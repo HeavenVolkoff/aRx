@@ -56,13 +56,13 @@ class AsyncAnonymousObserver(AsyncObserverBase):
     def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
         super().__init__()
 
-        assert iscoroutinefunction(asend)
+        assert asyncio.iscoroutinefunction(asend)
         self._send = asend
 
-        assert iscoroutinefunction(athrow)
+        assert asyncio.iscoroutinefunction(athrow)
         self._throw = athrow
 
-        assert iscoroutinefunction(aclose)
+        assert asyncio.iscoroutinefunction(aclose)
         self._close = aclose
 
     async def asend_core(self, value: T) -> None:
