@@ -46,7 +46,7 @@ class CatchException(AsyncObservable[T], Generic[T]):
             super().__init__()
             self.worker = worker
 
-        async def athrow(self, ex: Exception) -> None:
+        async def araise(self, ex: Exception) -> None:
             self.cancel()
 
 

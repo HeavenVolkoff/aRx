@@ -73,7 +73,7 @@ async def test_map_subscription_cancel():
 
     async def asend(value):
         result.append(value)
-        await sub.adispose()
+        await sub.__adispose__()
         await asyncio.sleep(0)
 
     async with subscribe(ys, AsyncAnonymousObserver(asend)) as sub:

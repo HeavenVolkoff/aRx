@@ -1,79 +1,92 @@
-
-from asyncio import Future
-from typing import TypeVar, Generic
-from abc import abstractmethod
+# Internal
+import typing as T
 import logging
-from aioreactive.abc import Disposable
-from .typing import AsyncObserver
 
-log = logging.getLogger(__name__)
+from abc import abstractmethod
+from asyncio import Future, InvalidStateError
 
-T = TypeVar('T')
+# Project
+from .errors import ReactiveError
+from ..abstract import AsyncDisposable, AsyncObservable
+
+K = T.TypeVar('K')
 
 
-class AsyncObserverBase(Future, AsyncObserver[T], Disposable):
+class ObserverClosedError(ReactiveError, InvalidStateError):
+    pass
+
+
+class AsyncObserver(T.Generic[K], Future, AsyncObservable, AsyncDisposable):
     """An async observer abstract base class.
 
-    Both a future and async observer. The future resolves with the last
-    value before the observer is closed. A close without any values sent
-    is the same as cancelling the future."""
+    Both a future and async observer.
+    The future resolves with the value passed to close.
+    """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,
+                 *args,
+                 logger: T.Optional[logging.Logger] = None,
+                 **kwargs) -> None:
+        cls = type(self)
 
-        self._has_value = False
-        self._last_value = None  # type: T
+        super().__init__(*args, **kwargs)
 
-        self._is_stopped = False
+        self._logger = logger if logger else logging.getLogger(cls.__name__)
+        self._closed = False
 
-    async def asend(self, value: T) -> None:
-        log.debug("AsyncObserverBase:asend(%s)", value)
+        # Ensure that observable is closed if it's future is resolved externally
+        self.add_done_callback(self._closed)
 
-        if self._is_stopped:
-            log.debug("Closed!!")
-            return
+    async def asend(self, data: K) -> None:
+        if self._closed:
+            raise ObserverClosedError("Observer is closed")
 
-        self._last_value = value
-        self._has_value = True
+        self._logger.debug("Observer send: %s", data)
+        await self.__asend__(data)
 
-        await self.asend_core(value)
+    async def araise(self, ex: Exception) -> None:
+        if self._closed:
+            raise ObserverClosedError("Observer is closed")
 
-    async def athrow(self, ex: Exception) -> None:
-        if self._is_stopped:
-            return
-
-        self._is_stopped = True
-
+        #
         self.set_exception(ex)
-        await self.athrow_core(ex)
 
-    async def aclose(self) -> None:
-        log.debug("AsyncObserverBase:aclose")
+        # Special case, we run close manually
+        self.remove_done_callback(self._closed)
 
-        if self._is_stopped:
-            log.debug("Closed!!")
-            return
+        self._logger.debug("Observer throw: %s", ex)
+        await self.__araise__(ex)
+        await self.aclose()
 
-        self._is_stopped = True
+    async def aclose(self, data: T.Any = None) -> bool:
+        if self._closed:
+            return False
 
-        if self._has_value:
-            self.set_result(self._last_value)
-        else:
-            self.cancel()
+        self._closed = True
 
-        await self.aclose_core()
+        self._logger.debug("Observer close")
 
-    def dispose(self) -> None:
-        self._is_stopped = True
+        if not self.done():
+            self.set_result(data)
+
+        await self.__aclose__()
+
+        return True
+
+    async def __adispose__(self):
+        await self.aclose()
+
+    async def __aobserve__(self, observer):
+        return self
 
     @abstractmethod
-    async def asend_core(self, value: T) -> None:
-        return NotImplemented
+    def __asend__(self, value: K) -> None:
+        raise NotImplemented()
 
     @abstractmethod
-    async def athrow_core(self, error) -> None:
-        return NotImplemented
+    async def __araise__(self, error) -> None:
+        raise NotImplemented()
 
     @abstractmethod
-    async def aclose_core(self) -> None:
-        return NotImplemented
+    async def __aclose__(self) -> None:
+        raise NotImplemented()

@@ -1,6 +1,6 @@
 from typing import Callable, TypeVar, Generic, Iterable
 
-from aioreactive.abc import AsyncDisposable
+from aioreactive.abstract import AsyncDisposable
 from .typing import AsyncObserver, AsyncObservable as AsyncObservableGeneric
 
 T = TypeVar('T')

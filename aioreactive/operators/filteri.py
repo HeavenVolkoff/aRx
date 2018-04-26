@@ -37,7 +37,7 @@ class FilterIndexed(AsyncObservable):
             try:
                 should_run = await self._predicate(value, self._index) if self._is_awaitable else self._predicate(value, self._index)
             except Exception as ex:
-                await self._observer.athrow(ex)
+                await self._observer.araise(ex)
             else:
                 if should_run:
                     await self._observer.asend(value)

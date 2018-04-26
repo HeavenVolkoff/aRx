@@ -70,7 +70,7 @@ async def test_delay_throw():
     await xs.asend(10)
     await asyncio.sleep(1.5)
     await xs.asend(20)
-    await xs.athrow(Exception('ex'))
+    await xs.araise(Exception('ex'))
     await asyncio.sleep(1)
 
     assert result == [10]

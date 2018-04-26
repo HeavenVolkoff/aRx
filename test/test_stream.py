@@ -112,7 +112,7 @@ async def test_stream_cancel_asend() -> None:
     subscription = None
 
     async def asend(value) -> None:
-        await subscription.adispose()
+        await subscription.__adispose__()
         await asyncio.sleep(0)
 
     def mapper(value) -> int:
@@ -136,7 +136,7 @@ async def test_stream_cancel_mapper():
     subscription = None
 
     def mapper(value):
-        asyncio.ensure_future(subscription.adispose())
+        asyncio.ensure_future(subscription.__adispose__())
         return value * 10
 
     ys = map(mapper, xs)

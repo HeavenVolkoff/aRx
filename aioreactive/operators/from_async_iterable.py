@@ -30,7 +30,7 @@ class FromAsyncIterable(AsyncObservable, Generic[T]):
                 try:
                     await observer.asend(value)
                 except Exception as ex:
-                    await observer.athrow(ex)
+                    await observer.araise(ex)
                     return
 
             await observer.aclose()
@@ -38,7 +38,7 @@ class FromAsyncIterable(AsyncObservable, Generic[T]):
             task = asyncio.ensure_future(worker())
         except Exception as ex:
             log.debug("FromIterable:worker(), Exception: %s" % ex)
-            await observer.athrow(ex)
+            await observer.araise(ex)
         return sub
 
 

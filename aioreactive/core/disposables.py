@@ -10,7 +10,7 @@ class AsyncDisposable(abc.AsyncDisposable):
             assert iscoroutinefunction(dispose)
         self._dispose = dispose
 
-    async def adispose(self) -> None:
+    async def __adispose__(self) -> None:
         await self._dispose()
 
 
@@ -19,6 +19,6 @@ class AsyncCompositeDisposable(AsyncDisposable):
     def __init__(self, *disposables) -> None:
         self._disposables = disposables
 
-    async def adispose(self) -> None:
+    async def __adispose__(self) -> None:
         for disposable in self._disposables:
-            await disposable.adispose()
+            await disposable.__adispose__()

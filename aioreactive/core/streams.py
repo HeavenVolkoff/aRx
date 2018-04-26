@@ -2,17 +2,16 @@ import logging
 from asyncio import Future
 from typing import TypeVar
 
-from .typing import AsyncObserver
+from .bases import AsyncObserver
 from .observables import AsyncObservable
 from .disposables import AsyncDisposable
-from .bases import AsyncObserverBase
 
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
 
-class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposable):
+class AsyncSingleStream(AsyncObserver[T], AsyncObservable[T], AsyncDisposable):
 
     """An stream with a single sink.
 
@@ -44,7 +43,7 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
         log.debug("AsyncSingleStream:athrow()")
 
         await self.await_subscriber()
-        await self._observer.athrow(ex)
+        await self._observer.araise(ex)
 
     async def aclose_core(self) -> None:
         log.debug("AsyncSingleStream:aclose()")
@@ -60,7 +59,7 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
             log.debug("AsyncSingleStream:await_subscriber()")
             await self._wait
 
-    async def adispose(self):
+    async def __adispose__(self):
         self._observer = None
         self._is_stopped = True
         self.cancel()
@@ -73,10 +72,10 @@ class AsyncSingleStream(AsyncObserverBase[T], AsyncObservable[T], AsyncDisposabl
         if not self._wait.done():
             self._wait.set_result(True)
 
-        return AsyncDisposable(self.adispose)
+        return AsyncDisposable(self.__adispose__)
 
 
-class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
+class AsyncMultiStream(AsyncObserver[T], AsyncObservable[T]):
     """An stream with a multiple observers.
 
     Both an async multi future and async iterable. Thus you may
@@ -96,7 +95,7 @@ class AsyncMultiStream(AsyncObserverBase[T], AsyncObservable[T]):
 
     async def athrow_core(self, ex: Exception) -> None:
         for obv in list(self._observers):
-            await obv.athrow(ex)
+            await obv.araise(ex)
 
     async def aclose_core(self) -> None:
         for obv in list(self._observers):

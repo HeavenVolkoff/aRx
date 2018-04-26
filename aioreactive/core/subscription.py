@@ -35,9 +35,9 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
         self._subscription = await chain(self._source, self._observer)
         return self._subscription
 
-    async def adispose(self) -> None:
+    async def __adispose__(self) -> None:
         """Closes stream."""
-        await self._subscription.adispose()
+        await self._subscription.__adispose__()
 
     async def __aenter__(self) -> AsyncDisposable:
         """Awaits subscription creation."""
@@ -45,7 +45,7 @@ class AsyncSubscriptionFactory(Awaitable, AsyncDisposable):
 
     async def __aexit__(self, type, value, traceback):
         """Awaits unsubscription."""
-        await self._subscription.adispose()
+        await self._subscription.__adispose__()
 
     def __await__(self):
         """Await stream creation."""
@@ -58,7 +58,7 @@ async def chain(source, observer) -> AsyncDisposable:
     Performs the chaining done internally by most operators. A much
     more light-weight version of subscribe()."""
 
-    return await source.__asubscribe__(observer)
+    return await source.__aobserve__(observer)
 
 
 def subscribe(source: AsyncObservable, observer: AsyncObserver) -> AsyncSubscriptionFactory:

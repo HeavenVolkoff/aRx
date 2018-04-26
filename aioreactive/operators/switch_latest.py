@@ -58,9 +58,9 @@ class SwitchLatest(AsyncObservable):
                 if self._parent._latest == id(self):
                     await self._observer.asend(value)
 
-            async def athrow(self, error: Exception):
+            async def araise(self, error: Exception):
                 if self._parent._latest == id(self):
-                    await self._observer.athrow(error)
+                    await self._observer.araise(error)
 
             async def aclose(self) -> None:
                 if self._parent._latest == id(self):

@@ -34,7 +34,7 @@ class AsyncStreamBase(core.AsyncObserver):
 
     async def athrow_at(self, when: float, err: Exception) -> None:
         async def task() -> None:
-            await self.athrow(err)
+            await self.araise(err)
 
         def callback() -> None:
             asyncio.ensure_future(task())
@@ -43,12 +43,12 @@ class AsyncStreamBase(core.AsyncObserver):
 
     async def athrow_later(self, delay: float, err: Exception) -> None:
         await asyncio.sleep(delay)
-        await self.athrow(err)
+        await self.araise(err)
 
     async def athrow_later_scheduled(self, delay: float, err: Exception) -> None:
         async def task():
             await asyncio.sleep(delay)
-            await self.athrow(err)
+            await self.araise(err)
         asyncio.ensure_future(task())
 
     async def aclose_at(self, when: float):

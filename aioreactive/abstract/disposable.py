@@ -7,7 +7,7 @@ class Disposable(metaclass=ABCMeta):
     Must implement the cancel method. Will cancel on exit."""
 
     @abstractmethod
-    def dispose(self):
+    def __dispose__(self):
         return NotImplemented
 
     def __enter__(self):
@@ -16,7 +16,7 @@ class Disposable(metaclass=ABCMeta):
 
     def __exit__(self, type, value, traceback) -> None:
         """Exit context management."""
-        self.dispose()
+        self.__dispose__()
 
 
 class AsyncDisposable(metaclass=ABCMeta):
@@ -25,7 +25,7 @@ class AsyncDisposable(metaclass=ABCMeta):
     Must implement the cancel method. Will cancel on exit."""
 
     @abstractmethod
-    async def adispose(self):
+    async def __adispose__(self):
         return NotImplemented
 
     async def __aenter__(self):
@@ -34,4 +34,4 @@ class AsyncDisposable(metaclass=ABCMeta):
 
     async def __aexit__(self, type, value, traceback) -> None:
         """Exit context management."""
-        await self.adispose()
+        await self.__adispose__()

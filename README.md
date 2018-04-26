@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/dbrattli/aioreactive.svg?branch=master)](https://travis-ci.org/dbrattli/aioreactive)
-[![Coverage Status](https://coveralls.io/repos/github/dbrattli/aioreactive/badge.svg?branch=master)](https://coveralls.io/github/dbrattli/aioreactive?branch=master)
+# ALPHA VERSION - API BREAKING CHANGES
+Following README is not at par with the current API
 
 # aioreactive - RxPY for asyncio using async and await
 

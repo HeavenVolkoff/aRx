@@ -109,7 +109,7 @@ async def test_stream_cancel_asend():
     sub = None
 
     async def asend(value):
-        await sub.adispose()
+        await sub.__adispose__()
         await asyncio.sleep(0)
 
     def mapper(value):
@@ -188,7 +188,7 @@ async def test_stream_cold_throw():
     sink = AsyncAnonymousObserver()
 
     async def athrow():
-        await xs.athrow(MyException)
+        await xs.araise(MyException)
 
     asyncio.ensure_future(athrow())
     await asyncio.sleep(10)

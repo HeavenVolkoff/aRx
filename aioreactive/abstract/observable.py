@@ -5,13 +5,13 @@ class Observable(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    def __subscribe__(self, observer):
-        return NotImplemented
+    def __observe__(self, observer):
+        raise NotImplemented()
 
 
 class AsyncObservable(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    async def __asubscribe__(self, observer):
-        return NotImplemented
+    async def __aobserve__(self, observer):
+        raise NotImplemented()
