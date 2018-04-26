@@ -1,12 +1,12 @@
 from typing import TypeVar
 
-from aioreactive.core.bases import AsyncObserverBase
+from aioreactive.core.bases import AsyncObserver
 from aioreactive.core.utils import anoop
 
 T = TypeVar('T')
 
 
-class AsyncAnonymousObserver(AsyncObserverBase):
+class AsyncAnonymousObserver(AsyncObserver):
     """A test AsyncAnonymousObserver.
 
     Records all values and events that happens and makes them available

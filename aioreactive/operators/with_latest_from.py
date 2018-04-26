@@ -42,7 +42,7 @@ class WithLatestFrom(AsyncObservable):
             try:
                 result = self._source._mapper(value, self._latest)
             except Exception as error:
-                await self._observer.athrow(error)
+                await self._observer.araise(error)
             else:
                 await self._observer.asend(result)
 

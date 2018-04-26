@@ -41,7 +41,7 @@ class Merge(AsyncObservable):
             # cancel the inner streams.
             for sub in self._inner_subs.values():
                 if sub is not None:
-                    await sub.adispose()
+                    await sub.__adispose__()
             self._inner_subs = {}
 
         async def asend_core(self, stream: AsyncObservable) -> None:

@@ -19,7 +19,7 @@ class NoopObserver(typing.AsyncObserver):
         log.debug("NoopSink:asend(%s)", value)
         pass
 
-    async def athrow(self, ex) -> None:
+    async def araise(self, ex) -> None:
         log.debug("NoopSink:athrow(%s)", ex)
         pass
 

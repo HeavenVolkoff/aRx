@@ -38,7 +38,7 @@ class Scan(AsyncObservable):
             try:
                 result = await self._function(value, value) if self._is_awaitable else self._selector(value)
             except Exception as err:
-                await self._observer.athrow(err)
+                await self._observer.araise(err)
             else:
                 await self._observer.asend(result)
 

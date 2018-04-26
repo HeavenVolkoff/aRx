@@ -1,82 +1,93 @@
+# Internal
 import asyncio
-from typing import TypeVar, AsyncIterator, AsyncIterable, List, Any, Optional
-import logging
 
-from .bases import AsyncObserverBase
+import typing as T
+
+# Project
+from .bases import AsyncObserver
 from .utils import anoop
 
-log = logging.getLogger(__name__)
-
-T = TypeVar("T")
+K = T.TypeVar("K")
 
 
-class AsyncIteratorObserver(AsyncObserverBase[T], AsyncIterable[T]):
+class AsyncIteratorObserver(AsyncObserver[K], T.AsyncIterator[K]):
     """An async observer that might be iterated asynchronously."""
 
-    def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
-        super().__init__()
-        self._loop = loop if loop is not None else asyncio.get_event_loop()
-        self._queue = []  # type: List[Any]
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._queue = []  # type: T.List[K]
         self._control = self._loop.create_future()  # type: asyncio.Future
 
-    async def asend_core(self, value: T) -> None:
+    async def __asend__(self, value: K) -> None:
         self._queue.append((False, value))
-        self._control.set_result(True)
+        try:
+            self._control.set_result(True)
+        except asyncio.InvalidStateError:
+            pass
 
-    async def athrow_core(self, err: Exception) -> None:
+    async def __araise__(self, err: Exception) -> None:
         self._queue.append((True, err))
-        self._control.set_result(True)
+        try:
+            self._control.set_result(True)
+        except asyncio.InvalidStateError:
+            pass
 
-    async def aclose_core(self) -> None:
+    async def __aclose__(self) -> None:
         self._queue.append((True, StopAsyncIteration))
-        self._control.set_result(True)
+        try:
+            self._control.set_result(True)
+        except asyncio.InvalidStateError:
+            pass
 
-    async def __aiter__(self) -> AsyncIterator:
+    async def __aiter__(self) -> T.AsyncIterator[K]:
         return self
 
-    async def __anext__(self) -> T:
+    async def __anext__(self) -> K.Awaitable[K]:
         while not self._queue:
             await self._control
+            self._control = self._loop.create_future()
 
         is_error, value = self._queue.pop(0)
 
         if is_error:
-            return value
-        else:
             raise value
+        else:
+            return value
 
 
-class AsyncAnonymousObserver(AsyncObserverBase):
+class AsyncAnonymousObserver(AsyncObserver[K]):
     """An anonymous AsyncObserver.
 
     Creates as sink where the implementation is provided by three
-    optional and anonymous functions, asend, athrow and aclose. Used for
+    optional and anonymous functions, asend, araise and aclose. Used for
     listening to a source."""
 
-    def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
+    def __init__(
+            self,
+            asend_coro: T.Callable[[K], T.Awaitable[None]] = anoop,
+            araise_coro: T.Callable[[Exception], T.Awaitable[None]] = anoop,
+            aclose_coro: T.Callable[None, T.Awaitable[None]] = anoop) -> None:
         super().__init__()
 
-        assert asyncio.iscoroutinefunction(asend)
-        self._send = asend
+        if not asyncio.iscoroutinefunction(asend_coro):
+            raise TypeError("asend must be a coroutine")
 
-        assert asyncio.iscoroutinefunction(athrow)
-        self._throw = athrow
+        if not asyncio.iscoroutinefunction(araise_coro):
+            raise TypeError("araise must be a coroutine")
 
-        assert asyncio.iscoroutinefunction(aclose)
-        self._close = aclose
+        if not asyncio.iscoroutinefunction(aclose_coro):
+            raise TypeError("aclose must be a coroutine")
 
-    async def asend_core(self, value: T) -> None:
+        self._send = asend_coro
+        self._throw = araise_coro
+        self._close = aclose_coro
+
+    async def __asend__(self, value: K) -> None:
         await self._send(value)
 
-    async def athrow_core(self, ex: Exception) -> None:
+    async def __araise__(self, ex: Exception) -> None:
         await self._throw(ex)
 
-    async def aclose_core(self) -> None:
+    async def __aclose__(self) -> None:
         await self._close()
-
-
-class AsyncNoopObserver(AsyncAnonymousObserver):
-    """An no operation Async Observer."""
-
-    def __init__(self, asend=anoop, athrow=anoop, aclose=anoop) -> None:
-        super().__init__(asend, athrow, aclose)

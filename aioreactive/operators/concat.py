@@ -24,7 +24,7 @@ class Concat(AsyncObservable):
         except StopIteration:
             await observer.aclose()
         except Exception as ex:
-            await observer.athrow(ex)
+            await observer.araise(ex)
         else:
             sink = Concat.Stream()
             down = await chain(sink, observer)  # type: AsyncDisposable
@@ -35,7 +35,7 @@ class Concat(AsyncObservable):
     async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
         async def cancel() -> None:
             if self._subscription is not None:
-                await self._subscription.adispose()
+                await self._subscription.__adispose__()
 
             if self._task is not None:
                 self._task.cancel()

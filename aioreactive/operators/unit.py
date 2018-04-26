@@ -22,7 +22,7 @@ class Unit(AsyncObservable):
                 await observer.asend(value)
             except Exception as ex:
                 try:
-                    await observer.athrow(ex)
+                    await observer.araise(ex)
                 except Exception as ex:
                     log.error("Unhandled exception: ", ex)
                     return
@@ -38,7 +38,7 @@ class Unit(AsyncObservable):
                 await observer.aclose()
             except Exception as ex:
                 try:
-                    await observer.athrow(ex)
+                    await observer.araise(ex)
                 except Exception as ex:
                     log.error("Unhandled exception: ", ex)
                     return

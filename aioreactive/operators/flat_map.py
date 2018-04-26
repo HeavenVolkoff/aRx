@@ -38,7 +38,7 @@ class FlatMap(AsyncObservable[T2]):
             try:
                 result = await self._mapper(value)
             except Exception as err:
-                await self._observer.athrow(err)
+                await self._observer.araise(err)
             else:
                 await self._observer.asend(result)
 
