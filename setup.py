@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
-    from setuptools import setup
+    from setuptools import setup, find_packages
 
 setup(
     name='aioreactive',
@@ -11,7 +13,8 @@ setup(
     description='Async/await Reactive Tools for Python 3.6+',
     long_description=(
         "aioreactive is a library for asynchronous and reactive "
-        "programming using asyncio, async and await"),
+        "programming using asyncio, async and await"
+    ),
     author='Børge Lanes & Dag Brattli',
     author_email='dag@brattli.net',
     license='MIT License',
@@ -33,8 +36,8 @@ setup(
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest', "pytest-asyncio"],
-
-    packages=['aioreactive', 'aioreactive.core', 'aioreactive.abc',
-              'aioreactive.operators', 'aioreactive.testing'],
+    packages=find_packages(
+        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
+    ),
     package_dir={'aioreactive': 'aioreactive'}
 )
