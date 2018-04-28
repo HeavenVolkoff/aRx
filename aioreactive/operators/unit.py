@@ -1,71 +1,64 @@
 import asyncio
-import logging
 
-from aioreactive.core import AsyncObservable, AsyncDisposable
-
-log = logging.getLogger(__name__)
+from .. import abstract
+from ..core import AsyncObserver
 
 
-class Unit(AsyncObservable):
+class Unit(abstract.AsyncObservable, abstract.AsyncDisposable):
+    def __init__(
+        self, value, *, loop: asyncio.AbstractEventLoop = None
+    ) -> None:
+        self.loop = loop if loop else asyncio.get_event_loop()
+        self.value = value
 
-    def __init__(self, value) -> None:
-        self._value = value
+        self._task = None  # type: asyncio.Task
 
-    async def __asubscribe__(self, observer) -> AsyncDisposable:
-        """Start streaming."""
+    async def worker(self, sink: AsyncObserver) -> None:
+        """Task for sending value."""
 
-        async def worker(value) -> None:
-            """Task for sending value."""
-
+        if asyncio.iscoroutine(self.value) or asyncio.isfuture(self.value):
             try:
-                log.debug("Unit:__asubscribe__:worker:sending: %s", value)
-                await observer.asend(value)
-            except Exception as ex:
-                try:
-                    await observer.araise(ex)
-                except Exception as ex:
-                    log.error("Unhandled exception: ", ex)
-                    return
-
-            await observer.aclose()
-
-        async def done() -> None:
-            """Called when future resolves."""
-
-            try:
-                value = self._value.result()
+                value = await self.value
             except asyncio.CancelledError:
-                await observer.aclose()
+                pass
             except Exception as ex:
-                try:
-                    await observer.araise(ex)
-                except Exception as ex:
-                    log.error("Unhandled exception: ", ex)
-                    return
+                await sink.araise(ex)
             else:
-                await worker(value)
-
-        def done_callback(fut):
-            asyncio.ensure_future(done())
-
-        async def dispose():
-            if hasattr(self._value, "remove_done_callback"):
-                self._value.remove_done_callback(done_callback)
-
-        disposable = AsyncDisposable(dispose)
-
-        # Check if plain value or Future (async value)
-        if hasattr(self._value, "add_done_callback"):
-            self._value.add_done_callback(done_callback)
-
+                await sink.asend(value)
         else:
-            asyncio.ensure_future(worker(self._value))
+            await sink.asend(self.value)
 
-        log.debug("Unit:done")
-        return disposable
+        await sink.aclose()
+
+    def clear_task(self, fut=None):
+        if fut is not None:
+            # Treat task callback response
+            try:
+                fut.result()
+            except (asyncio.CancelledError, asyncio.InvalidStateError):
+                # In case future was cancelled or not resolved,
+                # just ignore and clear it
+                pass
+
+        if self._task is not None:
+            self._task.cancel()
+            self._task = None
+
+    async def __adispose__(self):
+        self.clear_task()
+
+    async def __aobserve__(
+        self, observer: AsyncObserver
+    ) -> abstract.AsyncDisposable:
+        # Add worker execution to loop queue
+        self._task = self.loop.create_task(self.worker(observer))
+        # Add callback to clear task after it's completion
+        self._task.add_done_callback(self.clear_task)
+
+        return self
 
 
-def unit(value) -> AsyncObservable:
+def unit(value) -> Unit:
     """Returns a source stream that sends a single value.
 
     Example:
