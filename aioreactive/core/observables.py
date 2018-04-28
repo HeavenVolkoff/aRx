@@ -1,14 +1,23 @@
-from typing import Callable, TypeVar, Generic, Iterable
+# Internal
+import typing as T
 
-from aioreactive.abstract import AsyncDisposable
-from .typing import AsyncObserver, AsyncObservable as AsyncObservableGeneric
+# Project
+from .bases import AsyncObserver
+from ..abstract import (
+    AsyncDisposable, AsyncObservable as AbstractAsyncObservable
+)
+from ..operators import (
+    unit, empty, never, from_iterable, from_async_iterable, concat, slice as
+    slice_op
+)
+from .subscription import subscribe
 
-T = TypeVar('T')
-T1 = TypeVar('T1')
-T2 = TypeVar('T2')
+K = T.TypeVar('K')
+L = T.TypeVar('L')
+M = T.TypeVar('M')
 
 
-class AsyncObservable(AsyncObservableGeneric[T]):
+class AsyncObservable(T.Generic[K], AbstractAsyncObservable):
     """An AsyncObservable that works with Python special methods.
 
     This class supports python special methods including pipe-forward
@@ -16,13 +25,33 @@ class AsyncObservable(AsyncObservableGeneric[T]):
     plain old functions
     """
 
-    def __init__(self, source: 'AsyncObservable' = None) -> None:
+    @classmethod
+    def unit(cls, value: K) -> 'AsyncObservable[K]':
+        return AsyncChainedObservable(unit(value))
+
+    @classmethod
+    def empty(cls) -> 'AsyncObservable[K]':
+        return AsyncChainedObservable(empty())
+
+    @classmethod
+    def never(cls) -> 'AsyncObservable[K]':
+        return AsyncChainedObservable(never())
+
+    @classmethod
+    def from_iterable(cls, iterator: T.Iterable[K]) -> 'AsyncObservable[K]':
+        return AsyncChainedObservable(from_iterable(iterator))
+
+    @classmethod
+    def from_async_iterable(cls,
+                            iterator: T.Iterable[K]) -> 'AsyncObservable[K]':
+        return AsyncChainedObservable(from_async_iterable(iterator))
+
+    def __init__(self, source: AbstractAsyncObservable = None) -> None:
         self._source = source
 
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> 'AsyncDisposable':
-        return await self._source.__asubscribe__(observer)
-
-    def __or__(self, other: Callable[['AsyncObservable[T]'], 'AsyncObservable[T2]']) -> 'AsyncObservable[T2]':
+    def __or__(
+        self, other: T.Callable[['AsyncObservable[K]'], 'AsyncObservable[M]']
+    ) -> 'AsyncObservable[M]':
         """Forward pipe.
 
         Composes an async observable with a partally applied operator.
@@ -31,7 +60,28 @@ class AsyncObservable(AsyncObservableGeneric[T]):
         """
         return other(self)
 
-    def __getitem__(self, key) -> 'AsyncObservable[T]':
+    def __gt__(self, obv: AsyncObserver) -> AsyncDisposable:
+        return subscribe(self, obv)
+
+    def __add__(self, other: 'AsyncObservable[K]') -> 'AsyncObservable[K]':
+        """Pythonic version of concat
+
+        Example:
+        zs = xs + ys
+
+        Returns concat(other, self)"""
+        return concat(self, other)
+
+    def __iadd__(self, other: 'AsyncObservable[K]') -> 'AsyncObservable[K]':
+        """Pythonic use of concat
+
+        Example:
+        xs += ys
+
+        Returns self.concat(other, self)"""
+        return concat(self, other)
+
+    def __getitem__(self, key) -> 'AsyncObservable[K]':
         """Slices the given source stream using Python slice notation.
         The arguments to slice is start, stop and step given within
         brackets [] and separated with the ':' character. It is
@@ -58,8 +108,6 @@ class AsyncObservable(AsyncObservableGeneric[T]):
 
         Return a sliced source stream."""
 
-        from aioreactive.operators.slice import slice as _slice
-
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
         elif isinstance(key, int):
@@ -67,58 +115,10 @@ class AsyncObservable(AsyncObservableGeneric[T]):
         else:
             raise TypeError("Invalid argument type.")
 
-        return _slice(start, stop, step, self)
+        return slice_op(start, stop, step, self)
 
-    def __add__(self, other: 'AsyncObservable[T]') -> 'AsyncObservable[T]':
-        """Pythonic version of concat
-
-        Example:
-        zs = xs + ys
-
-        Returns concat(other, self)"""
-
-        from aioreactive.operators.concat import concat
-        return concat(self, other)
-
-    def __iadd__(self, other: 'AsyncObservable[T]') -> 'AsyncObservable[T]':
-        """Pythonic use of concat
-
-        Example:
-        xs += ys
-
-        Returns self.concat(other, self)"""
-
-        from aioreactive.operators.concat import concat
-        return concat(self, other)
-
-    def __gt__(self, obv) -> AsyncDisposable:
-        from .subscription import subscribe
-        return subscribe(self, obv)
-
-    @classmethod
-    def from_iterable(cls, iter: Iterable[T]) -> 'AsyncObservable[T]':
-        from aioreactive.operators.from_iterable import from_iterable
-        return AsyncChainedObservable(from_iterable(iter))
-
-    @classmethod
-    def from_async_iterable(cls, iter: Iterable[T]) -> 'AsyncObservable[T]':
-        from aioreactive.operators.from_async_iterable import from_async_iterable
-        return AsyncChainedObservable(from_async_iterable(iter))
-
-    @classmethod
-    def unit(cls, value: T) -> 'AsyncObservable[T]':
-        from aioreactive.operators.unit import unit
-        return AsyncChainedObservable(unit(value))
-
-    @classmethod
-    def empty(cls) -> 'AsyncObservable[T]':
-        from aioreactive.operators.empty import empty
-        return AsyncChainedObservable(empty())
-
-    @classmethod
-    def never(cls) -> 'AsyncObservable[T]':
-        from aioreactive.operators.never import never
-        return AsyncChainedObservable(never())
+    async def __aobserve__(self, observer: AsyncObserver[K]) -> AsyncDisposable:
+        return await self._source.__aobserve__(observer)
 
 
 class AsyncChainedObservable(AsyncObservable):
@@ -167,7 +167,9 @@ class AsyncChainedObservable(AsyncObservable):
 
         Returne a sliced source stream."""
 
-        return AsyncChainedObservable(super(AsyncChainedObservable, self).__getitem__(key))
+        return AsyncChainedObservable(
+            super(AsyncChainedObservable, self).__getitem__(key)
+        )
 
     def __add__(self, other) -> 'AsyncChainedObservable':
         """Pythonic version of concat
@@ -236,7 +238,9 @@ class AsyncChainedObservable(AsyncObservable):
         from aioreactive.operators.map import map
         return AsyncChainedObservable(map(selector, self))
 
-    def merge(self, other: 'AsyncChainedObservable') -> 'AsyncChainedObservable':
+    def merge(
+        self, other: 'AsyncChainedObservable'
+    ) -> 'AsyncChainedObservable':
         from aioreactive.operators.merge import merge
         return AsyncChainedObservable(merge(other, self))
 

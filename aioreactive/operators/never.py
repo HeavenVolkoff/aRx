@@ -1,8 +1,9 @@
-from aioreactive.core import AsyncObserver, AsyncObservable, AsyncDisposable
+from ..core import AsyncObserver, AsyncDisposable
+from ..abstract import AsyncObservable
 
 
 class Never(AsyncObservable):
-    async def __asubscribe__(self, observer: AsyncObserver) -> AsyncDisposable:
+    async def __aobserve__(self, _: AsyncObserver) -> AsyncDisposable:
         return AsyncDisposable()
 
 
@@ -12,7 +13,7 @@ def never() -> AsyncObservable:
     Example:
     xs = never()
 
-    Returns a source steam where nothing happens.
+    Returns a source stream where nothing happens.
     """
 
     return Never()

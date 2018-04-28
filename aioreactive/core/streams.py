@@ -1,18 +1,14 @@
-import logging
-from asyncio import Future
-from typing import TypeVar
+import typing as T
+import asyncio
 
 from .bases import AsyncObserver
 from .observables import AsyncObservable
 from .disposables import AsyncDisposable
 
-log = logging.getLogger(__name__)
-
-T = TypeVar("T")
+K = T.TypeVar("K")
 
 
-class AsyncSingleStream(AsyncObserver[T], AsyncObservable[T], AsyncDisposable):
-
+class AsyncSingleStream(AsyncObserver[K], AsyncObservable[K], AsyncDisposable):
     """An stream with a single sink.
 
     Both an async multi future and async iterable. Thus you may
@@ -25,10 +21,10 @@ class AsyncSingleStream(AsyncObserver[T], AsyncObservable[T], AsyncDisposable):
     def __init__(self) -> None:
         super().__init__()
 
-        self._wait = Future()  # type: Future
+        self._wait = Future()  # type: asyncio.Future
         self._observer = None  # type: AsyncObserver
 
-    async def asend_core(self, value: T):
+    async def asend_core(self, value: K):
         log.debug("AsyncSingleStream:asend(%s)", value)
 
         # AsyncSingleStreams are cold and will await a sink.
@@ -75,7 +71,7 @@ class AsyncSingleStream(AsyncObserver[T], AsyncObservable[T], AsyncDisposable):
         return AsyncDisposable(self.__adispose__)
 
 
-class AsyncMultiStream(AsyncObserver[T], AsyncObservable[T]):
+class AsyncMultiStream(AsyncObserver[K], AsyncObservable[K]):
     """An stream with a multiple observers.
 
     Both an async multi future and async iterable. Thus you may
@@ -89,7 +85,7 @@ class AsyncMultiStream(AsyncObserver[T], AsyncObservable[T]):
         super().__init__()
         self._observers = []  # type: List[AsyncObserver]
 
-    async def asend_core(self, value: T) -> None:
+    async def asend_core(self, value: K) -> None:
         for obv in list(self._observers):
             await obv.asend(value)
 
