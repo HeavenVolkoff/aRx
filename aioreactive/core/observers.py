@@ -1,16 +1,17 @@
 # Internal
 import asyncio
-
 import typing as T
 
+from collections.abc import AsyncIterator
+
 # Project
-from .bases import AsyncObserver
 from .utils import anoop
+from .bases import AsyncObserver
 
 K = T.TypeVar("K")
 
 
-class AsyncIteratorObserver(AsyncObserver[K], T.AsyncIterator[K]):
+class AsyncIteratorObserver(AsyncObserver[K], AsyncIterator[K]):
     """An async observer that might be iterated asynchronously."""
 
     def __init__(self, *args, **kwargs) -> None:
@@ -40,10 +41,10 @@ class AsyncIteratorObserver(AsyncObserver[K], T.AsyncIterator[K]):
         except asyncio.InvalidStateError:
             pass
 
-    async def __aiter__(self) -> T.AsyncIterator[K]:
+    async def __aiter__(self) -> AsyncIterator[K]:
         return self
 
-    async def __anext__(self) -> K.Awaitable[K]:
+    async def __anext__(self) -> T.Awaitable[K]:
         while not self._queue:
             await self._control
             self._control = self._loop.create_future()
@@ -64,10 +65,11 @@ class AsyncAnonymousObserver(AsyncObserver[K]):
     listening to a source."""
 
     def __init__(
-            self,
-            asend_coro: T.Callable[[K], T.Awaitable[None]] = anoop,
-            araise_coro: T.Callable[[Exception], T.Awaitable[None]] = anoop,
-            aclose_coro: T.Callable[None, T.Awaitable[None]] = anoop) -> None:
+        self,
+        asend_coro: T.Callable[[K], T.Awaitable[None]] = anoop,
+        araise_coro: T.Callable[[Exception], T.Awaitable[None]] = anoop,
+        aclose_coro: T.Callable[None, T.Awaitable[None]] = anoop
+    ) -> None:
         super().__init__()
 
         if not asyncio.iscoroutinefunction(asend_coro):
