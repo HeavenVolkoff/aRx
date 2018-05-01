@@ -2,11 +2,12 @@
 import typing as T
 
 from abc import ABCMeta, abstractmethod
+from asyncio import Future
 
 K = T.TypeVar("K")
 
 
-class Observer(T.Generic[K], metaclass=ABCMeta):
+class Observer(T.Generic[K], Future, metaclass=ABCMeta):
     """An async observer abstract base class.
 
     Both a future and async observer.
@@ -20,7 +21,7 @@ class Observer(T.Generic[K], metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    async def __araise__(self, error: Exception) -> None:
+    async def __araise__(self, ex: Exception) -> None:
         raise NotImplemented()
 
     @abstractmethod
