@@ -5,7 +5,7 @@ from asyncio import iscoroutinefunction
 from .. import abstract
 
 
-class AsyncCompositeDisposable(abstract.Disposable):
+class CompositeDisposable(abstract.Disposable):
     def __init__(
         self, a: abstract.Disposable, b: abstract.Disposable,
         *rest: abstract.Disposable

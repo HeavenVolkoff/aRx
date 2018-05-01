@@ -2,12 +2,11 @@
 import typing as T
 import logging
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from enum import Enum, auto
 from asyncio import Future, InvalidStateError
 
 # Project
-from ..misc import noop
 from ..error import ReactiveError
 from ..abstract import Disposable, Observer
 
@@ -27,7 +26,7 @@ class ObserverClosedError(ReactiveError, InvalidStateError):
     pass
 
 
-class BaseObserver(Future, Observer[K], Disposable, metaclass=ABCMeta):
+class BaseObserver(Observer[K], Disposable, metaclass=ABCMeta):
     """An async observer abstract base class.
 
     Both a future and async observer.
@@ -39,7 +38,7 @@ class BaseObserver(Future, Observer[K], Disposable, metaclass=ABCMeta):
     ) -> None:
         cls = type(self)
 
-        super().__init__(*args, **kwargs)
+        super(Observer, self).__init__(*args, **kwargs)
 
         self._state = ObserverState.OPEN
         self._logger = logger if logger else logging.getLogger(cls.__name__)
@@ -47,18 +46,21 @@ class BaseObserver(Future, Observer[K], Disposable, metaclass=ABCMeta):
         # Ensure that observable is closed if it's future is resolved externally
         self.add_done_callback(self.aclose)
 
+    async def __adispose__(self):
+        await self.aclose()
+
+    def clear_exception(self) -> None:
+        if self._state is not ObserverState.EXCEPTION:
+            raise InvalidStateError('Stream is not in a exception state')
+
+        self._state = ObserverState.OPEN
+
     async def asend(self, data: K) -> None:
         if self._state is ObserverState.CLOSED:
             raise ObserverClosedError(self)
 
         self._logger.debug("Observer send: %s", data)
         await self.__asend__(data)
-
-    def _clear_exception(self) -> None:
-        if self._state is not ObserverState.EXCEPTION:
-            raise InvalidStateError('Stream is not in a exception state')
-
-        self._state = ObserverState.OPEN
 
     async def araise(self, ex: Exception) -> None:
         if self._state is ObserverState.CLOSED:
@@ -92,12 +94,3 @@ class BaseObserver(Future, Observer[K], Disposable, metaclass=ABCMeta):
         await self.__aclose__()
 
         return True
-
-    async def __adispose__(self):
-        await self.aclose()
-
-    @abstractmethod
-    async def __araise__(
-        self, error: Exception, *, clear: T.Callable[None, None] = noop
-    ):
-        raise NotImplemented()
