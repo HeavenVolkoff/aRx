@@ -1,39 +1,40 @@
-from typing import TypeVar
+# Internal
+import typing as T
 
-from aioreactive.core import AsyncSingleStream
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
-from aioreactive.core import AsyncObserver, AsyncObservable, chain
+# Project
+from ..stream import SingleStream
+from ..abstract import Observable, Observer, Disposable
+from ..disposable import CompositeDisposable
 
-T = TypeVar('T')
+K = T.TypeVar('K')
 
 
-class Skip(AsyncObservable[T]):
-
-    def __init__(self, count: int, source: AsyncObservable[T]) -> None:
-        self._source = source
-        self._count = count
-
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
-        sink = Skip.Sink(self)
-        down = await chain(sink, observer)
-        up = await chain(self._source, sink)
-
-        return AsyncCompositeDisposable(up, down)
-
-    class Sink(AsyncSingleStream[T]):
-
-        def __init__(self, source: "Skip[T]") -> None:
+class Skip(Observable):
+    class Sink(SingleStream[K]):
+        def __init__(self, count: int) -> None:
             super().__init__()
-            self._count = source._count
+            self._count = count
 
-        async def asend_core(self, value: T):
+        async def __asend__(self, value: K):
             if self._count <= 0:
-                await self._observer.asend(value)
+                await super().__asend__(value)
             else:
                 self._count -= 1
 
+    def __init__(self, count: int, source: Observable) -> None:
+        self._count = count
+        self._source = source
 
-def skip(count: int, source: AsyncObservable[T]) -> AsyncObservable[T]:
+    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
+        sink = Skip.Sink(self._count)
+
+        up = await self._source.__aobserve__(sink)
+        down = await sink.__aobserve__(observer)
+
+        return CompositeDisposable(up, down)
+
+
+def skip(count: int, source: Observable) -> Observable:
     """Skip the specified number of values.
 
     Keyword arguments:
@@ -43,5 +44,4 @@ def skip(count: int, source: AsyncObservable[T]) -> AsyncObservable[T]:
     Returns a source stream that contains the values that occur
     after the specified index in the input source stream.
     """
-
     return Skip(count, source)

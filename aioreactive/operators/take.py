@@ -1,42 +1,42 @@
-from typing import TypeVar
+# Internal
+import typing as T
 
-from aioreactive.core import AsyncObserver, AsyncObservable, AsyncSingleStream
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable, chain
-
+# Project
 from .empty import empty
+from ..stream import SingleStream
+from ..abstract import Observable, Observer, Disposable
+from ..disposable import CompositeDisposable
 
-T = TypeVar('T')
+K = T.TypeVar('T')
 
 
-class Take(AsyncObservable[T]):
-
-    def __init__(self, count: int, source: AsyncObservable[T]) -> None:
+class Take(Observable):
+    def __init__(self, count: int, source: Observable) -> None:
         self._source = source
         self._count = count
 
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
-        sink = Take.Sink(self)  # type: AsyncSingleStream[T]
-        down = await chain(sink, observer)
-        up = await chain(self._source, sink)
+    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
+        sink = Take.Sink(self._count)  # type: SingleStream[K]
+        down = await sink.__aobserve__(observer)
+        up = await self.__aobserve__(sink)
 
-        return AsyncCompositeDisposable(up, down)
+        return CompositeDisposable(up, down)
 
-    class Sink(AsyncSingleStream[T]):
-
-        def __init__(self, source: "Take") -> None:
+    class Sink(SingleStream[K]):
+        def __init__(self, count: int) -> None:
             super().__init__()
-            self._count = source._count
+            self._count = count
 
-        async def asend(self, value: T) -> None:
+        async def __asend__(self, value: K) -> None:
             if self._count > 0:
                 self._count -= 1
-                await self._observer.asend(value)
+                await super().__asend__(value)
 
-                if not self._count:
-                    await self._observer.aclose()
+                if self._count == 0:
+                    await super().__aclose__()
 
 
-def take(count: int, source: AsyncObservable[T]) -> AsyncObservable[T]:
+def take(count: int, source: Observable) -> Observable:
     """Returns a specified number of contiguous elements from the start
     of the source stream.
 
@@ -49,11 +49,9 @@ def take(count: int, source: AsyncObservable[T]) -> AsyncObservable[T]:
     Returns a source sequence that contains the specified number of
     elements from the start of the input sequence.
     """
-
     if count < 0:
-        raise ValueError()
-
-    if not count:
+        raise ValueError("Count must be bigger than 0")
+    elif count == 0:
         return empty()
 
     return Take(count, source)
