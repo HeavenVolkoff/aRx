@@ -14,7 +14,6 @@ from functools import partial
 # Project
 from .map import map
 from .max import max
-from .scan import scan
 from .skip import skip
 from .take import take
 from .unit import unit

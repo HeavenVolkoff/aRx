@@ -1,40 +1,41 @@
-from typing import TypeVar
+# Internal
+import typing as T
 
-from aioreactive.core import AsyncObserver, AsyncObservable
-from aioreactive.core import AsyncSingleStream, chain
-from aioreactive.core import AsyncDisposable, AsyncCompositeDisposable
+# Project
+from ..stream import SingleStream
+from ..abstract import Observable, Observer, Disposable
+from ..disposable import CompositeDisposable
 
-T = TypeVar('T')
+K = T.TypeVar('K')
 
 
-class Max(AsyncObservable[T]):
-
-    def __init__(self, source: AsyncObservable) -> None:
-        self._source = source
-
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
-        sink = Max.Stream()  # type: AsyncSingleStream[T]
-        down = await chain(sink, observer)
-        up = await chain(self._source, down)
-
-        return AsyncCompositeDisposable(up, down)
-
-    class Stream(AsyncSingleStream[T]):
-
+class Max(Observable):
+    class Stream(SingleStream[T]):
         def __init__(self) -> None:
             super().__init__()
             self._max = None  # type: T
 
-        async def asend_core(self, value: T) -> None:
+        async def __asend__(self, value: T) -> None:
             if value > self._max:
                 self._max = value
 
-        async def aclose_core(self) -> None:
-            await super().asend_core(self._max)
-            await super().aclose_core()
+        async def __aclose__(self) -> None:
+            await super().__asend__(self._max)
+            await super().__aclose__()
+
+    def __init__(self, source: Observable) -> None:
+        self._source = source
+
+    async def __aobserve__(self, observer: Observer) -> Disposable:
+        sink = Max.Stream()  # type: SingleStream[T]
+
+        up = await self._source.__aobserve__(sink)
+        down = await sink.__aobserve__(observer)
+
+        return CompositeDisposable(up, down)
 
 
-def max(source: AsyncObservable[T]) -> AsyncObservable[T]:
+def max(source: Observable) -> Observable:
     """Project each item of the source stream.
 
     xs = max(source)
@@ -45,5 +46,4 @@ def max(source: AsyncObservable[T]) -> AsyncObservable[T]:
     Returns a stream with a single item that is the item with the
     maximum value from the source stream.
     """
-
     return Max(source)

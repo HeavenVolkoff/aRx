@@ -68,7 +68,7 @@ class BaseObserver(Observer[K], Disposable, metaclass=ABCMeta):
 
         self._logger.debug("Observer throw: %s", ex)
 
-        await self.__araise__(ex, clear=self._clear_exception)
+        await self.__araise__(ex)
 
         if self._state is ObserverState.EXCEPTION:
             try:

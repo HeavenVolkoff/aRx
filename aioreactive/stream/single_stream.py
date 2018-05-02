@@ -35,31 +35,35 @@ class SingleStream(BaseObservable, BaseObserver[K]):
             await self._wait
 
     async def __asend__(self, value: K):
-        self._logger.debug("AsyncSingleStream:asend(%s)", value)
+        self._logger.debug("AsyncSingleStream:__asend__(%s)", value)
         await self.await_subscriber()
         await self._observer.asend(value)
 
     async def __araise__(self, ex: Exception) -> None:
-        self._logger.debug("AsyncSingleStream:athrow(%s)", ex)
+        self._logger.debug("AsyncSingleStream:__araise__(%s)", ex)
         await self.await_subscriber()
         await self._observer.araise(ex)
 
     async def __aclose__(self) -> None:
-        self._logger.debug("AsyncSingleStream:aclose()")
+        self._logger.debug("AsyncSingleStream:__aclose__()")
         await self.await_subscriber()
         await self._observer.aclose()
 
     async def __adispose__(self) -> None:
         self._wait = None
         self._observer = None
-        BaseObserver.__adispose__(self)
 
-    async def __aobserve__(self, observer: Observer) -> Disposable:
+        await BaseObserver.__adispose__(self)
+
+    async def __aobserve__(self, observer: T.Optional[Observer]) -> Disposable:
         """Start streaming."""
-
         self._observer = observer
 
-        if not self._wait.done():
-            self._wait.set_result(True)
+        if observer is None:
+            if self._wait.done():
+                self._wait = self._loop.create_future()
+        else:
+            if not self._wait.done():
+                self._wait.set_result(True)
 
         return self
