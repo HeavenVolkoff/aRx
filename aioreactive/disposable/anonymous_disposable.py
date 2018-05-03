@@ -8,10 +8,13 @@ from ..misc import anoop
 
 
 class AnonymousDisposable(abstract.Disposable):
-    def __init__(self,
-                 dispose: T.Callable[None, T.Awaitable[None]] = anoop) -> None:
+    def __init__(
+        self, dispose: T.Callable[[], T.Awaitable[None]] = anoop, **kwargs
+    ) -> None:
         if not iscoroutinefunction(dispose):
             raise TypeError("Parameter dispose must be a coroutine")
+
+        super().__init__(**kwargs)
 
         self._dispose = dispose
 

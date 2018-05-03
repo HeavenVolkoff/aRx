@@ -1,24 +1,21 @@
 # Internal
 import typing as T
-import logging
 
 from abc import ABCMeta
 from ..supervision import observe
 
 # Project
-from .. import abstract
 from .. import operators as op
+from ..abstract import Observable, Loggable, Disposable, Observer
 
 K = T.TypeVar('K')
 M = T.TypeVar('M')
 
 
-class BaseObservable(T.Generic[K], abstract.Observable, metaclass=ABCMeta):
-    """An AsyncObservable that works with Python special methods.
+class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
+    """The base class for all Observables.
 
-    This class supports python special methods including pipe-forward
-    using OR operator. All operators are provided as partially applied
-    plain old functions
+    Implements all the common behaviour of a Observable
     """
 
     @classmethod
@@ -42,14 +39,13 @@ class BaseObservable(T.Generic[K], abstract.Observable, metaclass=ABCMeta):
                             ) -> 'BaseObservable[K]':
         return op.from_async_iterable(iterable)
 
-    def __init__(self, *, logger: T.Optional[logging.Logger] = None) -> None:
-        """Observable Constructor
+    def __init__(self, **kwargs) -> None:
+        """Observable Constructor.
 
         Args:
-            logger: Optional logger
+            kwargs: Super classes named parameters
         """
-        cls = type(self)
-        self._logger = logger if logger else logging.getLogger(cls.__name__)
+        super().__init__(**kwargs)
 
     def __or__(
         self, other: T.Callable[['BaseObservable[K]'], 'BaseObservable[M]']
@@ -65,7 +61,7 @@ class BaseObservable(T.Generic[K], abstract.Observable, metaclass=ABCMeta):
         """
         return other(self)
 
-    def __gt__(self, observer: abstract.Observer) -> abstract.Disposable:
+    def __gt__(self, observer: Observer) -> Disposable:
         """Grater than. Call observe.
 
         Args:

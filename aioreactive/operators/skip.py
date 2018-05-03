@@ -11,8 +11,8 @@ K = T.TypeVar('K')
 
 class Skip(Observable):
     class Sink(SingleStream[K]):
-        def __init__(self, count: int) -> None:
-            super().__init__()
+        def __init__(self, count: int, **kwargs) -> None:
+            super().__init__(**kwargs)
             self._count = count
 
         async def __asend__(self, value: K):
@@ -21,7 +21,9 @@ class Skip(Observable):
             else:
                 self._count -= 1
 
-    def __init__(self, count: int, source: Observable) -> None:
+    def __init__(self, count: int, source: Observable, **kwargs) -> None:
+        super().__init__(**kwargs)
+
         self._count = count
         self._source = source
 
