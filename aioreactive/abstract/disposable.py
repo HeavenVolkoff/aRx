@@ -1,12 +1,15 @@
 from abc import ABCMeta, abstractmethod
 
 
-class Disposable(metaclass=ABCMeta):
+class Disposable(object, metaclass=ABCMeta):
     """A disposable class with a context manager.
 
     Must implement the cancel method. Will cancel on exit."""
 
     __slots__ = ()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @abstractmethod
     async def __adispose__(self):

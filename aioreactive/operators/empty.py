@@ -1,20 +1,22 @@
-import asyncio
+from asyncio import Task
 
-from ..abstract import AsyncObservable
-from ..core import AsyncObserver, AsyncObservable
+from ..abstract import Observable, Observer, Disposable
+from ..disposable import AnonymousDisposable
 
 
-class Empty(AsyncObservable):
-    async def __aobserve__(self, sink: AsyncObserver):
+class Empty(Observable):
+    async def __aobserve__(self, observer: Observer) -> Disposable:
         """Start streaming."""
 
-        async def worker():
-            await sink.aclose()
+        task = observer.loop.create_task(observer.aclose())  # type: Task
 
-        return asyncio.ensure_future(worker())
+        async def dispose():
+            task.cancel()
+
+        return AnonymousDisposable(dispose)
 
 
-def empty() -> AsyncObservable:
+def empty() -> Observable:
     """Returns an empty source sequence.
 
     1 - xs = empty()

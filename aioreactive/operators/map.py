@@ -14,8 +14,8 @@ J = T.TypeVar('J')
 
 class Map(Observable):
     class Sink(SingleStream[J]):
-        def __init__(self, mapper: T.Callable[[K], J]) -> None:
-            super().__init__()
+        def __init__(self, mapper: T.Callable[[K], J], **kwargs) -> None:
+            super().__init__(**kwargs)
             self._mapper = mapper
 
         async def __asend__(self, value: K) -> None:
@@ -26,9 +26,13 @@ class Map(Observable):
             else:
                 await super().__asend__(result)
 
-    def __init__(self, mapper: T.Callable[[K], J], source: Observable) -> None:
+    def __init__(
+        self, mapper: T.Callable[[K], J], source: Observable, **kwargs
+    ) -> None:
         if not iscoroutinefunction(mapper):
             raise TypeError("mapper must be a coroutine")
+
+        super().__init__(**kwargs)
 
         self._source = source
         self._mapper = mapper

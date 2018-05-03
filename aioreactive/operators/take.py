@@ -11,7 +11,21 @@ K = T.TypeVar('T')
 
 
 class Take(Observable):
-    def __init__(self, count: int, source: Observable) -> None:
+    class Sink(SingleStream[K]):
+        def __init__(self, count: int, **kwargs) -> None:
+            super().__init__(**kwargs)
+            self._count = count
+
+        async def __asend__(self, value: K) -> None:
+            if self._count > 0:
+                self._count -= 1
+                await super().__asend__(value)
+
+                if self._count == 0:
+                    await super().aclose()
+
+    def __init__(self, count: int, source: Observable, **kwargs) -> None:
+        super().__init__(**kwargs)
         self._source = source
         self._count = count
 
@@ -21,19 +35,6 @@ class Take(Observable):
         up = await self.__aobserve__(sink)
 
         return CompositeDisposable(up, down)
-
-    class Sink(SingleStream[K]):
-        def __init__(self, count: int) -> None:
-            super().__init__()
-            self._count = count
-
-        async def __asend__(self, value: K) -> None:
-            if self._count > 0:
-                self._count -= 1
-                await super().__asend__(value)
-
-                if self._count == 0:
-                    await super().__aclose__()
 
 
 def take(count: int, source: Observable) -> Observable:

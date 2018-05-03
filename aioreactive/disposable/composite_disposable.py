@@ -8,13 +8,15 @@ from .. import abstract
 class CompositeDisposable(abstract.Disposable):
     def __init__(
         self, a: abstract.Disposable, b: abstract.Disposable,
-        *rest: abstract.Disposable
+        *rest: abstract.Disposable, **kwargs
     ) -> None:
         disposables = [a, b] + list(rest)
 
         for disposable in disposables:
             if not iscoroutinefunction(disposable):
                 raise TypeError("Parameters must be coroutines")
+
+        super().__init__(**kwargs)
 
         self._disposables = disposables
 

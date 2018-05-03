@@ -1,22 +1,14 @@
 # Internal
 import typing as T
-import logging
 
 from abc import ABCMeta
-from enum import Enum, auto
-from asyncio import Future, InvalidStateError
+from asyncio import InvalidStateError
 
 # Project
 from ..error import ReactiveError
-from ..abstract import Disposable, Observer
+from ..abstract import Disposable, Observer, Loggable
 
 K = T.TypeVar('K')
-
-
-class ObserverState(Enum):
-    OPEN = auto()
-    CLOSED = auto()
-    EXCEPTION = auto()
 
 
 class ObserverClosedError(ReactiveError, InvalidStateError):
@@ -26,51 +18,59 @@ class ObserverClosedError(ReactiveError, InvalidStateError):
     pass
 
 
-class BaseObserver(Observer[K], Disposable, metaclass=ABCMeta):
-    """An async observer abstract base class.
+class BaseObserver(Observer[K], Disposable, Loggable, metaclass=ABCMeta):
+    """The base class for all Observers.
 
-    Both a future and async observer.
-    The future resolves with the value passed to close.
+    Implements all the common behaviour of a Observer
     """
 
-    def __init__(
-        self, *args, logger: T.Optional[logging.Logger] = None, **kwargs
-    ) -> None:
-        cls = type(self)
+    def __init__(self, **kwargs) -> None:
+        """BaseObserver constructor.
 
-        super(Observer, self).__init__(*args, **kwargs)
+        Args
+            kwargs: Super classes named parameters
+        """
+        super().__init__(**kwargs)
 
-        self._state = ObserverState.OPEN
-        self._logger = logger if logger else logging.getLogger(cls.__name__)
+        # Public
+        self.closed = False
 
-        # Ensure that observable is closed if it's future is resolved externally
+        # Ensure that observable closes if it's future is resolved externally
         self.add_done_callback(self.aclose)
 
     async def __adispose__(self):
+        """Implements the disposable interface, enables context management"""
         await self.aclose()
 
-    def clear_exception(self) -> None:
-        if self._state is not ObserverState.EXCEPTION:
-            raise InvalidStateError('Stream is not in a exception state')
-
-        self._state = ObserverState.OPEN
-
     async def asend(self, data: K) -> None:
-        if self._state is ObserverState.CLOSED:
+        """Public method to send data through this observer
+
+        Args:
+            data: Data to be sent through
+        """
+        if self.done() or self.closed:
             raise ObserverClosedError(self)
 
         self._logger.debug("Observer send: %s", data)
         await self.__asend__(data)
 
-    async def araise(self, ex: Exception) -> None:
-        if self._state is ObserverState.CLOSED:
+    async def araise(self, ex: Exception) -> bool:
+        """Public method to raise a exception through this observer
+
+        Args:
+            ex: Exception to be raised
+
+        Returns:
+            Boolean indicating if observer was set to close due to the exception
+        """
+        if self.done() or self.closed:
             raise ObserverClosedError(self)
 
         self._logger.debug("Observer throw: %s", ex)
 
-        await self.__araise__(ex)
+        should_close = await self.__araise__(ex)
 
-        if self._state is ObserverState.EXCEPTION:
+        if should_close:
             try:
                 self.set_exception(ex)
             except InvalidStateError:
@@ -78,19 +78,34 @@ class BaseObserver(Observer[K], Disposable, metaclass=ABCMeta):
                     "Observer was put in a InvalidState during `.araise()`"
                 )
 
-    async def aclose(self, data: T.Any = None) -> bool:
-        if self._state is ObserverState.CLOSED:
-            return False
+        return should_close
 
-        self._state = ObserverState.CLOSED
+    async def aclose(self, data: T.Any = None) -> bool:
+        """Close observer and underlining future with received data as result.
+
+        Args:
+            data: Data to be used as result to underling future
+
+        Returns:
+            Boolean indicating if close executed
+        """
+        if self.closed:
+            return False
 
         self._logger.debug("Closing observer")
 
-        try:
-            self.set_result(data)
-        except InvalidStateError:
-            pass
+        self.closed = True
 
         await self.__aclose__()
+
+        try:
+            self.set_result(data)
+        except InvalidStateError as error:
+            if data is not None:
+                self._logger.warning(
+                    "Observer couldn't be resolved with data passed to "
+                    "`.aclosed()`, due to: [%s] %s",
+                    type(error).__name__, error
+                )
 
         return True

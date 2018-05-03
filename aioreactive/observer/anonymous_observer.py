@@ -20,11 +20,10 @@ class AnonymousObserver(BaseObserver[K]):
         self,
         asend_coro: T.Callable[[K], T.Awaitable[None]] = anoop,
         araise_coro: T.Callable[[Exception], T.Awaitable[None]] = anoop,
-        aclose_coro: T.Callable[None, T.Awaitable[None]] = anoop,
-        *args,
+        aclose_coro: T.Callable[[], T.Awaitable[None]] = anoop,
         **kwargs
     ) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
         if not asyncio.iscoroutinefunction(asend_coro):
             raise TypeError("asend must be a coroutine")
