@@ -16,6 +16,9 @@ class Observer(Future, T.Generic[K], metaclass=ABCMeta):
 
     __slots__ = ()
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     @property
     def loop(self) -> AbstractEventLoop:
         return self._loop

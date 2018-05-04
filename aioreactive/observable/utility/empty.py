@@ -1,7 +1,7 @@
 from asyncio import Task
 
-from ..abstract import Observable, Observer, Disposable
-from ..disposable import AnonymousDisposable
+from aioreactive.abstract import Observable, Observer, Disposable
+from aioreactive.disposable import AnonymousDisposable
 
 
 class Empty(Observable):

@@ -20,18 +20,14 @@ from aiohttp import web
 
 from aioreactive.core import AsyncAnonymousObserver, subscribe
 from aioreactive.core import AsyncObservable, AsyncStream
-from aioreactive.operators import op
+from aioreactive.operator import op
 
 
 async def search_wikipedia(term):
     """Search Wikipedia for a given term"""
     url = 'http://en.wikipedia.org/w/api.php'
 
-    params = {
-        "action": 'opensearch',
-        "search": term,
-        "format": 'json'
-    }
+    params = {"action": 'opensearch', "search": term, "format": 'json'}
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as resp:
@@ -43,13 +39,14 @@ async def websocket_handler(request):
 
     stream = AsyncStream()
 
-    xs = (stream
-          | op.map(lambda x: x["term"])
-          | op.filter(lambda text: len(text) > 2)
-          | op.debounce(0.5)
-          | op.distinct_until_changed()
-          | op.flat_map(search_wikipedia)
-          )
+    xs = (
+        stream
+        | op.map(lambda x: x["term"])
+        | op.filter(lambda text: len(text) > 2)
+        | op.debounce(0.5)
+        | op.distinct_until_changed()
+        | op.flat_map(search_wikipedia)
+    )
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
