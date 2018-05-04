@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators import from_iterable, flat_map, unit
+from aioreactive.operator import from_iterable, flat_map, unit
 from aioreactive.core import AsyncStream, subscribe, run
 from aioreactive.testing import AsyncAnonymousObserver
 
@@ -36,10 +36,7 @@ async def test_flap_map_done():
 
     await obv
 
-    assert obv.values == [
-        (0, 10),
-        (0, 20),
-        (0, )]
+    assert obv.values == [(0, 10), (0, 20), (0, )]
 
 
 @pytest.mark.asyncio
@@ -105,6 +102,7 @@ async def test_flat_map_monad_law_associativity():
     b = await run(flat_map(h, m))
 
     assert a == b
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

@@ -4,7 +4,7 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import subscribe
-from aioreactive.operators import delay
+from aioreactive.operator import delay
 from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
 
 log = logging.getLogger(__name__)
@@ -30,11 +30,7 @@ async def test_delay_done():
         await xs.aclose_later(1)
         await obv
 
-    assert obv.values == [
-        (0.5, 10),
-        (1.5, 20),
-        (2.5,)
-    ]
+    assert obv.values == [(0.5, 10), (1.5, 20), (2.5, )]
 
 
 @pytest.mark.asyncio

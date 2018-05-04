@@ -3,8 +3,8 @@ import asyncio
 import logging
 
 from aioreactive.core import subscribe
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.merge import merge
+from aioreactive.observable.utility.from_iterable import from_iterable
+from aioreactive.operator.merge import merge
 from aioreactive.testing import AsyncStream, VirtualTimeEventLoop, AsyncAnonymousObserver
 
 logging.basicConfig(level=logging.DEBUG)
@@ -30,11 +30,8 @@ async def test_merge_done():
     await xs.aclose()
     await obv
 
-    assert obv.values == [
-        (0, 10),
-        (0, 20),
-        (0,)
-    ]
+    assert obv.values == [(0, 10), (0, 20), (0, )]
+
 
 @pytest.mark.asyncio
 async def test_merge_streams():
@@ -63,13 +60,7 @@ async def test_merge_streams():
     await obv
 
     assert obv.values == [
-        (0, 40),
-        (1, 10),
-        (2, 20),
-        (3, 50),
-        (4, 30),
-        (5, 60),
-        (6,)
+        (0, 40), (1, 10), (2, 20), (3, 50), (4, 30), (5, 60), (6, )
     ]
 
 
@@ -93,13 +84,7 @@ async def test_merge_streams_concat():
     await obv
 
     assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (4, 30),
-        (6, 1),
-        (6, 2),
-        (6, 3),
-        (6,)
+        (1, 10), (2, 20), (4, 30), (6, 1), (6, 2), (6, 3), (6, )
     ]
 
 

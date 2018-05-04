@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.unit import unit
+from aioreactive.observable.utility.unit import unit
 from aioreactive.core import run, subscribe
 from aioreactive.testing import AsyncAnonymousObserver
 
@@ -121,4 +121,4 @@ async def test_unit_future_cancel():
         with pytest.raises(asyncio.CancelledError):
             await obv
 
-    assert obv.values == [(0,)]
+    assert obv.values == [(0, )]

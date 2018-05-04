@@ -5,7 +5,7 @@ from abc import ABCMeta
 from ..supervision import observe
 
 # Project
-from .. import operators as op
+from .. import operator as op
 from ..abstract import Observable, Loggable, Disposable, Observer
 
 K = T.TypeVar('K')
@@ -17,27 +17,6 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
 
     Implements all the common behaviour of a Observable
     """
-
-    @classmethod
-    def unit(cls, value: T) -> 'BaseObservable[K]':
-        return op.unit(value)
-
-    @classmethod
-    def empty(cls) -> 'BaseObservable[K]':
-        return op.empty()
-
-    @classmethod
-    def never(cls) -> 'BaseObservable[K]':
-        return op.never()
-
-    @classmethod
-    def from_iterable(cls, iterable: T.Iterable[K]) -> 'BaseObservable[K]':
-        return op.from_iterable(iterable)
-
-    @classmethod
-    def from_async_iterable(cls, iterable: T.AsyncIterable[K]
-                            ) -> 'BaseObservable[K]':
-        return op.from_async_iterable(iterable)
 
     def __init__(self, **kwargs) -> None:
         """Observable Constructor.
@@ -94,7 +73,7 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
         """Slices the given source stream using Python slice notation.
         The arguments to slice is start, stop and step given within
         brackets [] and separated with the ':' character. It is
-        basically a wrapper around the operators skip(), skip_last(),
+        basically a wrapper around the operator skip(), skip_last(),
         take(), take_last() and filter().
 
         This marble diagram helps you remember how slices works with

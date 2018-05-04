@@ -4,8 +4,8 @@ import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncObservable, run, subscribe, AsyncStream, AsyncAnonymousObserver, Operators as _
-from aioreactive.operators.to_async_iterable import to_async_iterable
-from aioreactive.operators.pipe import pipe
+from aioreactive.operator.to_async_iterable import to_async_iterable
+from aioreactive.operator.pipe import pipe
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -47,10 +47,7 @@ async def test_pipe_simple_pipe():
         await asyncio.sleep(0.1)
         return value > 1
 
-    ys = pipe(xs,
-              _.filter(predicate),
-              _.map(mapper)
-              )
+    ys = pipe(xs, _.filter(predicate), _.map(mapper))
 
     async def asend(value):
         result.append(value)
@@ -74,12 +71,10 @@ async def test_pipe_complex_pipe():
     async def long_running(value):
         return AsyncObservable.from_iterable([value])
 
-    ys = pipe(xs,
-              _.filter(predicate),
-              _.map(mapper),
-              _.flat_map(long_running),
-              _.to_async_iterable()
-              )
+    ys = pipe(
+        xs, _.filter(predicate), _.map(mapper), _.flat_map(long_running),
+        _.to_async_iterable()
+    )
 
     async for value in ys:
         result.append(value)

@@ -1,12 +1,10 @@
 import pytest
 import asyncio
-from asyncio import Future
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators import map
-from aioreactive.core import run, subscribe, chain
+from aioreactive.operator import map
+from aioreactive.core import subscribe, chain
 from aioreactive.testing import AsyncStream, AsyncAnonymousObserver
 
 log = logging.getLogger(__name__)
@@ -34,11 +32,7 @@ async def test_stream_happy() -> None:
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30)
-    ]
+    assert obv.values == [(1, 10), (2, 20), (3, 30)]
 
 
 @pytest.mark.asyncio
@@ -58,12 +52,7 @@ async def test_stream_throws() -> None:
 
         await obv
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (4, ex)
-    ]
+    assert obv.values == [(1, 10), (2, 20), (3, 30), (4, ex)]
 
 
 @pytest.mark.asyncio
@@ -79,12 +68,7 @@ async def test_stream_send_after_close() -> None:
     await xs.aclose_later(2)
     await xs.asend_later(1, 40)
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (5,)
-    ]
+    assert obv.values == [(1, 10), (2, 20), (3, 30), (5, )]
 
 
 @pytest.mark.asyncio
@@ -178,7 +162,4 @@ async def test_stream_chain_observer():
     await xs.asend_later(1, 10)
     await xs.asend_later(1, 20)
 
-    assert obv.values == [
-        (1, 10),
-        (2, 20)
-    ]
+    assert obv.values == [(1, 10), (2, 20)]

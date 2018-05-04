@@ -4,10 +4,9 @@ import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncStream, run, AsyncAnonymousObserver, subscribe
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.with_latest_from import with_latest_from
-from aioreactive.operators.never import never
-from aioreactive.operators.empty import empty
+from aioreactive.operator.with_latest_from import with_latest_from
+from aioreactive.observable.utility.never import never
+from aioreactive.observable.utility.empty import empty
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)

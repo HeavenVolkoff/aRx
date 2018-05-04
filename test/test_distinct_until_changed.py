@@ -2,7 +2,7 @@ import pytest
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import run, subscribe
-from aioreactive.operators import from_iterable, distinct_until_changed
+from aioreactive.operator import from_iterable, distinct_until_changed
 from aioreactive.testing import AsyncAnonymousObserver
 
 
@@ -25,11 +25,7 @@ async def test_distinct_until_changed_different():
     ys = distinct_until_changed(xs)
 
     await run(ys, obv)
-    assert obv.values == [
-        (0, 1),
-        (0, 2),
-        (0, 3),
-        (0, )]
+    assert obv.values == [(0, 1), (0, 2), (0, 3), (0, )]
 
 
 @pytest.mark.asyncio
@@ -40,11 +36,4 @@ async def test_distinct_until_changed_changed():
     ys = distinct_until_changed(xs)
 
     await run(ys, obv)
-    assert obv.values == [
-        (0, 1),
-        (0, 2),
-        (0, 1),
-        (0, 3),
-        (0, 1),
-        (0, 2),
-        (0, )]
+    assert obv.values == [(0, 1), (0, 2), (0, 1), (0, 3), (0, 1), (0, 2), (0, )]

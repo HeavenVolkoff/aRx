@@ -3,7 +3,7 @@ from tkinter import *
 
 from aioreactive.core import subscribe, AsyncAnonymousObserver
 from aioreactive.core import AsyncStream
-from aioreactive.operators.pipe import delay
+from aioreactive.operator.pipe import delay
 
 
 async def main(loop) -> None:
@@ -19,6 +19,7 @@ async def main(loop) -> None:
 
     def call_move(event):
         asyncio.ensure_future(move(event))
+
     frame.bind("<Motion>", call_move)
 
     text = "TIME FLIES LIKE AN ARROW"
@@ -43,6 +44,7 @@ async def main(loop) -> None:
     while True:
         root.update()
         await asyncio.sleep(0.005)
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

@@ -2,7 +2,7 @@
 import typing as T
 
 # Project
-from .empty import empty
+from aioreactive.observable.utility.empty import empty
 from ..stream import SingleStream
 from ..abstract import Observable, Observer, Disposable
 from ..disposable import CompositeDisposable

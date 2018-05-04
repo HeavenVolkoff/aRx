@@ -1,12 +1,10 @@
 import pytest
 import asyncio
-from asyncio import Future
 import logging
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
-from aioreactive.operators.map import map
-from aioreactive.core import run, subscribe
+from aioreactive.operator.map import map
+from aioreactive.core import subscribe
 from aioreactive.testing import AsyncSingleStream, AsyncAnonymousObserver
 
 log = logging.getLogger(__name__)
@@ -34,11 +32,7 @@ async def test_stream_happy():
     await xs.asend_later(1, 20)
     await xs.asend_later(1, 30)
 
-    assert sink.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30)
-    ]
+    assert sink.values == [(1, 10), (2, 20), (3, 30)]
 
 
 @pytest.mark.asyncio
@@ -56,12 +50,7 @@ async def test_stream_throws():
         await xs.asend_later(1, 40)
         await sink
 
-    assert sink.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (4, ex)
-    ]
+    assert sink.values == [(1, 10), (2, 20), (3, 30), (4, ex)]
 
 
 @pytest.mark.asyncio
@@ -76,12 +65,7 @@ async def test_stream_send_after_close():
     await xs.aclose_later(2)
     await xs.asend_later(1, 40)
 
-    assert sink.values == [
-        (1, 10),
-        (2, 20),
-        (3, 30),
-        (5,)
-    ]
+    assert sink.values == [(1, 10), (2, 20), (3, 30), (5, )]
 
 
 @pytest.mark.asyncio
@@ -175,10 +159,7 @@ async def test_stream_cold_send():
     async with subscribe(xs, sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [
-        (10, 42),
-        (11, 20)
-    ]
+    assert sink.values == [(10, 42), (11, 20)]
 
 
 @pytest.mark.asyncio
@@ -196,9 +177,7 @@ async def test_stream_cold_throw():
     async with subscribe(xs, sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [
-        (10, MyException)
-    ]
+    assert sink.values == [(10, MyException)]
 
 
 @pytest.mark.asyncio
@@ -215,6 +194,4 @@ async def test_stream_cold_close():
     async with subscribe(xs, sink):
         await xs.asend_later(1, 20)
 
-    assert sink.values == [
-        (10,)
-    ]
+    assert sink.values == [(10, )]

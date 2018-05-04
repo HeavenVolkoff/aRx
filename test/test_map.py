@@ -1,10 +1,8 @@
 import pytest
 import asyncio
-from typing import TypeVar
-from asyncio import Future
 
 from aioreactive.testing import VirtualTimeEventLoop
-from aioreactive.operators.from_iterable import from_iterable
+from aioreactive.observable.utility.from_iterable import from_iterable
 from aioreactive.core import run, subscribe, AsyncAnonymousObserver, AsyncStream, Operators as _
 
 

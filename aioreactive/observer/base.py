@@ -18,7 +18,7 @@ class ObserverClosedError(ReactiveError, InvalidStateError):
     pass
 
 
-class BaseObserver(Observer[K], Disposable, Loggable, metaclass=ABCMeta):
+class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
     """The base class for all Observers.
 
     Implements all the common behaviour of a Observer

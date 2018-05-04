@@ -41,17 +41,20 @@ class MultiStream(BaseObservable, BaseObserver[K]):
             await obv.aclose()
 
     async def __aobserve__(self, observer: BaseObserver) -> Disposable:
-        """Subscribe."""
+        async def dispose() -> None:
+            observer.remove_done_callback(dispose)
 
-        self._logger.debug("AsyncMultiStream:subscribe")
+            try:
+                self._observers.remove(observer)
+            except ValueError:
+                self._logger.warning(
+                    "Dispose for [%s] was called more than once",
+                    type(observer).__name__
+                )
+                pass
 
         self._observers.append(observer)
 
-        async def dispose() -> None:
-            self._logger.debug("AsyncMultiStream:dispose()")
-            if observer in self._observers:
-                print("Remove")
-                # TODO: Should we close observer on dispose?
-                self._observers.remove(observer)
+        observer.add_done_callback(dispose)
 
         return AnonymousDisposable(dispose)

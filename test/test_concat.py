@@ -3,7 +3,7 @@ import asyncio
 import logging
 
 from aioreactive.core import AsyncObservable, run, AsyncAnonymousObserver
-from aioreactive.operators import from_iterable, concat
+from aioreactive.operator import from_iterable, concat
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ async def test_concat_special_iadd():
 
     await run(xs, AsyncAnonymousObserver(asend))
     assert result == list(range(10))
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
