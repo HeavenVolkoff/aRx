@@ -6,7 +6,6 @@ from aioreactive.core import AsyncCompositeDisposable, AsyncDisposable
 
 
 class Delay(AsyncObservable):
-
     def __init__(self, source: AsyncObservable, seconds: float) -> None:
         self._seconds = seconds
         self._source = source
@@ -21,10 +20,10 @@ class Delay(AsyncObservable):
         async def cancel():
             for task in tasks:
                 task.cancel()
+
         return AsyncCompositeDisposable(up, down, AsyncDisposable(cancel))
 
     class Sink(AsyncSingleStream):
-
         def __init__(self, source, tasks) -> None:
             super().__init__()
             self._source = source

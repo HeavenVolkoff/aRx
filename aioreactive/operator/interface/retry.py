@@ -8,7 +8,8 @@ from .catch_exception import catch_exception
 T = TypeVar('T')
 
 
-def retry(source: AsyncObservable[T], retry_count: int=None) -> AsyncObservable[T]:
+def retry(source: AsyncObservable[T],
+          retry_count: int = None) -> AsyncObservable[T]:
     """Repeat source observable.
 
     Repeats the source observable sequence the specified number of times

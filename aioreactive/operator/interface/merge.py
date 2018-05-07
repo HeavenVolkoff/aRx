@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class Merge(AsyncObservable):
-
     def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
         self._source = source
         self.max_concurrent = max_concurrent
@@ -26,10 +25,12 @@ class Merge(AsyncObservable):
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
-
-        def __init__(self, source: AsyncObservable, max_concurrent: int) -> None:
+        def __init__(
+            self, source: AsyncObservable, max_concurrent: int
+        ) -> None:
             super().__init__()
-            self._inner_subs = {}  # type: Dict[AsyncObserver[T], AsyncSingleStream]
+            self._inner_subs = {
+            }  # type: Dict[AsyncObserver[T], AsyncSingleStream]
             self._sem = BoundedSemaphore(max_concurrent)
             self._is_closed = False
 
@@ -48,7 +49,9 @@ class Merge(AsyncObservable):
             log.debug("Merge.Sink:asend_core(%s)" % stream)
 
             inner_stream = Merge.Sink.InnerStream()
-            inner_sub = await chain(inner_stream, self._observer)  # type: AsyncDisposable
+            inner_sub = await chain(
+                inner_stream, self._observer
+            )  # type: AsyncDisposable
 
             # Allocate entry to make sure no-one closes the merge before
             # we get to aquire the semaphore.
@@ -63,7 +66,9 @@ class Merge(AsyncObservable):
                     asyncio.ensure_future(self._observer.aclose())
 
             inner_stream.add_done_callback(done)
-            sub = self._inner_subs[inner_sub] = await chain(stream, inner_stream)
+            sub = self._inner_subs[inner_sub] = await chain(
+                stream, inner_stream
+            )
             return sub
 
         async def aclose_core(self) -> None:
@@ -77,7 +82,6 @@ class Merge(AsyncObservable):
             await self._observer.aclose()
 
         class InnerStream(AsyncSingleStream):
-
             async def aclose_core(self) -> None:
                 log.debug("Merge.Sink.InnerStream:aclose()")
 
@@ -87,7 +91,7 @@ class Merge(AsyncObservable):
                 self._observer = noopobserver
 
 
-def merge(source: AsyncObservable, max_concurrent: int=42) -> AsyncObservable:
+def merge(source: AsyncObservable, max_concurrent: int = 42) -> AsyncObservable:
     """Merges a source stream of source streams.
 
     Keyword arguments:

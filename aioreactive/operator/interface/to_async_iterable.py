@@ -7,7 +7,6 @@ T = TypeVar('T')
 
 
 class ToAsyncIterable(Generic[T], AsyncIterable[T]):
-
     def __init__(self, source: AsyncObservable) -> None:
         self._source = source
 

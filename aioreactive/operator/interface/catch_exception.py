@@ -11,7 +11,6 @@ T = TypeVar('T')
 
 
 class CatchException(AsyncObservable[T], Generic[T]):
-
     def __init__(self, iterable) -> None:
         self.iterable = iterable
 
@@ -41,7 +40,6 @@ class CatchException(AsyncObservable[T], Generic[T]):
         return sub
 
     class Stream(AsyncSingleStream, Generic[T]):
-
         def __init__(self, source: "CatchException", worker) -> None:
             super().__init__()
             self.worker = worker

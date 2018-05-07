@@ -6,7 +6,6 @@ T = TypeVar('T')
 
 
 class TakeLast(AsyncObservable[T]):
-
     def __init__(self, count: int, source: AsyncObservable) -> None:
         self._source = source
         self._count = count
@@ -15,7 +14,6 @@ class TakeLast(AsyncObservable[T]):
         return await chain(self._source, TakeLast._(observer, self))
 
     class _(AsyncSingleStream):
-
         def __init__(self, observer: AsyncObserver, source: "TakeLast") -> None:
             super().__init__()
             self._count = source._count

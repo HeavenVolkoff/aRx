@@ -96,7 +96,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
 
         self.closed = True
 
-        await self.__aclose__()
+        await self.__aclose__(data)
 
         try:
             self.set_result(data)

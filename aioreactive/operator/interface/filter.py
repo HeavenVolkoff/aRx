@@ -4,9 +4,9 @@ import typing as T
 from asyncio import iscoroutinefunction
 
 # Project
-from ..stream import SingleStream
-from ..abstract import Observable, Observer, Disposable
-from ..disposable import CompositeDisposable
+from ...stream import SingleStream
+from ...abstract import Observable, Observer, Disposable
+from ...disposable import CompositeDisposable
 
 K = T.TypeVar('K')
 

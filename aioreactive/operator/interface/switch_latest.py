@@ -8,7 +8,6 @@ log = logging.getLogger(__name__)
 
 
 class SwitchLatest(AsyncObservable):
-
     def __init__(self, source: AsyncObservable) -> None:
         self._source = source
 
@@ -19,7 +18,6 @@ class SwitchLatest(AsyncObservable):
         return sub
 
     class Sink(AsyncSingleStream):
-
         def __init__(self, source: AsyncObservable) -> None:
             super().__init__()
             self._task = None  # type: asyncio.Task
@@ -35,7 +33,9 @@ class SwitchLatest(AsyncObservable):
 
         async def asend(self, stream) -> None:
             log.debug("SwitchLatest._:send(%s)" % stream)
-            inner_observer = await chain(SwitchLatest.Sink.Inner(self), self._observer)
+            inner_observer = await chain(
+                SwitchLatest.Sink.Inner(self), self._observer
+            )
 
             self._latest = id(inner_observer)
             inner_sub = await chain(stream, inner_observer)
@@ -49,7 +49,6 @@ class SwitchLatest(AsyncObservable):
                 await self._observer.aclose()
 
         class Inner(AsyncSingleStream):
-
             def __init__(self, observer) -> None:
                 super().__init__()
                 self._parent = observer

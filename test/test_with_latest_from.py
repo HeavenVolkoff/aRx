@@ -4,7 +4,7 @@ import asyncio
 
 from aioreactive.testing import VirtualTimeEventLoop
 from aioreactive.core import AsyncStream, run, AsyncAnonymousObserver, subscribe
-from aioreactive.operator.with_latest_from import with_latest_from
+from operator.interface.with_latest_from import with_latest_from
 from aioreactive.observable.utility.never import never
 from aioreactive.observable.utility.empty import empty
 

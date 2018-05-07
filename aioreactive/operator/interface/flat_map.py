@@ -10,14 +10,15 @@ from aioreactive.core import AsyncCompositeDisposable
 from .switch_latest import switch_latest
 from .merge import merge
 
-
 T1 = TypeVar('T1')
 T2 = TypeVar('T2')
 
 
 class FlatMap(AsyncObservable[T2]):
-
-    def __init__(self, mapper: Callable[[T1], AsyncObservable[T2]], source: AsyncObservable[T2]) -> None:
+    def __init__(
+        self, mapper: Callable[[T1], AsyncObservable[T2]],
+        source: AsyncObservable[T2]
+    ) -> None:
         self._source = source
         self._mapper = mapper
 
@@ -29,7 +30,6 @@ class FlatMap(AsyncObservable[T2]):
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
-
         def __init__(self, source: 'FlatMap') -> None:
             super().__init__()
             self._mapper = source._mapper
@@ -43,7 +43,9 @@ class FlatMap(AsyncObservable[T2]):
                 await self._observer.asend(result)
 
 
-def flat_map(amapper: Callable[[T1], AsyncObservable[T2]], source: AsyncObservable[T2]) -> AsyncObservable[T2]:
+def flat_map(
+    amapper: Callable[[T1], AsyncObservable[T2]], source: AsyncObservable[T2]
+) -> AsyncObservable[T2]:
     """Project each element of a source stream into a new source stream
     and merges the resulting source streams back into a single source
     stream.
@@ -65,7 +67,9 @@ def flat_map(amapper: Callable[[T1], AsyncObservable[T2]], source: AsyncObservab
     return merge(xs)
 
 
-def flat_map_latest(amapper: Callable[[T1], AsyncObservable[T2]], source: AsyncObservable[T2]) -> AsyncObservable[T2]:
+def flat_map_latest(
+    amapper: Callable[[T1], AsyncObservable[T2]], source: AsyncObservable[T2]
+) -> AsyncObservable[T2]:
     assert iscoroutinefunction(amapper)
 
     xs = FlatMap(amapper, source)
