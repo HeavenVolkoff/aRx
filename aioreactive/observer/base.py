@@ -35,6 +35,10 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         # Public
         self.closed = False
 
+        # Internal
+        self._index = 0
+        self._order_ctrl = self.loop.create_future()
+
         # Ensure that observable closes if it's future is resolved externally
         self.add_done_callback(self.aclose)
 
@@ -50,6 +54,13 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         """
         if self.done() or self.closed:
             raise ObserverClosedError(self)
+
+        index = self._index
+
+        self._index += 1
+        while index != 0:
+            await self._order_ctrl
+        self._index -= 1
 
         self._logger.debug("Observer send: %s", data)
         await self.__asend__(data)
@@ -80,7 +91,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
 
         return should_close
 
-    async def aclose(self, data: T.Any = None) -> bool:
+    async def aclose(self) -> bool:
         """Close observer and underlining future with received data as result.
 
         Args:
@@ -89,23 +100,22 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         Returns:
             Boolean indicating if close executed
         """
+        # Guard against repeated closes
         if self.closed:
             return False
 
-        self._logger.debug("Closing observer")
+        self._logger.warning("Closing %s", type(self).__name__)
 
+        # Set flag to disable further stream actions
         self.closed = True
 
-        await self.__aclose__(data)
+        # Remove callback from internal future
+        self.remove_done_callback(self.aclose)
 
-        try:
-            self.set_result(data)
-        except InvalidStateError as error:
-            if data is not None:
-                self._logger.warning(
-                    "Observer couldn't be resolved with data passed to "
-                    "`.aclosed()`, due to: [%s] %s",
-                    type(error).__name__, error
-                )
+        # Internal close
+        await self.__aclose__()
+
+        # Cancel future in case it wasn't resolved
+        self.cancel()
 
         return True
