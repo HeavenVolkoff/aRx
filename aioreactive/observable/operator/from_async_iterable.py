@@ -2,8 +2,8 @@
 import typing as T
 
 # Project
-from aioreactive.abstract import Observer, Observable, Disposable
-from aioreactive.disposable import AnonymousDisposable
+from ...abstract import Observer, Observable, Disposable
+from ...disposable import AnonymousDisposable
 
 K = T.TypeVar('K')
 

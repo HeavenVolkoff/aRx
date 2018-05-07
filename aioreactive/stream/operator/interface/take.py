@@ -2,10 +2,10 @@
 import typing as T
 
 # Project
-from ...stream import SingleStream
-from ...abstract import Observable, Observer, Disposable
-from ...disposable import CompositeDisposable
-from ...observable.utility.empty import empty
+from ....stream import SingleStream
+from ....abstract import Observable, Observer, Disposable
+from ....disposable import CompositeDisposable
+from ....observable.operator import empty
 
 K = T.TypeVar('T')
 

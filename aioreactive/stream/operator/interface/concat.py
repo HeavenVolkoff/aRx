@@ -5,10 +5,10 @@ from asyncio import gather
 from functools import partial
 
 # Project
-from ...stream import SingleStream
-from ...abstract import Observer, Observable, Disposable
-from ...observable import observe
-from ...disposable import CompositeDisposable
+from ....stream import SingleStream
+from ....abstract import Observer, Observable, Disposable
+from ....observable import observe
+from ....disposable import CompositeDisposable
 
 K = T.TypeVar("K")
 

@@ -1,13 +1,14 @@
 from typing import TypeVar, AsyncIterable, AsyncIterator, Generic
 
-from aioreactive.core import AsyncObservable
-from aioreactive.core import AsyncIteratorObserver
+from ...observable import observe
+from ...observable.base import Observable
+from ..iterator_observer import IteratorObserver
 
 T = TypeVar('T')
 
 
 class ToAsyncIterable(Generic[T], AsyncIterable[T]):
-    def __init__(self, source: AsyncObservable) -> None:
+    def __init__(self, source: Observable) -> None:
         self._source = source
 
     async def __aiter__(self) -> AsyncIterator:
@@ -18,12 +19,12 @@ class ToAsyncIterable(Generic[T], AsyncIterable[T]):
         continuing to avoid queuing values.
         """
 
-        obv = AsyncIteratorObserver()
-        await self._source.__asubscribe__(obv)
+        obv = IteratorObserver()
+        await observe(self._source, obv)
         return obv
 
 
-def to_async_iterable(source: AsyncObservable) -> AsyncIterable:
+def to_async_iterable(source: Observable) -> AsyncIterable:
     """Skip the specified number of values.
 
     Keyword arguments:
