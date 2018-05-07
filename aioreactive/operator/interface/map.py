@@ -11,7 +11,7 @@ from ...disposable import CompositeDisposable
 K = T.TypeVar('K')
 J = T.TypeVar('J')
 
-MapCallable = T.Callable[[K], T.Union[T.Awaitable[J], J]]
+MapCallable = T.Callable[[K, int], T.Union[T.Awaitable[J], J]]
 
 
 class Map(Observable):
@@ -21,19 +21,21 @@ class Map(Observable):
         ) -> None:
             super().__init__(**kwargs)
 
+            self._index = 0
             self._mapper = mapper
             self._is_coro = is_coro
 
         async def __asend__(self, value: K) -> None:
             try:
                 if self._is_coro:
-                    result = await self._mapper(value)
+                    result = await self._mapper(value, self._index)
                 else:
-                    result = self._mapper(value)
+                    result = self._mapper(value, self._index)
             except Exception as err:
                 await super().araise(err)
             else:
                 await super().__asend__(result)
+                self._index += 1
 
     def __init__(
         self, mapper: MapCallable, source: Observable, **kwargs

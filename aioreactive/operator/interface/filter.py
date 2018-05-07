@@ -10,27 +10,31 @@ from ...disposable import CompositeDisposable
 
 K = T.TypeVar('K')
 
-FilterCallable = T.Callable[[K], T.Union[T.Awaitable[bool], bool]]
+FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
 class Filter(Observable):
     class Sink(SingleStream):
-        def __init__(self, predicate: FilterCallable) -> None:
+        def __init__(self, is_coro: bool, predicate: FilterCallable) -> None:
             super().__init__()
+
+            self._index = 0
+            self._is_coro = is_coro
             self._predicate = predicate
-            self._is_coro = iscoroutinefunction(predicate)
 
         async def __asend__(self, value: K) -> None:
             try:
                 if self._is_coro:
-                    is_accepted = await self._predicate(value)
+                    is_accepted = await self._predicate(value, self._index)
                 else:
-                    is_accepted = self._predicate(value)
+                    is_accepted = self._predicate(value, self._index)
             except Exception as ex:
                 await self.araise(ex)
             else:
                 if is_accepted:
                     await self.__asend__(value)
+
+                self._index += 1
 
     def __init__(
         self, predicate: FilterCallable, source: Observable, **kwargs
@@ -40,10 +44,11 @@ class Filter(Observable):
         super().__init__(**kwargs)
 
         self._source = source
+        self._is_coro = iscoroutinefunction(predicate)
         self._predicate = predicate
 
     async def __aobserve__(self, observer: Observer) -> Disposable:
-        sink = Filter.Sink(self._predicate)
+        sink = Filter.Sink(self._is_coro, self._predicate)
 
         up = await self._source.__aobserve__(sink)
         down = await sink.__aobserve__(observer)

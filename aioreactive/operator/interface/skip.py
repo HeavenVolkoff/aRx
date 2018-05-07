@@ -2,9 +2,9 @@
 import typing as T
 
 # Project
-from ..stream import SingleStream
-from ..abstract import Observable, Observer, Disposable
-from ..disposable import CompositeDisposable
+from ...stream import SingleStream
+from ...abstract import Observable, Observer, Disposable
+from ...disposable import CompositeDisposable
 
 K = T.TypeVar('K')
 
@@ -13,6 +13,7 @@ class Skip(Observable):
     class Sink(SingleStream[K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
+
             self._count = count
 
         async def __asend__(self, value: K):

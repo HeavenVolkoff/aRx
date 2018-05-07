@@ -31,8 +31,6 @@ class SingleStream(BaseObservable, BaseObserver[K]):
         self._observer = None  # type: T.Optional[Observer]
 
     async def __asend__(self, value: K):
-        self._logger.debug("AsyncSingleStream:__asend__(%s)", value)
-
         while self._observer is None:
             try:
                 # Wait for observer
@@ -44,8 +42,6 @@ class SingleStream(BaseObservable, BaseObserver[K]):
         await self._observer.asend(value)
 
     async def __araise__(self, ex: Exception) -> bool:
-        self._logger.debug("AsyncSingleStream:__araise__(%s)", ex)
-
         while self._observer is None:
             try:
                 # Wait for observer
@@ -56,17 +52,18 @@ class SingleStream(BaseObservable, BaseObserver[K]):
 
         return await self._observer.araise(ex)
 
-    async def __aclose__(self) -> None:
-        self._logger.debug("AsyncSingleStream:__aclose__()")
-
+    async def __aclose__(self, *, close_observer: bool = True) -> None:
         if self._observer is not None:
-            self._observer.aclose()
+            if close_observer:
+                await self._observer.aclose()
             self._observer = None
 
         if not self._lock.cancel():
             # Ensure that all waiting actions get cancelled
             self._lock = self._loop.create_future()
             self._lock.cancel()
+
+        self.set_result(None)
 
     async def __aobserve__(self, observer: Observer) -> Disposable:
         """Start streaming."""

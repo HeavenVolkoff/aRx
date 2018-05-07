@@ -36,9 +36,12 @@ class MultiStream(BaseObservable, BaseObserver[K]):
         # MultiStream doesn't close on raise
         return False
 
-    async def __aclose__(self) -> None:
-        for obv in list(self._observers):
-            await obv.aclose()
+    async def __aclose__(self, *, close_observers: bool = False) -> None:
+        if close_observers:
+            for obv in list(self._observers):
+                await obv.aclose()
+
+        self.set_result(None)
 
     async def __aobserve__(self, observer: BaseObserver) -> Disposable:
         async def dispose() -> None:
@@ -51,7 +54,6 @@ class MultiStream(BaseObservable, BaseObserver[K]):
                     "Dispose for [%s] was called more than once",
                     type(observer).__name__
                 )
-                pass
 
         self._observers.append(observer)
 
