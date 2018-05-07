@@ -4,41 +4,49 @@ import typing as T
 from asyncio import iscoroutinefunction
 
 # Project
-from ..stream import SingleStream
-from ..abstract import Observable, Observer, Disposable
-from ..disposable import CompositeDisposable
+from ...stream import SingleStream
+from ...abstract import Observable, Observer, Disposable
+from ...disposable import CompositeDisposable
 
 K = T.TypeVar('K')
 J = T.TypeVar('J')
 
+MapCallable = T.Callable[[K], T.Union[T.Awaitable[J], J]]
+
 
 class Map(Observable):
     class Sink(SingleStream[J]):
-        def __init__(self, mapper: T.Callable[[K], J], **kwargs) -> None:
+        def __init__(
+            self, mapper: MapCallable, is_coro: bool, **kwargs
+        ) -> None:
             super().__init__(**kwargs)
+
             self._mapper = mapper
+            self._is_coro = is_coro
 
         async def __asend__(self, value: K) -> None:
             try:
-                result = self._mapper(value)
+                if self._is_coro:
+                    result = await self._mapper(value)
+                else:
+                    result = self._mapper(value)
             except Exception as err:
-                await super().__araise__(err)
+                await super().araise(err)
             else:
                 await super().__asend__(result)
 
     def __init__(
-        self, mapper: T.Callable[[K], J], source: Observable, **kwargs
+        self, mapper: MapCallable, source: Observable, **kwargs
     ) -> None:
-        if not iscoroutinefunction(mapper):
-            raise TypeError("mapper must be a coroutine")
 
         super().__init__(**kwargs)
 
-        self._source = source
         self._mapper = mapper
+        self._source = source
+        self._is_coro = iscoroutinefunction(mapper)
 
-    async def __aobserve__(self, observer: Observer) -> Disposable:
-        sink = Map.Sink(self._mapper)  # type: SingleStream[J]
+    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
+        sink = Map.Sink(self._mapper, self._is_coro)
 
         up = await self._source.__aobserve__(sink)
         down = await sink.__aobserve__(observer)
@@ -46,7 +54,7 @@ class Map(Observable):
         return CompositeDisposable(up, down)
 
 
-def map(mapper: T.Callable[[K], J], source: Observable) -> Observable:
+def map(mapper: MapCallable, source: Observable) -> Observable:
     """Project each item of the source observable.
 
     xs = map(lambda value: value * value, source)

@@ -1,6 +1,7 @@
 # Internal
 import typing as T
 
+from asyncio import gather
 from functools import partial
 
 # Project
@@ -8,6 +9,8 @@ from ...stream import SingleStream
 from ...abstract import Observer, Observable, Disposable
 from ...observable import observe
 from ...disposable import CompositeDisposable
+
+K = T.TypeVar("K")
 
 
 class Concat(Observable):
@@ -19,7 +22,8 @@ class Concat(Observable):
             self.cancel()
 
     @staticmethod
-    def _sinking(sink: "Concat.Sink", observable: Observable) -> T.Awaitable[Disposable]:
+    def _sinking(sink: "Concat.Sink",
+                 observable: Observable) -> T.Awaitable[Disposable]:
         return observe(observable, sink)
 
     def __init__(self, *sources: Observable, **kwargs) -> None:
@@ -33,14 +37,17 @@ class Concat(Observable):
 
         self._sources_iterator = iter(sources)
 
-    async def __aobserve__(self, observer: Observer) -> Disposable:
+    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
         sink = Concat.Sink()
 
-        supervisions = list(map(partial(self._sinking, sink), self._sources_iterator))
+        observations = (
+            list(map(partial(self._sinking, sink), self._sources_iterator)) +
+            [observe(sink, observer)]
+        )
 
-        down =
-
-        return CompositeDisposable(cancel)
+        return CompositeDisposable(
+            *(await gather(observations, loop=observer.loop))
+        )
 
 
 def concat(*operators: Observable) -> Observable:

@@ -11,7 +11,7 @@ import typing as T
 from functools import partial
 
 # Project
-from observer.base import BaseObserver
+from ..observer.base import BaseObserver
 
 K = T.TypeVar("K")
 L = T.TypeVar("L")
