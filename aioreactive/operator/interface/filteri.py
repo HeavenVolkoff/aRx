@@ -8,8 +8,10 @@ T = TypeVar('T')
 
 
 class FilterIndexed(AsyncObservable):
-
-    def __init__(self, predicate: Union[Callable[[T, int], bool], Awaitable], source: AsyncObservable) -> None:
+    def __init__(
+        self, predicate: Union[Callable[[T, int], bool], Awaitable],
+        source: AsyncObservable
+    ) -> None:
         """Filters the elements of the source stream based on a
         predicate function.
         """
@@ -26,7 +28,6 @@ class FilterIndexed(AsyncObservable):
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
-
         def __init__(self, source: "FilterIndexed") -> None:
             super().__init__()
             self._is_awaitable = source._is_awaitable
@@ -35,7 +36,11 @@ class FilterIndexed(AsyncObservable):
 
         async def asend(self, value: T) -> None:
             try:
-                should_run = await self._predicate(value, self._index) if self._is_awaitable else self._predicate(value, self._index)
+                should_run = await self._predicate(
+                    value, self._index
+                ) if self._is_awaitable else self._predicate(
+                    value, self._index
+                )
             except Exception as ex:
                 await self._observer.araise(ex)
             else:
@@ -44,5 +49,8 @@ class FilterIndexed(AsyncObservable):
                 self._index += 1
 
 
-def filteri(predicate: Union[Callable[[T, int], bool], Awaitable], source: AsyncObservable) -> AsyncObservable:
+def filteri(
+    predicate: Union[Callable[[T, int], bool], Awaitable],
+    source: AsyncObservable
+) -> AsyncObservable:
     return FilterIndexed(predicate, source)

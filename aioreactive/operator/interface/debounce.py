@@ -10,12 +10,12 @@ T = TypeVar("T")
 
 
 class Debounce(AsyncObservable[T], Generic[T]):
-
     def __init__(self, source: AsyncObservable[T], seconds: float) -> None:
         self._seconds = seconds
         self._source = source
 
-    async def __asubscribe__(self, observer: AsyncObserver[T]) -> AsyncDisposable:
+    async def __asubscribe__(self,
+                             observer: AsyncObserver[T]) -> AsyncDisposable:
         """Start streaming."""
 
         tasks = []  # type: List[asyncio.Task]
@@ -27,12 +27,13 @@ class Debounce(AsyncObservable[T], Generic[T]):
         def cancel(sub: asyncio.Future):
             for task in tasks:
                 task.cancel()
+
         sink.add_done_callback(cancel)
         return AsyncCompositeDisposable(up, down)
 
     class Stream(AsyncSingleStream[T]):
-
-        def __init__(self, source: 'Debounce[T]', tasks: List[asyncio.Task]) -> None:
+        def __init__(self, source: 'Debounce[T]',
+                     tasks: List[asyncio.Task]) -> None:
             super().__init__()
             self._source = source
             self._tasks = tasks

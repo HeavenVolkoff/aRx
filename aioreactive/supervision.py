@@ -17,8 +17,11 @@ class Supervision(Awaitable, abstract.Disposable):
     directly, but it will created when using subscribe()."""
 
     def __init__(
-        self, observable: abstract.Observable, observer: abstract.Observer[K]
+        self, observable: abstract.Observable, observer: abstract.Observer[K],
+        **kwargs
     ):
+        super().__init__(**kwargs)
+
         self._observer = observer
         self._observable = observable
         self._subscription = None  # type: T.Optional[abstract.Disposable]
@@ -53,8 +56,8 @@ class Supervision(Awaitable, abstract.Disposable):
         self._subscription = None
 
 
-def observe(observable: abstract.Observable,
-            observer: abstract.Observer[K]) -> Supervision:
+def supervise(observable: abstract.Observable,
+              observer: abstract.Observer[K]) -> Supervision:
     """Start streaming source into observer.
 
     Returns an AsyncStreamFactory that is lazy in the sense that it will

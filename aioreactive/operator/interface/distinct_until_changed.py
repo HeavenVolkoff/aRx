@@ -8,13 +8,11 @@ T = TypeVar('T')
 
 
 class Different:
-
     def __cmp__(self, other):
         return False
 
 
 class DistinctUntilChanged(AsyncObservable):
-
     def __init__(self, source: AsyncObservable) -> None:
         self.source = source
 
@@ -25,7 +23,6 @@ class DistinctUntilChanged(AsyncObservable):
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
-
         def __init__(self) -> None:
             super().__init__()
             self._latest = Different()

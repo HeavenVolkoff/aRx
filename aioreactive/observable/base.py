@@ -2,7 +2,7 @@
 import typing as T
 
 from abc import ABCMeta
-from ..supervision import observe
+from ..supervision import supervise
 
 # Project
 from .. import operator as op
@@ -10,6 +10,10 @@ from ..abstract import Observable, Loggable, Disposable, Observer
 
 K = T.TypeVar('K')
 M = T.TypeVar('M')
+
+
+async def observe(source: Observable, sink: Observer) -> Disposable:
+    return await source.__aobserve__(sink)
 
 
 class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
@@ -49,7 +53,7 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
         Returns:
             Disposable to control observation life-cycle
         """
-        return observe(self, observer)
+        return supervise(self, observer)
 
     def __add__(self, other: 'BaseObservable[K]') -> 'BaseObservable[K]':
         """Pythonic version of concat

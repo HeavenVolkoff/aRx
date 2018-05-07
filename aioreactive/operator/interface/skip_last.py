@@ -7,7 +7,6 @@ T = TypeVar('T')
 
 
 class SkipLast(AsyncObservable):
-
     def __init__(self, count: int, source: AsyncObservable) -> None:
         self._source = source
         self._count = count
@@ -20,7 +19,6 @@ class SkipLast(AsyncObservable):
         return AsyncCompositeDisposable(up, down)
 
     class Sink(AsyncSingleStream):
-
         def __init__(self, source: "SkipLast") -> None:
             super().__init__()
             self._count = source._count

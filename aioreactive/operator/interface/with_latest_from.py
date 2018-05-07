@@ -12,8 +12,9 @@ TT = TypeVar('TT')
 
 
 class WithLatestFrom(AsyncObservable):
-
-    def __init__(self, mapper, other: AsyncObservable, source: AsyncObservable) -> None:
+    def __init__(
+        self, mapper, other: AsyncObservable, source: AsyncObservable
+    ) -> None:
         self._mapper = mapper
         self._other = other
         self._source = source
@@ -28,7 +29,6 @@ class WithLatestFrom(AsyncObservable):
         return AsyncCompositeDisposable(up_source, up_other, down_source)
 
     class SourceStream(AsyncSingleStream, Generic[TT]):
-
         def __init__(self, source: "WithLatestFrom") -> None:
             super().__init__()
             self._source = source
@@ -56,8 +56,9 @@ class WithLatestFrom(AsyncObservable):
             self._has_latest = True
 
     class OtherStream(AsyncSingleStream):
-
-        def __init__(self, source: "WithLatestFrom", observer: "AsyncObserver") -> None:
+        def __init__(
+            self, source: "WithLatestFrom", observer: "AsyncObserver"
+        ) -> None:
             super().__init__()
             self._source = source
             self._observer = observer
@@ -70,7 +71,9 @@ class WithLatestFrom(AsyncObservable):
             self.observer = noopobserver
 
 
-def with_latest_from(mapper: Callable, other: AsyncObservable, source: AsyncObservable) -> AsyncObservable:
+def with_latest_from(
+    mapper: Callable, other: AsyncObservable, source: AsyncObservable
+) -> AsyncObservable:
     """Merge with the latest value from source.
 
     Merges the specified source streams into one source source
