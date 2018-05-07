@@ -16,13 +16,8 @@ K = T.TypeVar("K")
 class Concat(Observable):
     """Observable that is the concatenation of multiple observables"""
 
-    class Sink(SingleStream):
-        async def __aclose__(self) -> None:
-            self._logger.debug("Concat._:close()")
-            self.cancel()
-
     @staticmethod
-    def _sinking(sink: "Concat.Sink",
+    def _sinking(sink: SingleStream,
                  observable: Observable) -> T.Awaitable[Disposable]:
         return observe(observable, sink)
 
@@ -38,7 +33,7 @@ class Concat(Observable):
         self._sources_iterator = iter(sources)
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
-        sink = Concat.Sink()
+        sink = SingleStream()
 
         observations = (
             list(map(partial(self._sinking, sink), self._sources_iterator)) +

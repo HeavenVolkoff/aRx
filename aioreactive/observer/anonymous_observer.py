@@ -18,9 +18,9 @@ class AnonymousObserver(BaseObserver[K]):
 
     def __init__(
         self,
-        asend_coro: T.Callable[[K], T.Awaitable[None]] = anoop,
-        araise_coro: T.Callable[[Exception], T.Awaitable[None]] = anoop,
-        aclose_coro: T.Callable[[], T.Awaitable[None]] = anoop,
+        asend_coro: T.Callable[BaseObserver[K].__asend__] = anoop,
+        araise_coro: (T.Callable[BaseObserver[K].__araise__]) = anoop,
+        aclose_coro: T.Callable[BaseObserver[K].__aclose__] = anoop,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -35,14 +35,14 @@ class AnonymousObserver(BaseObserver[K]):
             raise TypeError("aclose must be a coroutine")
 
         self._send = asend_coro
-        self._throw = araise_coro
+        self._raise = araise_coro
         self._close = aclose_coro
 
-    async def __asend__(self, value: K) -> None:
-        await self._send(value)
+    async def __asend__(self, value: K, **kwargs) -> None:
+        await self._send(value, **kwargs)
 
-    async def __araise__(self, ex: Exception) -> None:
-        await self._throw(ex)
+    async def __araise__(self, ex: Exception, **kwargs) -> bool:
+        return bool(await self._raise(ex, **kwargs))
 
-    async def __aclose__(self) -> None:
-        await self._close()
+    async def __aclose__(self, **kwargs) -> None:
+        self.set_result(await self._close(**kwargs))
