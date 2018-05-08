@@ -58,7 +58,7 @@ class Filter(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def filter(predicate: FilterCallable, source: Observable) -> Filter:
+def filter(predicate: FilterCallable, source: Observable) -> Filter[K]:
     """Filters the source stream.
 
     Filters the items of the source stream based on a predicate

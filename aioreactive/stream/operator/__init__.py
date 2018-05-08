@@ -16,19 +16,18 @@ from ...abstract import Observable
 from ...observable.base import BaseObservable
 
 K = T.TypeVar("K")
-L = T.TypeVar("L")
 
 
 def max(*, close_observer: bool = True
-        ) -> T.Callable[[Observable], BaseObservable]:
+        ) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(max_op, close_observer=close_observer)
 
 
-def skip(count: int) -> T.Callable[[Observable], BaseObservable]:
+def skip(count: int) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(skip_op, count)
 
 
-def take(count: int) -> T.Callable[[Observable], BaseObservable]:
+def take(count: int) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(take_op, count)
 
 
@@ -36,10 +35,10 @@ def concat(operator: Observable) -> T.Callable[concat_op]:
     return partial(concat_op, operator)
 
 
-def map(mapper: MapCallable) -> T.Callable[[Observable], BaseObservable]:
+def map(mapper: MapCallable) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(map_op, mapper)
 
 
 def filter(predicate: FilterCallable
-           ) -> T.Callable[[Observable], BaseObservable]:
+           ) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(filter_op, predicate)

@@ -38,7 +38,7 @@ class Skip(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def skip(count: int, source: Observable) -> Skip:
+def skip(count: int, source: Observable) -> Skip[K]:
     """Skip the specified number of values.
 
     Keyword arguments:
