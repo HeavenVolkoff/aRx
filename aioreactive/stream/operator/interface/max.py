@@ -5,11 +5,12 @@ import typing as T
 from ....stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
+from ....observable.base import BaseObservable
 
 K = T.TypeVar('K')
 
 
-class Max(Observable):
+class Max(BaseObservable):
     class Stream(SingleStream[K]):
         def __init__(self, *, close_observer: bool, **kwargs) -> None:
             super().__init__(**kwargs)
@@ -43,7 +44,7 @@ class Max(Observable):
         return CompositeDisposable(up, down)
 
 
-def max(source: Observable, close_observer: bool = True) -> Observable:
+def max(source: Observable, *, close_observer: bool = True) -> Max:
     """Project each item of the source stream.
 
     xs = max(source)

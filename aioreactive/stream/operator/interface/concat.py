@@ -9,11 +9,12 @@ from ....stream import SingleStream
 from ....abstract import Observer, Observable, Disposable
 from ....observable import observe
 from ....disposable import CompositeDisposable
+from ....observable.base import BaseObservable
 
 K = T.TypeVar("K")
 
 
-class Concat(Observable):
+class Concat(BaseObservable):
     """Observable that is the concatenation of multiple observables"""
 
     @staticmethod
@@ -45,7 +46,7 @@ class Concat(Observable):
         )
 
 
-def concat(*operators: Observable) -> Observable:
+def concat(*operators: Observable) -> Concat:
     """Concatenate multiple source streams.
 
     Returns:

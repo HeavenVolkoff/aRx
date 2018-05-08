@@ -2,13 +2,14 @@
 import typing as T
 
 # Project
-from ...abstract import Observer, Observable, Disposable
+from ..base import BaseObservable
+from ...abstract import Observer, Disposable
 from ...disposable import AnonymousDisposable
 
 K = T.TypeVar('K')
 
 
-class FromAsyncIterable(Observable, T.Generic[K]):
+class FromAsyncIterable(BaseObservable, T.Generic[K]):
     def __init__(self, iterable, **kwargs) -> None:
         super().__init__(**kwargs)
 
@@ -34,7 +35,7 @@ class FromAsyncIterable(Observable, T.Generic[K]):
         return AnonymousDisposable(cancel)
 
 
-def from_async_iterable(iterable: T.AsyncIterable[K]) -> Observable:
+def from_async_iterable(iterable: T.AsyncIterable[K]) -> FromAsyncIterable:
     """Convert an async iterable to a source stream.
 
     2 - xs = from_async_iterable(async_iterable)
