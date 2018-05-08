@@ -5,12 +5,13 @@ import typing as T
 from ....stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
+from ....observable.base import BaseObservable
 from ....observable.operator import empty
 
 K = T.TypeVar('T')
 
 
-class Take(Observable):
+class Take(BaseObservable):
     class Sink(SingleStream[K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
@@ -39,7 +40,7 @@ class Take(Observable):
         return CompositeDisposable(up, down)
 
 
-def take(count: int, source: Observable) -> Observable:
+def take(count: int, source: Observable) -> Take:
     """Returns a specified number of contiguous elements from the start
     of the source stream.
 

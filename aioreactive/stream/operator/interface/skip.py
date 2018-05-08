@@ -5,11 +5,12 @@ import typing as T
 from ....stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
+from ....observable.base import BaseObservable
 
 K = T.TypeVar('K')
 
 
-class Skip(Observable):
+class Skip(BaseObservable):
     class Sink(SingleStream[K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
@@ -37,7 +38,7 @@ class Skip(Observable):
         return CompositeDisposable(up, down)
 
 
-def skip(count: int, source: Observable) -> Observable:
+def skip(count: int, source: Observable) -> Skip:
     """Skip the specified number of values.
 
     Keyword arguments:

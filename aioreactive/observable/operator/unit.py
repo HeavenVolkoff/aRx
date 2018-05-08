@@ -4,10 +4,11 @@ from asyncio import (
 )
 
 # Project
-from aioreactive.abstract import Observer, Observable, Disposable
+from ..base import BaseObservable
+from aioreactive.abstract import Observer, Disposable
 
 
-class Unit(Observable, Disposable):
+class Unit(BaseObservable, Disposable):
     def __init__(self, value, **kwargs) -> None:
         super().__init__(**kwargs)
 

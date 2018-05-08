@@ -7,6 +7,7 @@ from asyncio import iscoroutinefunction
 from ....stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
+from ....observable.base import BaseObservable
 
 K = T.TypeVar('K')
 J = T.TypeVar('J')
@@ -14,7 +15,7 @@ J = T.TypeVar('J')
 MapCallable = T.Callable[[K, int], T.Union[T.Awaitable[J], J]]
 
 
-class Map(Observable):
+class Map(BaseObservable):
     class Sink(SingleStream[J]):
         def __init__(
             self, mapper: MapCallable, is_coro: bool, **kwargs
@@ -56,7 +57,7 @@ class Map(Observable):
         return CompositeDisposable(up, down)
 
 
-def map(mapper: MapCallable, source: Observable) -> Observable:
+def map(mapper: MapCallable, source: Observable) -> Map:
     """Project each item of the source observable.
 
     xs = map(lambda value: value * value, source)

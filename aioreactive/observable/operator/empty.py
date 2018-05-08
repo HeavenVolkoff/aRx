@@ -1,10 +1,13 @@
+# Internal
 from asyncio import Task
 
-from aioreactive.abstract import Observable, Observer, Disposable
-from aioreactive.disposable import AnonymousDisposable
+# Project
+from ..base import BaseObservable
+from ...abstract import Observer, Disposable
+from ...disposable import AnonymousDisposable
 
 
-class Empty(Observable):
+class Empty(BaseObservable):
     async def __aobserve__(self, observer: Observer) -> Disposable:
         """Start streaming."""
 
@@ -16,7 +19,7 @@ class Empty(Observable):
         return AnonymousDisposable(dispose)
 
 
-def empty() -> Observable:
+def empty() -> Empty:
     """Returns an empty source sequence.
 
     1 - xs = empty()

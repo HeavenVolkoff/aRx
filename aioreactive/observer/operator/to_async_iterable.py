@@ -1,17 +1,19 @@
-from typing import TypeVar, AsyncIterable, AsyncIterator, Generic
+# Internal
+import typing as T
 
+# Project
+from ..iterator_observer import IteratorObserver
 from ...observable import observe
 from ...observable.base import Observable
-from ..iterator_observer import IteratorObserver
 
-T = TypeVar('T')
+K = T.TypeVar('K')
 
 
-class ToAsyncIterable(Generic[T], AsyncIterable[T]):
+class ToAsyncIterable(T.Generic[K], T.AsyncIterable[K]):
     def __init__(self, source: Observable) -> None:
         self._source = source
 
-    async def __aiter__(self) -> AsyncIterator:
+    async def __aiter__(self) -> T.AsyncIterator:
         """Iterate asynchronously.
 
         Transforms the async source to an async iterable. The source
@@ -24,7 +26,7 @@ class ToAsyncIterable(Generic[T], AsyncIterable[T]):
         return obv
 
 
-def to_async_iterable(source: Observable) -> AsyncIterable:
+def to_async_iterable(source: Observable) -> ToAsyncIterable[K]:
     """Skip the specified number of values.
 
     Keyword arguments:

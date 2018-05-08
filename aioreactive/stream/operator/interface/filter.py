@@ -7,13 +7,15 @@ from asyncio import iscoroutinefunction
 from ....stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
+from ....observable.base import BaseObservable
 
 K = T.TypeVar('K')
+L = T.TypeVar("M", Observable, BaseObservable)
 
 FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
-class Filter(Observable):
+class Filter(BaseObservable):
     class Sink(SingleStream):
         def __init__(self, is_coro: bool, predicate: FilterCallable) -> None:
             super().__init__()
@@ -56,7 +58,7 @@ class Filter(Observable):
         return CompositeDisposable(up, down)
 
 
-def filter(predicate: FilterCallable, source: Observable) -> Observable:
+def filter(predicate: FilterCallable, source: Observable) -> Filter:
     """Filters the source stream.
 
     Filters the items of the source stream based on a predicate
