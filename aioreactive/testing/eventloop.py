@@ -38,7 +38,6 @@ def isfuture(obj):
 
 
 class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
-
     def __init__(self):
         self._timer_cancelled_count = 0
         self._closed = False
@@ -148,7 +147,10 @@ class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
         return handle
 
     def _call_soon(self, callback, args):
-        if (asyncio.iscoroutine(callback) or asyncio.iscoroutinefunction(callback)):
+        if (
+            asyncio.iscoroutine(callback)
+            or asyncio.iscoroutinefunction(callback)
+        ):
             raise TypeError("coroutines cannot be used with call_soon()")
         self._check_closed()
         handle = asyncio.Handle(callback, args, self)
@@ -195,9 +197,11 @@ class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
         else:
             exc_info = False
 
-        if ('source_traceback' not in context
-        and self._current_handle is not None
-        and self._current_handle._source_traceback):
+        if (
+            'source_traceback' not in context
+            and self._current_handle is not None
+            and self._current_handle._source_traceback
+        ):
             context['handle_traceback'] = self._current_handle._source_traceback
 
         log_lines = [message]
@@ -243,7 +247,9 @@ class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
                 # Second protection layer for unexpected errors
                 # in the default implementation, as well as for subclassed
                 # event loops with overloaded "default_exception_handler".
-                log.error('Exception in default exception handler', exc_info=True)
+                log.error(
+                    'Exception in default exception handler', exc_info=True
+                )
         else:
             try:
                 self._exception_handler(self, context)
@@ -251,18 +257,22 @@ class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
                 # Exception in the user set custom exception handler.
                 try:
                     # Let's try default handler.
-                    self.default_exception_handler({
-                        'message': 'Unhandled error in exception handler',
-                        'exception': exc,
-                        'context': context,
-                    })
+                    self.default_exception_handler(
+                        {
+                            'message': 'Unhandled error in exception handler',
+                            'exception': exc,
+                            'context': context,
+                        }
+                    )
                 except Exception:
                     # Guard 'default_exception_handler' in case it is
                     # overloaded.
-                    log.error('Exception in default exception handler '
-                              'while handling an unexpected error '
-                              'in custom exception handler',
-                              exc_info=True)
+                    log.error(
+                        'Exception in default exception handler '
+                        'while handling an unexpected error '
+                        'in custom exception handler',
+                        exc_info=True
+                    )
 
     def get_debug(self):
         return self._debug
@@ -311,7 +321,10 @@ class VirtualTimeEventLoop(asyncio.AbstractEventLoop):
                     handle._run()
                     dt = self.time() - t0
                     if dt >= self.slow_callback_duration:
-                        log.warning('Executing %s took %.3f seconds', _format_handle(handle), dt)
+                        log.warning(
+                            'Executing %s took %.3f seconds',
+                            _format_handle(handle), dt
+                        )
                 finally:
                     self._current_handle = None
             else:

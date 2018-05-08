@@ -36,9 +36,9 @@ class MultiStream(BaseObservable, BaseObserver[K]):
         # MultiStream doesn't close on raise
         return False
 
-    async def __aclose__(self, *, close_observers: bool = False) -> None:
-        if close_observers:
-            for obv in list(self._observers):
+    async def __aclose__(self) -> None:
+        for obv in list(self._observers):
+            if not obv.keep_alive:
                 await obv.aclose()
 
         self.set_result(None)
