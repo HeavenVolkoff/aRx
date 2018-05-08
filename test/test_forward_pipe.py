@@ -69,12 +69,13 @@ async def test_forward_pipe_complex_pipe() -> None:
     async def long_running(value) -> AsyncObservable[int]:
         return AsyncObservable.from_iterable([value])
 
-    ys = (xs
-          | _.filter(predicate)
-          | _.map(mapper)
-          | _.flat_map(long_running)
-          | _.to_async_iterable()
-          )
+    ys = (
+        xs
+        | _.filter(predicate)
+        | _.map(mapper)
+        | _.flat_map(long_running)
+        | _.to_async_iterable()
+    )
 
     async for value in ys:
         result.append(value)

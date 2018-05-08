@@ -74,10 +74,7 @@ async def test_chain_complex_pipe():
     async def long_running(value) -> AsyncObservable:
         return AsyncObservable.from_iterable([value])
 
-    ys = (xs
-          .where(predicate)
-          .select(mapper)
-          .select_many(long_running))
+    ys = (xs.where(predicate).select(mapper).select_many(long_running))
 
     async def on_next(value):
         result.append(value)

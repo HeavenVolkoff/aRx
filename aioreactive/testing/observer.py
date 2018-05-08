@@ -45,7 +45,7 @@ class AsyncAnonymousObserver(AsyncObserver):
 
     async def aclose_core(self):
         time = self._loop.time()
-        self._values.append((time,))
+        self._values.append((time, ))
 
         await self._close()
 

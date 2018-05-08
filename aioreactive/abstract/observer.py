@@ -14,10 +14,11 @@ class Observer(Future, T.Generic[K], metaclass=ABCMeta):
     The future resolves with the value passed to close.
     """
 
-    __slots__ = ()
+    __slots__ = ("keep_alive", )
 
-    def __init__(self, **kwargs):
+    def __init__(self, *, keep_alive: bool = False, **kwargs):
         super().__init__(**kwargs)
+        self.keep_alive = keep_alive
 
     @property
     def loop(self) -> AbstractEventLoop:

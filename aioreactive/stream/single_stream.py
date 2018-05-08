@@ -12,10 +12,10 @@ K = T.TypeVar("K")
 
 
 class SingleStream(BaseObservable, BaseObserver[K]):
-    """An cold stream with a single observer.
+    """An cold stream tightly coupled with a single observer.
 
-    The SingleStream is cold in the sense that it will await an
-    observer before forwarding any events.
+    The SingleStream is cold in the sense that it will await a observer before
+    forwarding any events.
     """
 
     def __init__(self, **kwargs) -> None:
@@ -52,9 +52,10 @@ class SingleStream(BaseObservable, BaseObserver[K]):
 
         return await self._observer.araise(ex)
 
-    async def __aclose__(self, *, close_observer: bool = True) -> None:
+    async def __aclose__(self) -> None:
         if self._observer is not None:
-            if close_observer:
+            self._observer.remove_done_callback(self.aclose)
+            if not self._observer.keep_alive:
                 await self._observer.aclose()
             self._observer = None
 
@@ -71,6 +72,9 @@ class SingleStream(BaseObservable, BaseObserver[K]):
             raise ReactiveError(
                 "Can't assign multiple observers to a SingleStream"
             )
+
+        # Ensure stream closes if observer closes
+        observer.add_done_callback(self.aclose)
 
         self._observer = observer
         self._lock.set_result(None)

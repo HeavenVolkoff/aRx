@@ -30,6 +30,7 @@ class AsyncStreamBase(core.AsyncObserver):
         async def task() -> None:
             await asyncio.sleep(delay)
             await self.asend(value)
+
         asyncio.ensure_future(task())
 
     async def athrow_at(self, when: float, err: Exception) -> None:
@@ -45,10 +46,13 @@ class AsyncStreamBase(core.AsyncObserver):
         await asyncio.sleep(delay)
         await self.araise(err)
 
-    async def athrow_later_scheduled(self, delay: float, err: Exception) -> None:
+    async def athrow_later_scheduled(
+        self, delay: float, err: Exception
+    ) -> None:
         async def task():
             await asyncio.sleep(delay)
             await self.araise(err)
+
         asyncio.ensure_future(task())
 
     async def aclose_at(self, when: float):
@@ -68,17 +72,18 @@ class AsyncStreamBase(core.AsyncObserver):
         async def task():
             await asyncio.sleep(delay)
             await self.aclose()
+
         asyncio.ensure_future(task())
 
 
 class AsyncMultipleStream(core.AsyncStream, AsyncStreamBase):
     pass
 
+
 AsyncStream = AsyncMultipleStream
 
 
 class AsyncSingleStream(core.AsyncSingleStream, AsyncStreamBase):
-
     def __init__(self):
         super().__init__()
         #self._loop = asyncio.get_event_loop()
