@@ -44,7 +44,7 @@ class Max(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def max(source: Observable, *, close_observer: bool = True) -> Max:
+def max(source: Observable, *, close_observer: bool = True) -> Max[K]:
     """Project each item of the source stream.
 
     xs = max(source)

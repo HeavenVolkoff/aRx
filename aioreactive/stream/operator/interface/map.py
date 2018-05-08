@@ -57,7 +57,7 @@ class Map(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def map(mapper: MapCallable, source: Observable) -> Map:
+def map(mapper: MapCallable, source: Observable) -> Map[J]:
     """Project each item of the source observable.
 
     xs = map(lambda value: value * value, source)

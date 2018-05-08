@@ -46,7 +46,7 @@ class Concat(BaseObservable):
         )
 
 
-def concat(*operators: Observable) -> Concat:
+def concat(*operators: Observable) -> Concat[K]:
     """Concatenate multiple source streams.
 
     Returns:

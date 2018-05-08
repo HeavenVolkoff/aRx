@@ -40,7 +40,7 @@ class Take(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def take(count: int, source: Observable) -> Take:
+def take(count: int, source: Observable) -> Take[K]:
     """Returns a specified number of contiguous elements from the start
     of the source stream.
 

@@ -32,9 +32,8 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
         """
         super().__init__(**kwargs)
 
-    def __or__(
-        self, other: T.Callable[['BaseObservable[K]'], 'BaseObservable[M]']
-    ) -> 'BaseObservable[M]':
+    def __or__(self, other: T.Callable[[Observable], 'BaseObservable[M]']
+               ) -> 'BaseObservable[M]':
         """Forward pipe. Compose new observable with operator.
 
         Args:
