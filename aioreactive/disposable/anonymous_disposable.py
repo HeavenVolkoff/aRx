@@ -16,7 +16,7 @@ class AnonymousDisposable(abstract.Disposable):
 
         super().__init__(**kwargs)
 
-        self._dispose = dispose
+        self._adispose = dispose
 
     async def __adispose__(self) -> None:
-        await self._dispose()
+        await self._adispose()
