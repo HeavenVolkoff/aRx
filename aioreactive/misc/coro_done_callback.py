@@ -17,8 +17,6 @@ def coro_done_callback(
     logger = logger if logger else getLogger()
 
     def cb(fut: Future) -> None:
-        global coro
-
         try:
             fut.result()
         except Exception as ex:
