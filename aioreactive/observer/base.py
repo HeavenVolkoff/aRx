@@ -5,6 +5,7 @@ from abc import ABCMeta
 from asyncio import Future, InvalidStateError
 
 # Project
+from ..misc import coro_done_callback
 from ..error import ReactiveError
 from ..abstract import Disposable, Observer, Loggable
 
@@ -40,7 +41,9 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         self._ctrl_future = self.loop.create_future()  # type: Future
 
         # Ensure that observable closes if it's future is resolved externally
-        self.add_done_callback(self.aclose)
+        self._iner_clean_up = coro_done_callback(
+            self, self.aclose(), loop=self.loop, logger=self.logger
+        )
 
     async def __adispose__(self):
         """Implements the disposable interface, enables context management"""
@@ -101,7 +104,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         self.closed = True
 
         # Remove callback from internal future
-        self.remove_done_callback(self.aclose)
+        self.remove_done_callback(self._iner_clean_up)
 
         # Internal close
         await self.__aclose__()

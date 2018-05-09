@@ -6,6 +6,7 @@ from asyncio import iscoroutinefunction
 # Project
 from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
+from ....observable import observe
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
 
@@ -52,8 +53,8 @@ class Filter(BaseObservable):
     async def __aobserve__(self, observer: Observer) -> Disposable:
         sink = Filter.Sink(self._is_coro, self._predicate)
 
-        up = await self._source.__aobserve__(sink)
-        down = await sink.__aobserve__(observer)
+        up = await observe(self._source, sink)
+        down = await observe(sink, observer)
 
         return CompositeDisposable(up, down)
 

@@ -1,20 +1,19 @@
-# Internal
-from asyncio import iscoroutinefunction
-
 # Project
-from .. import abstract
+from . import adispose, Disposable
 
 
-class CompositeDisposable(abstract.Disposable):
+class CompositeDisposable(Disposable):
+    @staticmethod
+    def validate_mapper(disposable):
+        return isinstance(disposable, Disposable)
+
     def __init__(
-        self, a: abstract.Disposable, b: abstract.Disposable,
-        *rest: abstract.Disposable, **kwargs
+        self, a: Disposable, b: Disposable, *rest: Disposable, **kwargs
     ) -> None:
-        disposables = [a, b] + list(rest)
+        disposables = (a, b) + rest
 
-        for disposable in disposables:
-            if not iscoroutinefunction(disposable):
-                raise TypeError("Parameters must be coroutines")
+        if not all(map(self.validate_mapper, disposables)):
+            raise TypeError("Parameters must be disposable")
 
         super().__init__(**kwargs)
 
@@ -22,4 +21,4 @@ class CompositeDisposable(abstract.Disposable):
 
     async def __adispose__(self) -> None:
         for disposable in self._disposables:
-            await disposable.__adispose__()
+            await adispose(disposable)

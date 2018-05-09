@@ -5,7 +5,7 @@ from asyncio import (
 
 # Project
 from ..base import BaseObservable
-from aioreactive.abstract import Observer, Disposable
+from ...abstract import Observer, Disposable
 
 
 class Unit(BaseObservable, Disposable):
