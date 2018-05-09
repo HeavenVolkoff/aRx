@@ -3,6 +3,7 @@ import asyncio
 import typing as T
 
 # Project
+from ..misc import coro_done_callback
 from ..error import ReactiveError
 from ..abstract import Disposable, Observer
 from ..observer.base import BaseObserver
@@ -29,6 +30,7 @@ class SingleStream(BaseObservable, BaseObserver[K]):
         self._lock = \
             self._loop.create_future()  # type: T.Optional[asyncio.Future]
         self._observer = None  # type: T.Optional[Observer]
+        self._clean_up_listener = None  # type: T.Optional[T.Callable]
 
     async def __asend__(self, value: K):
         while self._observer is None:
@@ -54,7 +56,7 @@ class SingleStream(BaseObservable, BaseObserver[K]):
 
     async def __aclose__(self) -> None:
         if self._observer is not None:
-            self._observer.remove_done_callback(self.aclose)
+            self._observer.remove_done_callback(self._clean_up_listener)
             if not self._observer.keep_alive:
                 await self._observer.aclose()
             self._observer = None
@@ -74,7 +76,9 @@ class SingleStream(BaseObservable, BaseObserver[K]):
             )
 
         # Ensure stream closes if observer closes
-        observer.add_done_callback(self.aclose)
+        self._clean_up_listener = coro_done_callback(
+            observer, self.aclose(), loop=self.loop, logger=self.logger
+        )
 
         self._observer = observer
         self._lock.set_result(None)

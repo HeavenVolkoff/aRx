@@ -4,6 +4,7 @@ import typing as T
 # Project
 from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
+from ....observable import observe
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
 from ....observable.operator.empty import Empty
@@ -34,8 +35,8 @@ class Take(BaseObservable):
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
         sink = Take.Sink(self._count)  # type: SingleStream[K]
-        down = await sink.__aobserve__(observer)
-        up = await self.__aobserve__(sink)
+        down = await observe(sink, observer)
+        up = await observe(self, sink)
 
         return CompositeDisposable(up, down)
 

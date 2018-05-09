@@ -2,6 +2,7 @@
 import typing as T
 
 # Project
+from ..misc import coro_done_callback
 from ..abstract import Disposable
 from ..observer.base import BaseObserver
 from ..observable.base import BaseObservable
@@ -44,8 +45,10 @@ class MultiStream(BaseObservable, BaseObserver[K]):
         self.set_result(None)
 
     async def __aobserve__(self, observer: BaseObserver) -> Disposable:
+        clean_up = None
+
         async def dispose() -> None:
-            observer.remove_done_callback(dispose)
+            observer.remove_done_callback(clean_up)
 
             try:
                 self._observers.remove(observer)
@@ -57,6 +60,8 @@ class MultiStream(BaseObservable, BaseObserver[K]):
 
         self._observers.append(observer)
 
-        observer.add_done_callback(dispose)
+        clean_up = coro_done_callback(
+            observer, dispose(), loop=self.loop, logger=self.logger
+        )
 
         return AnonymousDisposable(dispose)

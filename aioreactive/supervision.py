@@ -5,6 +5,7 @@ from collections.abc import Awaitable
 
 # Project
 from . import abstract
+from .observable import observe
 
 K = T.TypeVar("K")
 
@@ -38,9 +39,7 @@ class Supervision(Awaitable, abstract.Disposable):
 
         """
         if self._subscription is None:
-            self._subscription = await self._observable.__aobserve__(
-                self._observer
-            )
+            self._subscription = await observe(self._observable, self._observer)
 
         return self._subscription
 
