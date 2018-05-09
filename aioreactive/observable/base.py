@@ -5,7 +5,6 @@ from abc import ABCMeta
 
 # Project
 from ..abstract import Observable, Loggable, Disposable, Observer
-from ..supervision import supervise
 
 
 async def observe(source: Observable, sink: Observer) -> Disposable:
@@ -48,6 +47,7 @@ class BaseObservable(Observable, Loggable, metaclass=ABCMeta):
         Returns:
             Disposable to control observation life-cycle
         """
+        from ..supervision import supervise
         return supervise(self, observer)
 
     def __add__(self, other: 'BaseObservable') -> 'BaseObservable':
