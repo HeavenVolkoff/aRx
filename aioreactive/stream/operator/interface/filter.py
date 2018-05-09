@@ -35,7 +35,7 @@ class Filter(BaseObservable):
                 await self.araise(ex)
             else:
                 if is_accepted:
-                    await self.__asend__(value)
+                    await super().__asend__(value)
 
                 self._index += 1
 
