@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='aioreactive',
-    version='0.6.0b15',
+    version='0.6.0b16',
     description='Async/await Reactive Tools for Python 3.6+',
     long_description=(
         "aioreactive is a library for asynchronous and reactive "
