@@ -30,7 +30,7 @@ def take(count: int) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(take_op, count)
 
 
-def concat(operator: Observable) -> T.Callable[concat_op]:
+def concat(operator: Observable) -> T.Callable[[Observable], BaseObservable[K]]:
     return partial(concat_op, operator)
 
 

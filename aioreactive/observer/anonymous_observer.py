@@ -7,6 +7,7 @@ from .base import BaseObserver
 from ..misc import anoop
 
 K = T.TypeVar("K")
+L = T.TypeVar("L")
 
 
 class AnonymousObserver(BaseObserver[K]):
@@ -18,9 +19,9 @@ class AnonymousObserver(BaseObserver[K]):
 
     def __init__(
         self,
-        asend_coro: T.Callable[BaseObserver[K].__asend__] = anoop,
-        araise_coro: (T.Callable[BaseObserver[K].__araise__]) = anoop,
-        aclose_coro: T.Callable[BaseObserver[K].__aclose__] = anoop,
+        asend_coro: T.Callable[[K], T.Awaitable[L]] = anoop,
+        araise_coro: T.Callable[[Exception], T.Awaitable[L]] = anoop,
+        aclose_coro: T.Callable[[], T.Awaitable[L]] = anoop,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -38,11 +39,11 @@ class AnonymousObserver(BaseObserver[K]):
         self._raise = araise_coro
         self._close = aclose_coro
 
-    async def __asend__(self, value: K, **kwargs) -> None:
-        await self._send(value, **kwargs)
+    async def __asend__(self, value: K) -> None:
+        await self._send(value)
 
-    async def __araise__(self, ex: Exception, **kwargs) -> bool:
-        return bool(await self._raise(ex, **kwargs))
+    async def __araise__(self, ex: Exception) -> bool:
+        return bool(await self._raise(ex))
 
-    async def __aclose__(self, **kwargs) -> None:
-        self.set_result(await self._close(**kwargs))
+    async def __aclose__(self) -> None:
+        self.set_result(await self._close())
