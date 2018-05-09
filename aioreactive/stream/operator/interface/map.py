@@ -68,4 +68,8 @@ def map(mapper: MapCallable, source: Observable) -> BaseObservable:
     Returns an observable sequence whose elements are the result of
     invoking the mapper function on each element of source.
     """
-    return Map(mapper, source)
+    parent_logger = None
+    if isinstance(source, BaseObservable):
+        parent_logger = source.logger
+
+    return Map(mapper, source, parent_logger=parent_logger)

@@ -50,7 +50,7 @@ class MultiStream(BaseObservable, BaseObserver[K]):
             try:
                 self._observers.remove(observer)
             except ValueError:
-                self._logger.warning(
+                self.logger.warning(
                     "Dispose for [%s] was called more than once",
                     type(observer).__name__
                 )

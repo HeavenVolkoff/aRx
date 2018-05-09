@@ -6,7 +6,7 @@ from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
-from ....observable.operator import empty
+from ....observable.operator.empty import Empty
 
 K = T.TypeVar('T')
 
@@ -53,9 +53,13 @@ def take(count: int, source: Observable) -> BaseObservable:
     Returns a source sequence that contains the specified number of
     elements from the start of the input sequence.
     """
+    parent_logger = None
+    if isinstance(source, BaseObservable):
+        parent_logger = source.logger
+
     if count < 0:
         raise ValueError("Count must be bigger than 0")
     elif count == 0:
-        return empty()
+        return Empty(parent_logger=parent_logger)
 
-    return Take(count, source)
+    return Take(count, source, parent_logger=parent_logger)
