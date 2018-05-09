@@ -55,7 +55,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         if self.done() or self.closed:
             raise ObserverClosedError(self)
 
-        self._logger.debug("Observer send: %s", data)
+        self.logger.debug("Observer send: %s", data)
         await self.__asend__(data)
 
     async def araise(self, ex: Exception) -> bool:
@@ -71,7 +71,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         if self.done() or self.closed:
             raise ObserverClosedError(self)
 
-        self._logger.debug("Observer throw: %s", ex)
+        self.logger.debug("Observer throw: %s", ex)
 
         should_close = await self.__araise__(ex)
 
@@ -79,7 +79,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
             try:
                 self.set_exception(ex)
             except InvalidStateError:
-                self._logger.warning(
+                self.logger.warning(
                     "Observer was put in a InvalidState during `.araise()`"
                 )
 
@@ -95,7 +95,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         if self.closed:
             return False
 
-        self._logger.warning("Closing %s", type(self).__name__)
+        self.logger.warning("Closing %s", type(self).__name__)
 
         # Set flag to disable further stream actions
         self.closed = True

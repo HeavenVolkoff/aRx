@@ -64,4 +64,8 @@ def filter(predicate: FilterCallable, source: Observable) -> BaseObservable:
     Filters the items of the source stream based on a predicate
     function.
     """
-    return Filter(predicate, source)
+    parent_logger = None
+    if isinstance(source, BaseObservable):
+        parent_logger = source.logger
+
+    return Filter(predicate, source, parent_logger=parent_logger)

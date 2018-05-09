@@ -22,7 +22,9 @@ class Concat(BaseObservable):
                  observable: Observable) -> T.Awaitable[Disposable]:
         return observe(observable, sink)
 
-    def __init__(self, *sources: Observable, **kwargs) -> None:
+    def __init__(
+        self, a: Observable, b: Observable, *sources: Observable, **kwargs
+    ) -> None:
         """Concat constructor.
 
         Args:
@@ -31,7 +33,7 @@ class Concat(BaseObservable):
         """
         super().__init__(**kwargs)
 
-        self._sources_iterator = iter(sources)
+        self._sources_iterator = iter((a, b) + sources)
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
         sink = SingleStream()
@@ -46,10 +48,16 @@ class Concat(BaseObservable):
         )
 
 
-def concat(*operators: Observable) -> BaseObservable:
+def concat(
+    a: Observable, b: Observable, *sources: Observable
+) -> BaseObservable:
     """Concatenate multiple source streams.
 
     Returns:
         Concatenated source stream.
     """
-    return Concat(*operators)
+    parent_logger = None
+    if isinstance(b, BaseObservable):
+        parent_logger = b.logger
+
+    return Concat(a, b, *sources, parent_logger=parent_logger)

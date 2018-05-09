@@ -48,4 +48,8 @@ def skip(count: int, source: Observable) -> BaseObservable:
     Returns a source stream that contains the values that occur
     after the specified index in the input source stream.
     """
-    return Skip(count, source)
+    parent_logger = None
+    if isinstance(source, BaseObservable):
+        parent_logger = source.logger
+
+    return Skip(count, source, parent_logger=parent_logger)

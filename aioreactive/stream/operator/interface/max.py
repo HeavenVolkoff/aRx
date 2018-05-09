@@ -49,4 +49,8 @@ def max(source: Observable) -> BaseObservable:
     Returns a stream with a single item that is the item with the
     maximum value from the source stream.
     """
-    return Max(source)
+    parent_logger = None
+    if isinstance(source, BaseObservable):
+        parent_logger = source.logger
+
+    return Max(source, parent_logger=parent_logger)
