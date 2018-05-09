@@ -2,23 +2,17 @@
 import typing as T
 
 from abc import ABCMeta
-from ..supervision import supervise
 
 # Project
 from ..abstract import Observable, Loggable, Disposable, Observer
-from ..stream.operator.interface import (
-    concat as concat_op, map as map_op, filter as filter_op
-)
-
-K = T.TypeVar('K')
-M = T.TypeVar('M')
+from ..supervision import supervise
 
 
 async def observe(source: Observable, sink: Observer) -> Disposable:
     return await source.__aobserve__(sink)
 
 
-class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
+class BaseObservable(Observable, Loggable, metaclass=ABCMeta):
     """The base class for all Observables.
 
     Implements all the common behaviour of a Observable
@@ -32,8 +26,8 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
         """
         super().__init__(**kwargs)
 
-    def __or__(self, other: T.Callable[[Observable], 'BaseObservable[M]']
-               ) -> 'BaseObservable[M]':
+    def __or__(self, other: T.Callable[[Observable], 'BaseObservable']
+               ) -> 'BaseObservable':
         """Forward pipe. Compose new observable with operator.
 
         Args:
@@ -56,25 +50,27 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
         """
         return supervise(self, observer)
 
-    def __add__(self, other: 'BaseObservable[K]') -> 'BaseObservable[K]':
+    def __add__(self, other: 'BaseObservable') -> 'BaseObservable':
         """Pythonic version of concat
 
         Example:
         zs = xs + ys
 
         Returns concat(other, self)"""
+        from ..stream.operator.interface import concat as concat_op
         return concat_op(self, other)
 
-    def __iadd__(self, other: 'BaseObservable[K]') -> 'BaseObservable[K]':
+    def __iadd__(self, other: 'BaseObservable') -> 'BaseObservable':
         """Pythonic use of concat
 
         Example:
         xs += ys
 
         Returns self.concat(other, self)"""
+        from ..stream.operator.interface import concat as concat_op
         return concat_op(self, other)
 
-    # def __getitem__(self, key) -> 'BaseObservable[K]':
+    # def __getitem__(self, key) -> 'BaseObservable':
     #     """Slices the given source stream using Python slice notation.
     #     The arguments to slice is start, stop and step given within
     #     brackets [] and separated with the ':' character. It is
@@ -114,9 +110,11 @@ class BaseObservable(Observable, Loggable, T.Generic[K], metaclass=ABCMeta):
     #     return delay(seconds, self)
 
     def where(self, predicate: T.Callable) -> 'BaseObservable':
+        from ..stream.operator.interface import filter as filter_op
         return filter_op(predicate, self)
 
     def select(self, selector: T.Callable) -> 'BaseObservable':
+        from ..stream.operator.interface import map as map_op
         return map_op(selector, self)
 
     # def debounce(self, seconds: float) -> 'BaseObservable':

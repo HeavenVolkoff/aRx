@@ -2,7 +2,7 @@
 import typing as T
 
 # Project
-from ....stream import SingleStream
+from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
@@ -38,7 +38,7 @@ class Skip(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def skip(count: int, source: Observable) -> Skip[K]:
+def skip(count: int, source: Observable) -> BaseObservable:
     """Skip the specified number of values.
 
     Keyword arguments:

@@ -2,7 +2,7 @@
 import typing as T
 
 # Project
-from ....stream import SingleStream
+from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
@@ -40,7 +40,7 @@ class Take(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def take(count: int, source: Observable) -> Take[K]:
+def take(count: int, source: Observable) -> BaseObservable:
     """Returns a specified number of contiguous elements from the start
     of the source stream.
 

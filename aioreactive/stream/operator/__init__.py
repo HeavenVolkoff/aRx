@@ -18,22 +18,22 @@ from ...observable.base import BaseObservable
 K = T.TypeVar("K")
 
 
-def map(mapper: MapCallable) -> T.Callable[[Observable], BaseObservable[K]]:
+def map(mapper: MapCallable) -> T.Callable[[Observable], BaseObservable]:
     return partial(map_op, mapper)
 
 
-def skip(count: int) -> T.Callable[[Observable], BaseObservable[K]]:
+def skip(count: int) -> T.Callable[[Observable], BaseObservable]:
     return partial(skip_op, count)
 
 
-def take(count: int) -> T.Callable[[Observable], BaseObservable[K]]:
+def take(count: int) -> T.Callable[[Observable], BaseObservable]:
     return partial(take_op, count)
 
 
-def concat(operator: Observable) -> T.Callable[[Observable], BaseObservable[K]]:
+def concat(operator: Observable) -> T.Callable[[Observable], BaseObservable]:
     return partial(concat_op, operator)
 
 
 def filter(predicate: FilterCallable
-           ) -> T.Callable[[Observable], BaseObservable[K]]:
+           ) -> T.Callable[[Observable], BaseObservable]:
     return partial(filter_op, predicate)

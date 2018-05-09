@@ -5,7 +5,7 @@ from asyncio import gather
 from functools import partial
 
 # Project
-from ....stream import SingleStream
+from ...single_stream import SingleStream
 from ....abstract import Observer, Observable, Disposable
 from ....observable import observe
 from ....disposable import CompositeDisposable
@@ -46,7 +46,7 @@ class Concat(BaseObservable):
         )
 
 
-def concat(*operators: Observable) -> Concat[K]:
+def concat(*operators: Observable) -> BaseObservable:
     """Concatenate multiple source streams.
 
     Returns:
