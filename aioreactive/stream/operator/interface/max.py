@@ -2,7 +2,7 @@
 import typing as T
 
 # Project
-from ....stream import SingleStream
+from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
@@ -38,7 +38,7 @@ class Max(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def max(source: Observable) -> Max[K]:
+def max(source: Observable) -> BaseObservable:
     """Project each item of the source stream.
 
     xs = max(source)

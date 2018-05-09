@@ -4,7 +4,7 @@ import typing as T
 from asyncio import iscoroutinefunction
 
 # Project
-from ....stream import SingleStream
+from ...single_stream import SingleStream
 from ....abstract import Observable, Observer, Disposable
 from ....disposable import CompositeDisposable
 from ....observable.base import BaseObservable
@@ -57,7 +57,7 @@ class Map(BaseObservable):
         return CompositeDisposable(up, down)
 
 
-def map(mapper: MapCallable, source: Observable) -> Map[J]:
+def map(mapper: MapCallable, source: Observable) -> BaseObservable:
     """Project each item of the source observable.
 
     xs = map(lambda value: value * value, source)
