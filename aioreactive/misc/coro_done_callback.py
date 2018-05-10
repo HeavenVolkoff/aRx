@@ -34,13 +34,13 @@ def coro_done_callback(
     loop: T.Optional[AbstractEventLoop] = None,
     logger: T.Optional[Logger] = None
 ) -> T.Callable[[Future], None]:
-    _cb = partial(
+    partial_cb = partial(
         cb,
         loop=loop if loop else get_event_loop(),
         coro=coro,
         logger=logger if logger else getLogger()
     )
 
-    unresolved_fut.add_done_callback(cb)
+    unresolved_fut.add_done_callback(partial_cb)
 
-    return _cb
+    return partial_cb
