@@ -1,6 +1,7 @@
 # Internal
-import asyncio
 import typing as T
+
+from asyncio import iscoroutinefunction
 
 # Project
 from .base import BaseObserver
@@ -19,31 +20,36 @@ class AnonymousObserver(BaseObserver[K]):
 
     def __init__(
         self,
-        asend_coro: T.Callable[[K], T.Awaitable[L]] = anoop,
-        araise_coro: T.Callable[[Exception], T.Awaitable[L]] = anoop,
-        aclose_coro: T.Callable[[], T.Awaitable[L]] = anoop,
+        asend_coro: T.Callable[[K], T.Union[T.Awaitable[L], L]] = anoop,
+        araise_coro: T.Callable[[Exception], T.Union[T.Awaitable[L], L]
+                                ] = anoop,
+        aclose_coro: T.Callable[[], T.Union[T.Awaitable[L], L]] = anoop,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
-
-        if not asyncio.iscoroutinefunction(asend_coro):
-            raise TypeError("asend must be a coroutine")
-
-        if not asyncio.iscoroutinefunction(araise_coro):
-            raise TypeError("araise must be a coroutine")
-
-        if not asyncio.iscoroutinefunction(aclose_coro):
-            raise TypeError("aclose must be a coroutine")
 
         self._send = asend_coro
         self._raise = araise_coro
         self._close = aclose_coro
 
+        self._send_is_coro = iscoroutinefunction(asend_coro)
+        self._raise_is_coro = iscoroutinefunction(araise_coro)
+        self._close_is_coro = iscoroutinefunction(aclose_coro)
+
     async def __asend__(self, value: K) -> None:
-        await self._send(value)
+        if self._send_is_coro:
+            await self._send(value)
+        else:
+            self._send(value)
 
     async def __araise__(self, ex: Exception) -> bool:
-        return bool(await self._raise(ex))
+        if self._raise_is_coro:
+            return bool(await self._raise(ex))
+        else:
+            return bool(self._raise(ex))
 
     async def __aclose__(self) -> None:
-        self.set_result(await self._close())
+        if self._close_is_coro:
+            self.set_result(await self._close())
+        else:
+            self.set_result(self._close())
