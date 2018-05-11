@@ -24,7 +24,7 @@ class MultiStream(BaseObservable, BaseObserver[K]):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self._observers = []  # type: T.List[BaseObserver]
+        self._observers = []  # type: T.List[BaseObserver[K]]
 
     async def __asend__(self, value: K) -> None:
         for obv in list(self._observers):
@@ -44,7 +44,7 @@ class MultiStream(BaseObservable, BaseObserver[K]):
 
         self.set_result(None)
 
-    async def __aobserve__(self, observer: BaseObserver) -> Disposable:
+    async def __aobserve__(self, observer: BaseObserver[K]) -> Disposable:
         clean_up = None
 
         async def dispose() -> None:
@@ -61,7 +61,7 @@ class MultiStream(BaseObservable, BaseObserver[K]):
         self._observers.append(observer)
 
         clean_up = coro_done_callback(
-            observer, dispose(), loop=self.loop, logger=self.logger
+            observer, dispose, loop=self.loop, logger=self.logger
         )
 
         return AnonymousDisposable(dispose)

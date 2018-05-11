@@ -29,7 +29,7 @@ class SingleStream(BaseObservable, BaseObserver[K]):
 
         self._lock = \
             self._loop.create_future()  # type: T.Optional[asyncio.Future]
-        self._observer = None  # type: T.Optional[Observer]
+        self._observer = None  # type: T.Optional[Observer[K]]
         self._clean_up_listener = None  # type: T.Optional[T.Callable]
 
     async def __asend__(self, value: K):
@@ -68,7 +68,7 @@ class SingleStream(BaseObservable, BaseObserver[K]):
 
         self.set_result(None)
 
-    async def __aobserve__(self, observer: Observer) -> Disposable:
+    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
         """Start streaming."""
         if self._observer is not None:
             raise ReactiveError(
@@ -77,7 +77,7 @@ class SingleStream(BaseObservable, BaseObserver[K]):
 
         # Ensure stream closes if observer closes
         self._clean_up_listener = coro_done_callback(
-            observer, self.aclose(), loop=self.loop, logger=self.logger
+            observer, self.aclose, loop=self.loop, logger=self.logger
         )
 
         self._observer = observer

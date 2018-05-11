@@ -12,7 +12,8 @@ def cb(
     fut: Future,
     *,
     loop: AbstractEventLoop,
-    coro: T.Optional[T.Awaitable[K]] = None,
+    # TODO: FIX Type
+    coro: T.Optional[T.Callable[[], T.Awaitable[K]]] = None,
     logger: Logger
 ) -> None:
     try:
@@ -22,17 +23,17 @@ def cb(
         logger.exception(ex)
 
     if coro:
-        loop.create_task(coro).add_done_callback(
+        loop.create_task(coro()).add_done_callback(
             partial(cb, loop=loop, logger=logger)
         )
 
 
 def coro_done_callback(
     unresolved_fut: Future,
-    coro: T.Optional[T.Awaitable[K]] = None,
-    *,
+    # TODO: FIX Type
+    coro: T.Optional[T.Callable[[], T.Awaitable[K]]] = None,
     loop: T.Optional[AbstractEventLoop] = None,
-    logger: T.Optional[Logger] = None
+    logger: T.Optional[Logger] = None,
 ) -> T.Callable[[Future], None]:
     partial_cb = partial(
         cb,

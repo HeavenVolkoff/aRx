@@ -41,8 +41,8 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         self._ctrl_future = self.loop.create_future()  # type: Future
 
         # Ensure that observable closes if it's future is resolved externally
-        self._iner_clean_up = coro_done_callback(
-            self, self.aclose(), loop=self.loop, logger=self.logger
+        self._inner_clean_up = coro_done_callback(
+            self, self.aclose, loop=self.loop, logger=self.logger
         )
 
     async def __adispose__(self):
@@ -104,7 +104,7 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
         self.closed = True
 
         # Remove callback from internal future
-        self.remove_done_callback(self._iner_clean_up)
+        self.remove_done_callback(self._inner_clean_up)
 
         # Internal close
         await self.__aclose__()
