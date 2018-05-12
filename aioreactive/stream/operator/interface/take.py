@@ -34,7 +34,9 @@ class Take(BaseObservable):
         self._count = count
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
-        sink = Take.Sink(self._count)  # type: SingleStream[K]
+        sink = Take.Sink(
+            self._count, parent_logger=self.logger
+        )  # type: SingleStream[K]
         down = await observe(sink, observer)
         up = await observe(self, sink)
 

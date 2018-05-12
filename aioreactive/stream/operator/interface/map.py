@@ -50,7 +50,7 @@ class Map(BaseObservable):
         self._is_coro = iscoroutinefunction(mapper)
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
-        sink = Map.Sink(self._mapper, self._is_coro)
+        sink = Map.Sink(self._mapper, self._is_coro, parent_logger=self.logger)
 
         up = await observe(self._source, sink)
         down = await observe(sink, observer)
