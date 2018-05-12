@@ -27,19 +27,21 @@ class MultiStream(BaseObservable, BaseObserver[K]):
         self._observers = []  # type: T.List[BaseObserver[K]]
 
     async def __asend__(self, value: K) -> None:
-        for obv in list(self._observers):
-            await obv.asend(value)
+        for obv in self._observers:
+            if not obv.done():  # This obv should be removed soon
+                await obv.asend(value)
 
     async def __araise__(self, ex: Exception) -> bool:
-        for obv in list(self._observers):
-            await obv.araise(ex)
+        for obv in self._observers:
+            if not obv.done():  # This obv should be removed soon
+                await obv.araise(ex)
 
         # MultiStream doesn't close on raise
         return False
 
     async def __aclose__(self) -> None:
-        for obv in list(self._observers):
-            if not obv.keep_alive:
+        for obv in self._observers:
+            if not (obv.done() or obv.keep_alive):
                 await obv.aclose()
 
         self.set_result(None)

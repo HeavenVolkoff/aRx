@@ -18,8 +18,10 @@ FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 class Filter(BaseObservable):
     class Sink(SingleStream):
-        def __init__(self, is_coro: bool, predicate: FilterCallable) -> None:
-            super().__init__()
+        def __init__(
+            self, is_coro: bool, predicate: FilterCallable, **kwargs
+        ) -> None:
+            super().__init__(**kwargs)
 
             self._index = 0
             self._is_coro = is_coro
@@ -51,7 +53,7 @@ class Filter(BaseObservable):
         self._predicate = predicate
 
     async def __aobserve__(self, observer: Observer) -> Disposable:
-        sink = Filter.Sink(self._is_coro, self._predicate)
+        sink = Filter.Sink(self._is_coro, self._predicate, logger=self.logger)
 
         up = await observe(self._source, sink)
         down = await observe(sink, observer)
