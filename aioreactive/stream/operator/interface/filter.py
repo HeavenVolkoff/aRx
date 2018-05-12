@@ -53,7 +53,9 @@ class Filter(BaseObservable):
         self._predicate = predicate
 
     async def __aobserve__(self, observer: Observer) -> Disposable:
-        sink = Filter.Sink(self._is_coro, self._predicate, logger=self.logger)
+        sink = Filter.Sink(
+            self._is_coro, self._predicate, parent_logger=self.logger
+        )
 
         up = await observe(self._source, sink)
         down = await observe(sink, observer)

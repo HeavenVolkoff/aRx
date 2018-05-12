@@ -31,7 +31,7 @@ class Skip(BaseObservable):
         self._source = source
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
-        sink = Skip.Sink(self._count)
+        sink = Skip.Sink(self._count, parent_logger=self.logger)
 
         up = await observe(self._source, sink)
         down = await observe(sink, observer)

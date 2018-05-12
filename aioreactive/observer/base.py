@@ -45,11 +45,6 @@ class BaseObserver(Disposable, Loggable, Observer[K], metaclass=ABCMeta):
             self, self.aclose, loop=self.loop, logger=self.logger
         )
 
-    def __del__(self):
-        # This can possibly fuck the garbage collector up
-        # If you experience any weird bug delete this
-        self.loop.create_task(self.aclose())
-
     async def __adispose__(self):
         """Implements the disposable interface, enables context management"""
         await self.aclose()

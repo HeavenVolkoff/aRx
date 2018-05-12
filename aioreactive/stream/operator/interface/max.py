@@ -31,7 +31,7 @@ class Max(BaseObservable):
         self._source = source
 
     async def __aobserve__(self, observer: Observer) -> Disposable:
-        sink = Max.Stream()
+        sink = Max.Stream(parent_logger=self.logger)
 
         up = await observe(self._source, sink)
         down = await observe(sink, observer)

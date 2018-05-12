@@ -36,7 +36,7 @@ class Concat(BaseObservable):
         self._sources_iterator = iter((a, b) + sources)
 
     async def __aobserve__(self, observer: Observer[K]) -> Disposable:
-        sink = SingleStream()
+        sink = SingleStream(parent_logger=self.logger)
 
         observations = (
             list(map(partial(self._sinking, sink), self._sources_iterator)) +
