@@ -3,8 +3,8 @@ import typing as T
 
 # Project
 from ..base import BaseObservable
-from aioreactive.abstract import Observer, Disposable
-from aioreactive.disposable import AnonymousDisposable
+from areact.abstract import Observer, Disposable
+from areact.disposable import AnonymousDisposable
 
 K = T.TypeVar('K')
 

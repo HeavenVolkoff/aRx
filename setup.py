@@ -11,7 +11,7 @@ setup(
     url='https://github.com/HeavenVolkoff/areact',
     name='areact',
     author='Børge Lanes, Dag Brattli, Vítor Augusto da Silva Vasconcellos',
-    version='0.6.0rc2',
+    version='0.6.0rc3',
     license='Mozilla Public License 2.0 (MPL 2.0)',
     zip_safe=True,
     packages=find_packages(
