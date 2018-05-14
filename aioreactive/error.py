@@ -1,2 +1,0 @@
-class ReactiveError(Exception):
-    pass

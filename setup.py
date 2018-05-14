@@ -8,36 +8,34 @@ except ImportError:
     from setuptools import setup, find_packages
 
 setup(
-    name='aioreactive',
-    version='0.6.0b23',
-    description='Async/await Reactive Tools for Python 3.6+',
-    long_description=(
-        "aioreactive is a library for asynchronous and reactive "
-        "programming using asyncio, async and await"
-    ),
-    author='Børge Lanes & Dag Brattli',
-    author_email='dag@brattli.net',
-    license='MIT License',
-    url='https://github.com/dbrattli/aioreactive',
-    download_url='https://github.com/dbrattli/aioreactive',
+    url='https://github.com/HeavenVolkoff/areact',
+    name='areact',
+    author='Børge Lanes, Dag Brattli, Vítor Augusto da Silva Vasconcellos',
+    version='0.6.0rc1',
+    license='Mozilla Public License 2.0 (MPL 2.0)',
     zip_safe=True,
-
-    # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Environment :: Other Environment',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
+    maintainer='Vítor Augusto da Silva Vasconcellos',
+    description='Async/await Reactive Tools for Python 3.6+',
+    author_email='"Dag Brattli" <dag@brattli.net>, '
+                 '"Vítor Augusto da Silva Vasconcellos" '
+                 '<vasconcellos.dev@gmail.com>',
+    packages=find_packages(
+        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
+    ),
+    package_dir={'areact': 'areact'},
+    classifiers=[  # https://pypi.python.org/pypi?%3Aaction=list_classifiers
+        'Development Status :: 4 - Beta', 'Environment :: Other Environment',
+        'Intended Audience :: Developers', 'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Software Development :: Libraries :: Python Modules',
+        'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)'
     ],
-    setup_requires=['pytest-runner'],
+    maintainer_email='"Vítor Augusto da Silva Vasconcellos" '
+                     '<vasconcellos.dev@gmail.com>',
     tests_require=['pytest', "pytest-asyncio"],
-    packages=find_packages(
-        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
-    ),
-    package_dir={'aioreactive': 'aioreactive'}
+    setup_requires=['pytest-runner'],
+    long_description="areact is a library for asynchronous and reactive "
+                     "programming using asyncio, async and await",
 )
