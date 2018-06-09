@@ -1,19 +1,19 @@
-# AReact
+# aRx
 
-Library for easy creation and maintenance of asynchronous observer/observable design pattern
+Async/await Reactive Tools for Python 3.6+
 
 Modified from [aioreactive](https://github.com/dbrattli/aioreactive)
 
 ## Documentation
 > Under construction
 
-## License
+## License & Copyright
 Original Work:
->The MIT License (MIT)
+>[The MIT License (MIT)](./LICENSE.original.md)
 >
->Copyright (c) 2016 Børge Lanes, Dag Brattli.
+>[Copyright (c) 2016 Børge Lanes, Dag Brattli.](./COPYRIGHT.md)
 
 Modified work:
->The MPL 2.0 License
+>[The MPL 2.0 License](./LICENSE.md)
 >
->Copyright (c) 2018 Vítor Augusto da Silva Vasconcellos.
+>[Copyright (c) 2018 Vítor Augusto da Silva Vasconcellos.](./COPYRIGHT.md)
