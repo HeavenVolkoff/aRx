@@ -1,3 +1,5 @@
+"""aRx disposable implementations."""
+
 __all__ = (
     "adispose", "Disposable", "AnonymousDisposable", "CompositeDisposable"
 )

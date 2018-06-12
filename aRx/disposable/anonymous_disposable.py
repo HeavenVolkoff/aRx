@@ -11,8 +11,8 @@ from ..abstract.disposable import Disposable
 class AnonymousDisposable(Disposable):
     """An anonymous Disposable.
 
-    Creates as disposable where the custom close logic implementation is
-    provided by a optional and anonymous function.
+    Disposable where the custom close logic implementation is provided by a
+    optional and anonymous function.
     """
 
     __slots__ = ("_adispose", )
@@ -35,5 +35,5 @@ class AnonymousDisposable(Disposable):
         self._adispose = dispose
 
     async def __adispose__(self) -> None:
-        """:meth:`Disposable.__adispose__`"""
+        """Call anonymous function on dispose."""
         await self._adispose()

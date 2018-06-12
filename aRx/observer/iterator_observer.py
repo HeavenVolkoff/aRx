@@ -1,6 +1,9 @@
 # Internal
-import asyncio
 import typing as T
+
+from asyncio import Future, InvalidStateError
+from contextlib import suppress
+from collections import deque
 
 # Project
 from ..abstract.observer import Observer
@@ -20,22 +23,21 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         super().__init__(**kwargs)
 
         # Private
-        self._queue = []  # type: T.List[T.Tuple[bool, K]]
-        self._control = self.loop.create_future()  # type: asyncio.Future
+        self._queue = deque()  # type: T.Deque[T.Tuple[bool, K]]
+        self._control = self.loop.create_future()  # type: Future
         self._counter = 0
 
     @property
     def _next_value(self) -> T.Tuple[bool, K]:
         """Shortcut to self._queue"""
-        return self._queue.pop(0)
+        return self._queue.popleft()
 
     @_next_value.setter
     def _next_value(self, value: T.Tuple[bool, K]) -> None:
         self._queue.append(value)
-        try:
+
+        with suppress(InvalidStateError):
             self._control.set_result(True)
-        except asyncio.InvalidStateError:
-            pass
 
     def __aiter__(self) -> T.AsyncIterator[K]:
         return self
@@ -49,14 +51,14 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         return True
 
     async def __aclose__(self) -> None:
-        self._next_value = (True, StopAsyncIteration())
-        self.set_result(self._counter)
+        with suppress(InvalidStateError):
+            self.future.set_result(self._counter)
 
     async def __anext__(self) -> T.Awaitable[K]:
-        if self.closed:
-            raise StopAsyncIteration()
-
         while not self._queue:
+            if self.closed:
+                raise StopAsyncIteration()
+
             await self._control
             self._control = self.loop.create_future()
 

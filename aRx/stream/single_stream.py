@@ -1,22 +1,26 @@
 # Internal
-import asyncio
 import typing as T
 
+from asyncio import Future, InvalidStateError
+from contextlib import suppress
+
 # Project
-from ..error import ObserverClosedError, SingleStreamMultipleError
+from ..error import SingleStreamMultipleError
 from ..promise import Promise
-from ..abstract import Disposable, Observer
-from ..observer.base import BaseObserver
-from ..observable.base import BaseObservable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable
+from ..abstract.observable import Observable
 
 K = T.TypeVar("K")
 
 
-class SingleStream(BaseObservable, BaseObserver[K]):
-    """An cold stream tightly coupled with a single observer.
+class SingleStream(Observable, Observer[K]):
+    """Cold stream tightly coupled with a single observer.
 
-    The SingleStream is cold in the sense that it will await a observer before
-    forwarding any events.
+    .. Note::
+
+        The SingleStream is cold in the sense that it will await a observer
+        before forwarding any events.
     """
 
     def __init__(self, **kwargs) -> None:
@@ -27,62 +31,48 @@ class SingleStream(BaseObservable, BaseObserver[K]):
         """
         super().__init__(**kwargs)
 
-        self._lock = \
-            self._loop.create_future()  # type: T.Optional[asyncio.Future]
+        self._lock = self._loop.create_future()  # type: T.Optional[Future]
         self._observer = None  # type: T.Optional[Observer[K]]
-        self._clean_up_listener = None  # type: T.Optional[T.Callable]
+        self._clean_up = None  # type: T.Optional[T.Callable]
+
+    @property
+    def closed(self):
+        """Property that indicates if this observer is closed or not."""
+        return super().closed or (
+            # Guard against rare concurrence issue were a stream event can be
+            # called after a observer closed, but before it is disposed.
+            self._observer is not None and self._observer.closed
+        )
 
     async def __asend__(self, value: K):
-        while self._observer is None:
-            try:
-                # Wait for observer
-                await self._lock
-            except asyncio.CancelledError:
-                # We got disposed
-                return
-
-        # This is a somewhat rare situation, basically the stream processed
-        # a send event after a observer closed but before it's done
-        # callback, closing the stream, was called
-        if not self._observer.done():
-            await self._observer.asend(value)
-        else:
-            await self.aclose()
-            raise ObserverClosedError(self)
+        # Wait for observer
+        await self._lock
+        await self._observer.asend(value)
 
     async def __araise__(self, ex: Exception) -> bool:
-        while self._observer is None:
-            try:
-                # Wait for observer
-                await self._lock
-            except asyncio.CancelledError:
-                # We got disposed, no need to close here
-                return False
+        await self._lock
+        await self._observer.araise(ex)
 
-            # This is a somewhat rare situation, basically the stream processed
-            # a raise event after a observer closed but before it's done
-            # callback, closing the stream, was called
-            if not self._observer.done():
-                await self._observer.araise(ex)
-            else:
-                await self.aclose()
-                raise ObserverClosedError(self)
+        # SingleStream doesn't close on raise
+        return False
 
     async def __aclose__(self) -> None:
+        # Cancel all awaiting event in the case we weren't subscribed
+        self._lock.cancel()
+
+        # Clean up observer
         if self._observer is not None:
-            self._observer.remove_done_callback(self._clean_up_listener)
-            if not (self._observer.done() or self._observer.keep_alive):
+            self._clean_up.cancel()
+
+            # Close observers that are open and don't need to outlive stream
+            if not (self._observer.closed or self._observer.keep_alive):
                 await self._observer.aclose()
-            self._observer = None
 
-        if not self._lock.cancel():
-            # Ensure that all waiting actions get cancelled
-            self._lock = self._loop.create_future()
-            self._lock.cancel()
+        # Resolve internal future
+        with suppress(InvalidStateError):
+            self.future.set_result(None)
 
-        self.set_result(None)
-
-    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
+    def __observe__(self, observer: Observer[K]) -> Disposable:
         """Start streaming."""
         if self._observer is not None:
             raise SingleStreamMultipleError(
@@ -90,9 +80,13 @@ class SingleStream(BaseObservable, BaseObserver[K]):
             )
 
         # Ensure stream closes if observer closes
-        Promise(observer, loop=self.loop) & (lambda _: self.aclose())
+        self._clean_up = (
+            Promise(observer, loop=self.loop).then(lambda _: self.aclose())
+        )
 
         self._observer = observer
+
+        # Release any awaiting event
         self._lock.set_result(None)
 
         return self

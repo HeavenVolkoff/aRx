@@ -1,4 +1,6 @@
 # Internal
+import typing as T
+
 from asyncio import ensure_future
 
 # Project
@@ -10,11 +12,27 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 
 
 class Unit(Observable, Loopable):
-    """Observable that outputs a single value.
+    """Observable that outputs a single value then closes.
 
     Attributes:
         value: Value to be outputted by observable.
     """
+
+    @staticmethod
+    async def _worker(value: T.Any, observer: Observer) -> None:
+        try:
+            value = ensure_future(value)
+        except TypeError:
+            await observer.asend(value)
+        else:
+            try:
+                value = await value
+            except Exception as ex:
+                await observer.araise(ex)
+            else:
+                await observer.asend(value)
+
+        await observer.aclose()
 
     def __init__(self, value, **kwargs) -> None:
         """Unit constructor
@@ -28,24 +46,9 @@ class Unit(Observable, Loopable):
         # Public
         self.value = value
 
-    async def _worker(self, observer: Observer) -> None:
-        try:
-            value = ensure_future(self.value)
-        except TypeError:
-            await observer.asend(self.value)
-        else:
-            try:
-                value = await value
-            except Exception as ex:
-                await observer.araise(ex)
-            else:
-                await observer.asend(value)
-
-        await observer.aclose()
-
-    async def __aobserve__(self, observer: Observer) -> Disposable:
+    def __observe__(self, observer: Observer) -> Disposable:
         # Add worker execution to loop queue
-        task = observer.loop.create_task(self._worker(observer))
+        task = observer.loop.create_task(Unit._worker(self.value, observer))
 
         async def cancel():
             task.cancel()

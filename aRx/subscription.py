@@ -7,7 +7,7 @@ from collections.abc import Awaitable
 
 # Project
 from .abstract.observer import Observer
-from .abstract.observable import Observable, aobserve
+from .abstract.observable import Observable, observe
 from .abstract.disposable import Disposable, adispose
 
 K = T.TypeVar("K")
@@ -54,9 +54,7 @@ class Subscription(Awaitable, Disposable, T.Generic[K]):
 
         """
         if self._subscription is None:
-            self._subscription = await aobserve(
-                self._observable, self._observer
-            )
+            self._subscription = observe(self._observable, self._observer)
 
         return self._subscription
 

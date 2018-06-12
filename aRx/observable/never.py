@@ -6,7 +6,8 @@ from ..disposable import AnonymousDisposable
 
 
 class Never(Observable):
-    """Observable that never outputs data."""
+    """Observable that never outputs data, but stays open."""
 
-    async def __aobserve__(self, _: Observer) -> Disposable:
+    def __observe__(self, _: Observer) -> Disposable:
+        """Do nothing."""
         return AnonymousDisposable()

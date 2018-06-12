@@ -5,16 +5,17 @@ import typing as T
 
 from abc import ABCMeta, abstractmethod
 from asyncio import InvalidStateError
+from warnings import warn
 
 # Project
-from .loggable import Loggable
 from ..error import ObserverClosedError
 from ..promise import Promise
+from ..disposable import Disposable
 
 K = T.TypeVar("K")
 
 
-class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
+class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     """Observer abstract class.
 
     An observer represents a data sink, where data can be sent to and
@@ -43,7 +44,7 @@ class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
 
     @abstractmethod
     async def __asend__(self, value: K) -> None:
-        """Method where data processing must take place.
+        """Processing of input data.
 
         Args:
             value: Received data.
@@ -53,7 +54,7 @@ class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
 
     @abstractmethod
     async def __araise__(self, ex: Exception) -> bool:
-        """Method where processing of exception must take place.
+        """Processing of input exceptions.
 
         Args:
             ex: Received exception.
@@ -63,8 +64,12 @@ class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
 
     @abstractmethod
     async def __aclose__(self) -> None:
-        """Actions necessary to be taken during observer close."""
+        """Actions to be taken during close."""
         raise NotImplemented()
+
+    async def __adispose__(self):
+        """Close stream when disposed"""
+        await self.aclose()
 
     @property
     def closed(self):
@@ -72,33 +77,29 @@ class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
         return self.future.done() or self._closed
 
     async def asend(self, data: K) -> None:
-        """Send data through this observer.
+        """Interface thought which data is inputted.
 
         Args:
-            data: Data to be sent.
+            data: Data to be inputted.
 
         """
         if self.closed:
             raise ObserverClosedError(self)
-
-        self.logger.debug("%s sends: %s", type(self).__qualname__, data)
         await self.__asend__(data)
 
     async def araise(self, ex: Exception) -> bool:
-        """Raise an exception through this observer.
+        """Interface thought which exceptions are inputted.
 
         Args:
-            ex: Exception to be raised.
+            ex: Exception to be inputted.
 
 
         Returns:
-            Boolean indicating if observer must be closed due to the exception.
+            Boolean indicating if observer will close due to the exception.
 
         """
         if self.closed:
             raise ObserverClosedError(self)
-
-        self.logger.debug("%s raises: %s", type(self).__qualname__, ex)
 
         should_close = await self.__araise__(ex)
 
@@ -106,9 +107,9 @@ class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
             try:
                 self.future.set_exception(ex)
             except InvalidStateError:
-                self.logger.warning(
-                    "%s was put in a InvalidState during `.araise()`",
-                    type(self).__qualname__
+                warn(
+                    f"{type(self).__qualname__} was put in a InvalidState"
+                    f"during `.araise()`", RuntimeWarning
                 )
 
         return should_close
@@ -123,8 +124,6 @@ class Observer(Promise, Loggable, T.Generic[K], metaclass=ABCMeta):
         # Guard against repeated calls
         if self.closed:
             return False
-
-        self.logger.warning("Closing %s", type(self).__qualname__)
 
         # Set flag to disable further stream actions
         self._closed = True
