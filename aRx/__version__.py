@@ -13,5 +13,5 @@ __maintainer__ = "Vítor Augusto da Silva Vasconcellos"
 __description__ = "Async/await Reactive Tools for Python 3.6+"
 __maintainer_email__ = (
     '"Vítor Augusto da Silva Vasconcellos" '
-    '<vasconcellos.dev@gmail.com>',
+    '<vasconcellos.dev@gmail.com>'
 )

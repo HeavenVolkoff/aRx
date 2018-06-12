@@ -32,6 +32,7 @@ class AnonymousObserver(Observer[K]):
             araise: Implementation of raise logic.
             aclose: Implementation of close logic.
             kwargs: Keyword parameters for super.
+
         """
         super().__init__(**kwargs)
 
@@ -40,14 +41,12 @@ class AnonymousObserver(Observer[K]):
         self._close = aclose
 
     async def __asend__(self, value: K) -> None:
-        """:meth:`Observer.__asend__`"""
         res = self._send(value)
 
         if iscoroutinefunction(self._send):
             await res
 
     async def __araise__(self, ex: Exception) -> bool:
-        """:meth:`Observer.__araise__`"""
         res = self._raise(ex)
 
         if iscoroutinefunction(self._raise):
@@ -56,7 +55,6 @@ class AnonymousObserver(Observer[K]):
         return bool(res)
 
     async def __aclose__(self) -> None:
-        """:meth:`Observer.__aclose__`"""
         res = self._close()
 
         if iscoroutinefunction(self._close):

@@ -7,7 +7,7 @@ from asyncio import AbstractEventLoop, get_event_loop
 
 
 class Loopable(object):
-    """Interface that enables asyncio loop access."""
+    """Interface for easy access to asyncio loop."""
 
     __slots__ = ("_loop", )
 
@@ -15,7 +15,7 @@ class Loopable(object):
         """Loopable constructor.
 
         Args:
-            loop: Asyncio loop to be used.
+            loop: Existing asyncio loop to be used.
             kwargs: Keyword parameters for super.
         """
         super().__init__(**kwargs)

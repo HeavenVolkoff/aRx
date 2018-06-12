@@ -1,11 +1,13 @@
+"""aRx observable implementations."""
+
 __all__ = (
-    "Unit", "Never", "Empty", "ObservableFromAsyncIterable",
-    "ObservableFromIterable", "Observable", "aobserve"
+    "Unit", "Never", "Empty", "FromAsyncIterable", "FromIterable", "Observable",
+    "observe"
 )
 
 from .unit import Unit
 from .never import Never
 from .empty import Empty
-from .observable_from_iterable import ObservableFromIterable
-from .observable_from_async_iterable import ObservableFromAsyncIterable
-from ..abstract.observable import Observable, aobserve
+from .from_iterable import FromIterable
+from .from_async_iterable import FromAsyncIterable
+from ..abstract.observable import Observable, observe

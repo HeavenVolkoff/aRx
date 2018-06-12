@@ -9,9 +9,10 @@ from ..disposable import AnonymousDisposable
 
 
 class Empty(Observable):
-    """Observable that is empty and will close as soon as possible."""
+    """Observable that doesn't output data and closes as soon as possible."""
 
-    async def __aobserve__(self, observer: Observer) -> Disposable:
+    def __observe__(self, observer: Observer) -> Disposable:
+        """Register a call to observable `close`_ on loop."""
         task = observer.loop.create_task(observer.aclose())  # type: Task
 
         async def dispose():

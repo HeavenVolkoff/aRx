@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class Disposable(object, metaclass=ABCMeta):
-    """Interface for custom closing logic for async context management."""
+    """Custom closing logic interface for async context management."""
 
     __slots__ = ()
 
@@ -31,4 +31,9 @@ class Disposable(object, metaclass=ABCMeta):
 
 
 async def adispose(disposable: Disposable):
+    """External access to disposable magic method.
+    Args:
+        disposable: Object to be disposed
+
+    """
     await disposable.__adispose__()

@@ -17,9 +17,12 @@ L = T.TypeVar("L")
 class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
     """A abstract Promise implementation that encapsulate an awaitable.
 
+    .. Warning::
+
     No implementation is made as to how the callback queue is generated or
     maintained.
     """
+
     __slots__ = ("_fut", )
 
     def __init__(self, awaitable: T.Awaitable[K] = None, **kwargs):
@@ -50,7 +53,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
 
     @property
     def future(self) -> Future:
-        """Public interface to underlining asyncio future"""
+        """Public interface to underlining future."""
         return self._fut
 
     @abstractmethod
@@ -63,6 +66,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
 
         Returns:
             Promise that will be resolved when the callback finishes executing.
+
         """
         raise NotImplemented()
 
@@ -72,10 +76,11 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
 
         Args:
             on_reject: The callback, it must receive a single argument that
-                is the error that was raised during the Promise resolution.
+                is the reason of the Promise resolution failure.
 
         Returns:
             Promise that will be resolved when the callback finishes executing.
+
         """
         raise NotImplemented()
 
@@ -84,12 +89,13 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
 
         Returns:
             Boolean indicating if the cancellation occurred or not.
+
         """
         return self._fut.cancel()
 
     @abstractmethod
     def lastly(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
-        """Chain a callback to be executed whether the Promise fails to resolve or not .
+        """Chain a callback to be executed when the Promise concludes.
 
         Args:
             on_fulfilled: The callback. No argument is passed to it.

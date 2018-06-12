@@ -1,4 +1,4 @@
-__all__ = ("Observable", "aobserve")
+__all__ = ("Observable", "observe")
 
 # Internal
 import typing as T
@@ -20,15 +20,6 @@ class Observable(object, metaclass=ABCMeta):
 
     __slots__ = ()
 
-    def __init__(self, **kwargs):
-        """Observable constructor.
-
-        Args
-            kwargs: Keyword parameters for super.
-
-        """
-        super().__init__(**kwargs)
-
     def __or__(
         self,
         other: T.Callable[['Observable'], 'Observable'],
@@ -40,17 +31,18 @@ class Observable(object, metaclass=ABCMeta):
         return subscribe(observer, self)
 
     def __add__(self, other: 'Observable') -> 'Observable':
-        from ..stream.operator.interface import concat as concat_op
-        return concat_op(self, other)
+        from ..operator import Concat
+        return Concat(self, other)
 
     def __iadd__(self, other: 'Observable') -> 'Observable':
         return self.__add__(other)
 
     @abstractmethod
-    async def __aobserve__(self, observer: Observer[K]) -> Disposable:
-        """Implementation of the Observable-like magic method.
-        Enables observers to be subscribed into this observable to receive new
-        data.
+    def __observe__(self, observer: Observer[K]) -> Disposable:
+        """Interface by which observers are subscribed.
+        Define how each observers is subscribed into this observable.
+        Also describe the necessary mechanisms necessary for data flow and
+        propagation.
 
         Args:
             observer: Observer to be subscribed.
@@ -61,14 +53,22 @@ class Observable(object, metaclass=ABCMeta):
         raise NotImplemented()
 
 
-async def aobserve(observable: Observable, observer: Observer) -> Disposable:
-    """Subscribe observer into observable.
+def observe(observable: Observable, observer: Observer) -> Disposable:
+    """External access to observable magic method.
+
+     .. Hint::
+
+        `super`_.
 
     Args:
         observable: Observable to be subscribed.
-        observer: Observer to be subscribed.
+        observer: Observer which will subscribe.
 
     Returns:
         Disposable that undoes this subscription.
+
+    .. _super::
+
+        :meth:`AbstractPromise.__observe__`.
     """
-    return await observable.__aobserve__(observer)
+    return observable.__observe__(observer)
