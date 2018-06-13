@@ -16,7 +16,7 @@ class Min(Observable):
 
     .. Note::
 
-        Data comparison is made using the `<` (lesser than) operation.
+        Data comparison is made using the ``<` ` (lesser than) operation.
 
     .. Warning::
 
@@ -40,7 +40,7 @@ class Min(Observable):
     def __init__(self, source: Observable, **kwargs) -> None:
         """Min constructor.
 
-        Args:
+        Arguments:
             source: Observable source.
             kwargs: Keyword parameters for super.
         """
@@ -62,13 +62,10 @@ class Min(Observable):
 
 
 def min() -> T.Type[Min]:
-    """Implementation of `Min`_ to be used with operator semantics.
+    """Implementation of :class:`~.Min` to be used with operator semantics.
 
     Returns:
         Implementation of Min.
 
-    .. _Max::
-
-        :class:`Min`.
     """
     return Min

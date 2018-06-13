@@ -7,16 +7,16 @@ from warnings import warn
 
 # Project
 from ..promise import Promise
-from ..abstract import Disposable
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
+from ..abstract.disposable import Disposable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
 K = T.TypeVar("K")
 
 
 class MultiStream(Observable, Observer[K]):
-    """A hot stream that can be observed by multiple observers.
+    """Hot stream that can be observed by multiple observers.
 
     .. Note::
 
@@ -27,7 +27,7 @@ class MultiStream(Observable, Observer[K]):
     def __init__(self, **kwargs) -> None:
         """MultiStream constructor
 
-        Args:
+        Arguments:
             kwargs: Keyword parameters for super.
 
         """

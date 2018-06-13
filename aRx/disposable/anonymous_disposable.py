@@ -22,7 +22,10 @@ class AnonymousDisposable(Disposable):
     ) -> None:
         """AnonymousDisposable constructor.
 
-        Args:
+        Raises:
+            TypeError: When dispose parameter is not a :class:`~typing.Coroutine`.
+
+        Arguments:
             dispose: Callback to be used as the custom close logic
                 implementation.
             kwargs: Keyword parameters for super.

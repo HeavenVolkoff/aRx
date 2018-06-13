@@ -1,5 +1,5 @@
 ## Copyright
-Original Work:
+Original work:
 >The MIT License (MIT)
 >
 >Copyright (c) 2016 Børge Lanes, Dag Brattli.

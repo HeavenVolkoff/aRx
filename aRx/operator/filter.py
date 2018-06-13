@@ -44,7 +44,7 @@ class Filter(Observable):
     ) -> None:
         """Filter constructor.
 
-        Args:
+        Arguments:
             predicate: Predicate to filter source.
             source: Observable source.
             kwargs: Keyword parameters for super.
@@ -69,14 +69,11 @@ class Filter(Observable):
             raise exc
 
 
-def filter(predicate: FilterCallable) -> partial[Filter]:
-    """Partial implementation of `Filter`_ to be used with operator semantics.
+def filter(predicate: FilterCallable) -> T.Callable[[], Filter]:
+    """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
-    .. _Filter::
-
-        :class:`Filter`.
     """
     return partial(Filter, predicate)

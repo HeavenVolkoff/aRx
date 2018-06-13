@@ -21,7 +21,7 @@ class Concat(Observable):
     ) -> None:
         """Concat constructor.
 
-        Args:
+        Arguments:
             first: First observable to be concatenated.
             second: Second observable to be concatenated.
             rest: Optional observables to be concatenated.
@@ -45,14 +45,11 @@ class Concat(Observable):
             raise exc
 
 
-def concat(first: Observable) -> partial[Concat]:
-    """Partial implementation of `Concat`_ to be used with operator semantics.
+def concat(first: Observable) -> T.Callable[[], Concat]:
+    """Partial implementation of :class:`~.Concat` to be used with operator semantics.
 
     Returns:
         Partial implementation of Concat
 
-    .. _Concat::
-
-        :class:`Concat`.
     """
     return partial(Concat, first)

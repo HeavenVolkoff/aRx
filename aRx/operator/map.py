@@ -43,7 +43,7 @@ class Map(Observable):
     ) -> None:
         """Map constructor.
 
-        Args:
+        Arguments:
             mapper: Transmutation function.
             source: Observable source.
             kwargs: Keyword parameters for super.
@@ -68,14 +68,11 @@ class Map(Observable):
             raise exc
 
 
-def map(mapper: MapCallable) -> partial[Map]:
-    """Partial implementation of `Map`_ to be used with operator semantics.
+def map(mapper: MapCallable) -> T.Callable[[], Map]:
+    """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:
         Partial implementation of Map
 
-    .. _Map::
-
-        :class:`Map`.
     """
     return partial(Map, mapper)

@@ -12,11 +12,7 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 
 
 class Unit(Observable, Loopable):
-    """Observable that outputs a single value then closes.
-
-    Attributes:
-        value: Value to be outputted by observable.
-    """
+    """Observable that outputs a single value then closes."""
 
     @staticmethod
     async def _worker(value: T.Any, observer: Observer) -> None:
@@ -37,18 +33,18 @@ class Unit(Observable, Loopable):
     def __init__(self, value, **kwargs) -> None:
         """Unit constructor
 
-        Args:
+        Arguments:
             value: Value to be outputted by observable.
             kwargs: Keyword parameters for super.
         """
         super().__init__(**kwargs)
 
         # Public
-        self.value = value
+        self._value = value
 
     def __observe__(self, observer: Observer) -> Disposable:
         # Add worker execution to loop queue
-        task = observer.loop.create_task(Unit._worker(self.value, observer))
+        task = observer.loop.create_task(Unit._worker(self._value, observer))
 
         async def cancel():
             task.cancel()

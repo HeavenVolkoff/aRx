@@ -14,7 +14,7 @@ class Loopable(object):
     def __init__(self, *, loop: T.Optional[AbstractEventLoop] = None, **kwargs):
         """Loopable constructor.
 
-        Args:
+        Arguments:
             loop: Existing asyncio loop to be used.
             kwargs: Keyword parameters for super.
         """

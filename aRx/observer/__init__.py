@@ -4,4 +4,4 @@ __all__ = ("Observer", "AnonymousObserver", "IteratorObserver")
 
 from .iterator_observer import IteratorObserver
 from .anonymous_observer import AnonymousObserver
-from ..abstract import Observer
+from ..abstract.observer import Observer

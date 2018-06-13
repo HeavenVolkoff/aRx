@@ -26,7 +26,7 @@ class SingleStream(Observable, Observer[K]):
     def __init__(self, **kwargs) -> None:
         """SingleStream constructor.
 
-        Args:
+        Arguments:
             kwargs: Super classes named parameters
         """
         super().__init__(**kwargs)
@@ -73,7 +73,11 @@ class SingleStream(Observable, Observer[K]):
             self.future.set_result(None)
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
-        """Start streaming."""
+        """Start streaming.
+
+        Raises:
+            SingleStreamMultipleError
+        """
         if self._observer is not None:
             raise SingleStreamMultipleError(
                 "Can't assign multiple observers to a SingleStream"

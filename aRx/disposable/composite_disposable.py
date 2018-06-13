@@ -10,18 +10,21 @@ class CompositeDisposable(Disposable):
         return isinstance(disposable, Disposable)
 
     def __init__(
-        self, a: Disposable, b: Disposable, *rest: Disposable, **kwargs
+        self, first: Disposable, second: Disposable, *rest: Disposable, **kwargs
     ) -> None:
         """CompositeDisposable constructor.
 
-        Args:
-            a: First disposable to register.
-            b: Second disposable to register.
+        Raises:
+            TypeError: if any parameter is not a :class:`~.Disposable`.
+
+        Arguments:
+            first: First disposable to register.
+            second: Second disposable to register.
             rest: Optional disposables to register.
             kwargs: Keyword parameters for super.
 
         """
-        disposables = (a, b) + rest
+        disposables = (first, second) + rest
 
         if not all(map(self._validate_mapper, disposables)):
             raise TypeError("Parameters must be disposable")

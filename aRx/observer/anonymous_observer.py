@@ -27,10 +27,10 @@ class AnonymousObserver(Observer[K]):
     ) -> None:
         """AnonymousObserver Constructor.
 
-        Args:
-            asend: Implementation of send logic.
-            araise: Implementation of raise logic.
-            aclose: Implementation of close logic.
+        Arguments:
+            asend: Implementation of asend logic.
+            araise: Implementation of araise logic.
+            aclose: Implementation of aclose logic.
             kwargs: Keyword parameters for super.
 
         """

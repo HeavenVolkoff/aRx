@@ -39,16 +39,19 @@ class Observable(object, metaclass=ABCMeta):
 
     @abstractmethod
     def __observe__(self, observer: Observer[K]) -> Disposable:
-        """Interface by which observers are subscribed.
-        Define how each observers is subscribed into this observable.
-        Also describe the necessary mechanisms necessary for data flow and
-        propagation.
+        """Interface through which observers are subscribed.
 
-        Args:
-            observer: Observer to be subscribed.
+        Define how each observers is subscribed into this observable and the
+        mechanisms necessary for data flow and propagation.
+
+        Arguments:
+            observer: Observer which will subscribe.
+
+        Raises:
+            NotImplemented
 
         Returns:
-            Disposable that undoes this subscription.
+            :class:`~.disposable.Disposable` that undoes this subscription.
         """
         raise NotImplemented()
 
@@ -56,19 +59,13 @@ class Observable(object, metaclass=ABCMeta):
 def observe(observable: Observable, observer: Observer) -> Disposable:
     """External access to observable magic method.
 
-     .. Hint::
+    See also: :meth:`~.Observable.__observe__`
 
-        `super`_.
-
-    Args:
+    Arguments:
         observable: Observable to be subscribed.
         observer: Observer which will subscribe.
 
     Returns:
         Disposable that undoes this subscription.
-
-    .. _super::
-
-        :meth:`AbstractPromise.__observe__`.
     """
     return observable.__observe__(observer)

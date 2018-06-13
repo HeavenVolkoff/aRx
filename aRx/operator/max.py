@@ -16,7 +16,7 @@ class Max(Observable):
 
     .. Note::
 
-        Data comparison is made using the `>` (grater than) operation.
+        Data comparison is made using the ``>`` (grater than) operation.
 
     .. Warning::
 
@@ -40,7 +40,7 @@ class Max(Observable):
     def __init__(self, source: Observable, **kwargs) -> None:
         """Max constructor.
 
-        Args:
+        Arguments:
             source: Observable source.
             kwargs: Keyword parameters for super.
         """
@@ -62,13 +62,10 @@ class Max(Observable):
 
 
 def max() -> T.Type[Max]:
-    """Implementation of `Max`_ to be used with operator semantics.
+    """Implementation of :class:`~.Max` to be used with operator semantics.
 
     Returns:
         Implementation of Max.
 
-    .. _Max::
-
-        :class:`Max`.
     """
     return Max

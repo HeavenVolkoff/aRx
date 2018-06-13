@@ -20,8 +20,13 @@ class Disposable(object, metaclass=ABCMeta):
 
     @abstractmethod
     async def __adispose__(self):
-        """Implementation of custom close logic."""
-        return NotImplemented
+        """This is where custom close logic must be implemented.
+
+        Raises:
+            NotImplemented
+
+        """
+        raise NotImplemented()
 
     async def __aenter__(self):
         return self
@@ -32,8 +37,11 @@ class Disposable(object, metaclass=ABCMeta):
 
 async def adispose(disposable: Disposable):
     """External access to disposable magic method.
-    Args:
-        disposable: Object to be disposed
+
+    See also: :meth:`~.Disposable.__adispose__`
+
+    Arguments:
+        disposable: Object to be disposed.
 
     """
     await disposable.__adispose__()
