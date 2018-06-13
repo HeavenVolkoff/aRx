@@ -11,11 +11,7 @@ K = T.TypeVar('K')
 
 
 class FromAsyncIterable(Observable, T.Generic[K]):
-    """Observable that uses an async iterable as data source.
-
-    Attributes:
-        async_iterator: AsyncIterator to used as source.
-    """
+    """Observable that uses an async iterable as data source."""
 
     @staticmethod
     async def _worker(
@@ -34,10 +30,10 @@ class FromAsyncIterable(Observable, T.Generic[K]):
         if isinstance(ex, StopAsyncIteration) or not await observer.araise(ex):
             await observer.aclose()
 
-    def __init__(self, async_iterable: T.AsyncIterable, **kwargs) -> None:
-        """ObservableFromAsyncIterable constructor.
+    def __init__(self, async_iterable: T.AsyncIterable[K], **kwargs) -> None:
+        """FromAsyncIterable constructor.
 
-        Args:
+        Arguments:
             async_iterable: AsyncIterable to be iterated.
             kwargs: Keyword parameters for super.
 
@@ -45,17 +41,17 @@ class FromAsyncIterable(Observable, T.Generic[K]):
         super().__init__(**kwargs)
 
         # TODO: FIX in Python 3.7
-        self.async_iterator = async_iterable.__aiter__()
+        self._async_iterator = async_iterable.__aiter__()
 
     def __observe__(self, observer: Observer) -> Disposable:
         """Schedule async iterator flush and register observer."""
-        if self.async_iterator is not None:
+        if self._async_iterator is not None:
             task = observer.loop.create_task(
-                FromAsyncIterable._worker(self.async_iterator, observer)
+                FromAsyncIterable._worker(self._async_iterator, observer)
             )
 
             # Clear reference to prevent reiterations
-            self.async_iterator = None
+            self._async_iterator = None
 
         async def cancel():
             task.cancel()

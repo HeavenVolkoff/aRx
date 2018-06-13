@@ -63,7 +63,7 @@ class Take(Observable):
             If in reverse mode, this observable only outputs data after source
             observable has closed.
 
-        Args:
+        Arguments:
             count: Quantity of data to skip.
             source: Observable source.
             kwargs: Keyword parameters for super.
@@ -87,14 +87,11 @@ class Take(Observable):
             raise exc
 
 
-def take(count: int) -> partial[Take]:
-    """Partial implementation of `Take`_ to be used with operator semantics.
+def take(count: int) -> T.Callable[[], Take]:
+    """Partial implementation of :class:`~.Take` to be used with operator semantics.
 
     Returns:
         Partial implementation of Take.
 
-    .. _Take::
-
-        :class:`Take`.
     """
     return partial(Take, count)

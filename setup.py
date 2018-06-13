@@ -13,7 +13,7 @@ except ImportError:
 # Get __version__ data
 here = str(path.abspath(path.dirname(__file__)))
 about = {}
-with c_open(path.join(here, 'antenna', '__version__.py'), 'r', 'utf-8') as f:
+with c_open(path.join(here, 'aRx', '__version__.py'), 'r', 'utf-8') as f:
     exec(f.read(), about)
 
 # Get README text

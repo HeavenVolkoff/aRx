@@ -1,8 +1,7 @@
-"""aRx Abstract class and interface definitions"""
+"""Abstract Base Classes.
 
-# Project
-from .promise import Promise
-from .loopable import Loopable
-from .observer import Observer
-from .disposable import Disposable
-from .observable import Observable
+This module provides access to aRx base classes.
+
+Those define the groundwork definitions used through the library, and can be
+extended to implement custom behaviour and logic.
+"""

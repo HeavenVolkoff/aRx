@@ -31,7 +31,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     def __init__(self, *, keep_alive: bool = False, **kwargs):
         """Observer constructor.
 
-        Args:
+        Arguments:
             keep_alive: :attr:`Observer.keep_alive`
             kwargs: keyword parameters for super.
         """
@@ -46,7 +46,10 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     async def __asend__(self, value: K) -> None:
         """Processing of input data.
 
-        Args:
+        Raises:
+            NotImplemented
+
+        Arguments:
             value: Received data.
 
         """
@@ -56,7 +59,10 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     async def __araise__(self, ex: Exception) -> bool:
         """Processing of input exceptions.
 
-        Args:
+        Raises:
+            NotImplemented
+
+        Arguments:
             ex: Received exception.
 
         """
@@ -64,7 +70,11 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
 
     @abstractmethod
     async def __aclose__(self) -> None:
-        """Actions to be taken during close."""
+        """Actions to be taken during close.
+
+        Raises:
+            NotImplemented
+        """
         raise NotImplemented()
 
     async def __adispose__(self):
@@ -79,7 +89,10 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     async def asend(self, data: K) -> None:
         """Interface thought which data is inputted.
 
-        Args:
+        Raises:
+            ObserverClosedError: If observer is closed.
+
+        Arguments:
             data: Data to be inputted.
 
         """
@@ -90,9 +103,11 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     async def araise(self, ex: Exception) -> bool:
         """Interface thought which exceptions are inputted.
 
-        Args:
+        Arguments:
             ex: Exception to be inputted.
 
+        Raises:
+            ObserverClosedError: If observer is closed.
 
         Returns:
             Boolean indicating if observer will close due to the exception.

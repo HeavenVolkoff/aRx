@@ -17,7 +17,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
     def __init__(self, **kwargs) -> None:
         """IteratorObserver constructor
 
-        Args:
+        Arguments:
             kwargs: Keyword parameters for super.
         """
         super().__init__(**kwargs)

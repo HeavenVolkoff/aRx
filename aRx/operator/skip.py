@@ -53,7 +53,7 @@ class Skip(Observable):
             If count is negative values are skipped from the last elements
             outputted by source.
 
-        Args:
+        Arguments:
             count: Quantity of data to skip.
             source: Observable source.
             kwargs: Keyword parameters for super.
@@ -77,14 +77,11 @@ class Skip(Observable):
             raise exc
 
 
-def skip(count: int) -> partial[Skip]:
-    """Partial implementation of `Skip`_ to be used with operator semantics.
+def skip(count: int) -> T.Callable[[], Skip]:
+    """Partial implementation of :class:`~.Skip` to be used with operator semantics.
 
     Returns:
         Partial implementation of Skip.
 
-    .. _Skip::
-
-        :class:`Skip`.
     """
     return partial(Skip, count)

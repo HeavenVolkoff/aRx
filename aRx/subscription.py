@@ -23,7 +23,7 @@ class Subscription(Awaitable, Disposable, T.Generic[K]):
     def __init__(self, observable: Observable, observer: Observer[K], **kwargs):
         """Subscription constructor.
 
-        Args:
+        Arguments:
             observable: Observable to which subscribe.
             observer: Observer that will be subscribed.
             kwargs: Keyword parameters for super.
@@ -74,9 +74,9 @@ class Subscription(Awaitable, Disposable, T.Generic[K]):
 
 
 def subscribe(observer: Observer[K], observable: Observable) -> Subscription:
-    """Subscribe observer into observable.
+    """Subscribe observer to observable.
 
-    Args:
+    Arguments:
         observer: Observer that will be subscribed.
         observable: Observable to which subscribe.
 
@@ -87,9 +87,9 @@ def subscribe(observer: Observer[K], observable: Observable) -> Subscription:
 
 
 async def inquire(observer: Observer[K], observable: Observable) -> K:
-    """Subscribe observer into observable and await for observer resolution.
+    """Subscribe observer to observable and await for observer resolution.
 
-    Args:
+    Arguments:
         observer: Observer that will be subscribed.
         observable: Observable to which subscribe.
 

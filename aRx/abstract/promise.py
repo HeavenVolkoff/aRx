@@ -14,13 +14,13 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
+class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
     """A abstract Promise implementation that encapsulate an awaitable.
 
     .. Warning::
 
-    No implementation is made as to how the callback queue is generated or
-    maintained.
+        No implementation is made as to how the callback queue is generated or
+        maintained.
     """
 
     __slots__ = ("_fut", )
@@ -28,7 +28,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
     def __init__(self, awaitable: T.Awaitable[K] = None, **kwargs):
         """Promise constructor.
 
-        Args:
+        Arguments:
             awaitable: The awaitable object to be encapsulated.
             kwargs: Keyword parameters for super.
         """
@@ -60,9 +60,12 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
     def then(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
         """Chain a callback to be executed when the Promise resolves.
 
-        Args:
+        Arguments:
             on_fulfilled: The callback, it must receive a single argument that
                 is the result of the Promise.
+
+        Raises:
+            NotImplemented
 
         Returns:
             Promise that will be resolved when the callback finishes executing.
@@ -74,9 +77,12 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
     def catch(self, on_reject: T.Callable[[Exception], T.Any]) -> 'Promise':
         """Chain a callback to be executed when the Promise fails to resolve.
 
-        Args:
+        Arguments:
             on_reject: The callback, it must receive a single argument that
                 is the reason of the Promise resolution failure.
+
+        Raises:
+            NotImplemented
 
         Returns:
             Promise that will be resolved when the callback finishes executing.
@@ -97,8 +103,11 @@ class Promise(Awaitable, Loopable, T.Generic[K], meta=ABCMeta):
     def lastly(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
         """Chain a callback to be executed when the Promise concludes.
 
-        Args:
+        Arguments:
             on_fulfilled: The callback. No argument is passed to it.
+
+        Raises:
+            NotImplemented
 
         Returns:
             Promise that will be resolved when the callback finishes executing.

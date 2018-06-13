@@ -11,11 +11,7 @@ K = T.TypeVar('K')
 
 
 class FromIterable(Observable, T.Generic[K]):
-    """Observable that uses an iterable as data source.
-
-    Attributes:
-        iterator: Iterator to used as source.
-    """
+    """Observable that uses an iterable as data source."""
 
     @staticmethod
     async def _worker(iterator: T.Iterator, observer: Observer) -> None:
@@ -31,26 +27,26 @@ class FromIterable(Observable, T.Generic[K]):
         if isinstance(ex, StopIteration) or not await observer.araise(ex):
             await observer.aclose()
 
-    def __init__(self, iterable, **kwargs) -> None:
-        """ObservableFromIterable constructor.
+    def __init__(self, iterable: T.Iterable[K], **kwargs) -> None:
+        """FromIterable constructor.
 
-       Args:
+       Arguments:
            iterable: Iterable to be converted.
            kwargs: Keyword parameters for super.
 
        """
         super().__init__(**kwargs)
-        self.iterator = iter(iterable)
+        self._iterator = iter(iterable)
 
     def __observe__(self, observer: Observer) -> Disposable:
         """Schedule iterator flush and register observer."""
-        if self.iterator is not None:
+        if self._iterator is not None:
             task = observer.loop.create_task(
-                FromIterable._worker(self.iterator, observer)
+                FromIterable._worker(self._iterator, observer)
             )
 
             # Clear reference to prevent reiterations
-            self.iterator = None
+            self._iterator = None
 
         async def cancel():
             task.cancel()
