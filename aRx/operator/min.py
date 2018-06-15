@@ -16,7 +16,7 @@ class Min(Observable):
 
     .. Note::
 
-        Data comparison is made using the ``<` ` (lesser than) operation.
+        Data comparison is made using the ``\<`` (lesser than) operation.
 
     .. Warning::
 
