@@ -10,7 +10,7 @@ install:
     - pipenv run pip install travis-sphinx && pipenv run python setup.py install;
 
 script:
-    - pipenv run travis-sphinx build --nowarn --source=doc;
+    - pipenv run travis-sphinx build --nowarn --source=docs;
 
 after_success:
     - pipenv run travis-sphinx deploy;
