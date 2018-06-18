@@ -33,7 +33,7 @@ class MultiStream(Observable, Observer[K]):
         """
         super().__init__(**kwargs)
 
-        self._observers = []  # type: T.List[Observer[K]]
+        self._observers = []  # type: T.List[T.Tuple(Observer[K], Promise[None])]
 
     async def __asend__(self, value: K) -> None:
         for obv in self._observers:
@@ -76,9 +76,9 @@ class MultiStream(Observable, Observer[K]):
                     RuntimeWarning,
                 )
 
-        self._observers.append(observer)
-
         # Ensure stream closes if observer closes
-        clean_up = Promise(observer, loop=self.loop) & dispose
+        clean_up = Promise(observer, loop=self.loop).then(dispose)
+
+        self._observers.append((observer, clean_up))
 
         return AnonymousDisposable(dispose)

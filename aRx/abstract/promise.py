@@ -45,10 +45,10 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
     def __or__(self, on_reject: T.Callable[[Exception], T.Any]) -> 'Promise':
         return self.catch(on_reject)
 
-    def __gt__(self, on_resolution: T.Callable[[], T.Any]) -> 'Promise':
+    def __gt__(self, on_resolution: T.Callable[[], L]) -> 'Promise':
         return self.lastly(on_resolution)
 
-    def __and__(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
+    def __and__(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise':
         return self.then(on_fulfilled)
 
     @property
@@ -57,7 +57,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
         return self._fut
 
     @abstractmethod
-    def then(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
+    def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise':
         """Chain a callback to be executed when the Promise resolves.
 
         Arguments:
@@ -74,7 +74,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    def catch(self, on_reject: T.Callable[[Exception], T.Any]) -> 'Promise':
+    def catch(self, on_reject: T.Callable[[Exception], L]) -> 'Promise':
         """Chain a callback to be executed when the Promise fails to resolve.
 
         Arguments:
@@ -100,7 +100,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
         return self._fut.cancel()
 
     @abstractmethod
-    def lastly(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
+    def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise':
         """Chain a callback to be executed when the Promise concludes.
 
         Arguments:

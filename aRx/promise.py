@@ -4,6 +4,7 @@ __all__ = ("Promise", )
 import typing as T
 
 from asyncio import shield, ensure_future, AbstractEventLoop
+from contextlib import suppress
 
 # Project
 from .abstract.promise import Promise as AbstractPromise
@@ -12,12 +13,12 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class Promise(AbstractPromise):
+class Promise(AbstractPromise[K]):
     """Concrete Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`."""
 
     @staticmethod
     async def _rejection_wrapper(
-        promise: T.Awaitable[K], on_reject: T.Callable[[Exception], T.Any],
+        promise: AbstractPromise[K], on_reject: T.Callable[[Exception], L],
         loop: AbstractEventLoop
     ) -> L:
         """Coroutine that wraps a promise and manages a rejection callback.
@@ -31,21 +32,25 @@ class Promise(AbstractPromise):
             Callback result.
 
         """
+        promise = shield(promise, loop=loop)
+
         try:
-            result = await shield(promise, loop=loop)
+            result = await promise
         except Exception as ex:
             result = on_reject(ex)
 
         try:
-            result = await ensure_future(result, loop=loop)
+            result = ensure_future(result, loop=loop)
         except TypeError:
             pass
+        else:
+            result = await result
 
         return result
 
     @staticmethod
     async def _resolution_wrapper(
-        promise: T.Awaitable[K], on_resolution: T.Callable[[], T.Any],
+        promise: AbstractPromise[K], on_resolution: T.Callable[[], L],
         loop: AbstractEventLoop
     ) -> L:
         """Coroutine that wraps a promise and manages a resolution callback.
@@ -59,23 +64,25 @@ class Promise(AbstractPromise):
             Callback result.
 
         """
-        try:
-            await shield(promise, loop=loop)
-        except Exception:
-            pass
+        promise = shield(promise, loop=loop)
+
+        with suppress(Exception):
+            await promise
 
         result = on_resolution()
 
         try:
-            result = await ensure_future(result, loop=loop)
+            result = ensure_future(result, loop=loop)
         except TypeError:
             pass
+        else:
+            result = await result
 
         return result
 
     @staticmethod
     async def _fulfillment_wrapper(
-        promise: T.Awaitable[K], on_fulfilled: T.Callable[[Exception], T.Any],
+        promise: AbstractPromise[K], on_fulfilled: T.Callable[[K], L],
         loop: AbstractEventLoop
     ) -> L:
         """Coroutine that wraps a promise and manages a fulfillment callback.
@@ -92,26 +99,31 @@ class Promise(AbstractPromise):
         result = on_fulfilled(await shield(promise, loop=loop))
 
         try:
-            result = await ensure_future(result, loop=loop)
+            result = ensure_future(result, loop=loop)
         except TypeError:
             pass
+        else:
+            result = await result
 
         return result
 
-    def then(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
+    def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.then`"""
         return Promise(
             Promise._fulfillment_wrapper(self, on_fulfilled, self._loop),
             loop=self._loop
         )
 
-    def catch(self, on_reject: T.Callable[[Exception], T.Any]) -> 'Promise':
+    def catch(self, on_reject: T.Callable[[Exception], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.catch`"""
         return Promise(
             Promise._rejection_wrapper(self, on_reject, self._loop),
             loop=self._loop
         )
 
-    def lastly(self, on_fulfilled: T.Callable[[L], T.Any]) -> 'Promise':
+    def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.lastly`"""
-        pass
+        return Promise(
+            Promise._fulfillment_wrapper(self, on_fulfilled, self._loop),
+            loop=self._loop
+        )
