@@ -25,7 +25,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
 
     __slots__ = ("_fut", )
 
-    def __init__(self, awaitable: T.Awaitable[K] = None, **kwargs):
+    def __init__(self, awaitable: T.Optional[T.Awaitable[K]] = None, **kwargs):
         """Promise constructor.
 
         Arguments:

@@ -124,6 +124,6 @@ class Promise(AbstractPromise[K]):
     def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.lastly`"""
         return Promise(
-            Promise._fulfillment_wrapper(self, on_fulfilled, self._loop),
+            Promise._resolution_wrapper(self, on_fulfilled, self._loop),
             loop=self._loop
         )

@@ -62,11 +62,15 @@ class SingleStream(Observable, Observer[K]):
 
         # Clean up observer
         if self._observer is not None:
+            # Cancel dispose promise
             self._clean_up.cancel()
 
             # Close observers that are open and don't need to outlive stream
             if not (self._observer.closed or self._observer.keep_alive):
                 await self._observer.aclose()
+
+        # Clear internal observer reference
+        self._observer = None
 
         # Resolve internal future
         with suppress(InvalidStateError):
@@ -84,10 +88,9 @@ class SingleStream(Observable, Observer[K]):
             )
 
         # Ensure stream closes if observer closes
-        self._clean_up = (
-            Promise(observer, loop=self.loop).then(lambda _: self.aclose())
-        )
+        self._clean_up = Promise(observer, loop=self.loop).lastly(self.aclose)
 
+        # Set stream observer
         self._observer = observer
 
         # Release any awaiting event
