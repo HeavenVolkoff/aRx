@@ -83,6 +83,10 @@ class MultiStream(Observable, Observer[K]):
                     f"more than once", RuntimeWarning
                 )
 
+                # Close observers that are open and don't need to outlive stream
+            if not (observer.closed or observer.keep_alive):
+                await observer.aclose()
+
         # Ensure stream closes if observer closes
         clean_up = Promise(observer, loop=self.loop).lastly(dispose)
 
