@@ -27,8 +27,7 @@ class Observable(object, metaclass=ABCMeta):
         return other(self)
 
     def __gt__(self, observer: Observer) -> Disposable:
-        from ..subscription import subscribe
-        return subscribe(observer, self)
+        return observe(self, observer)
 
     def __add__(self, other: 'Observable') -> 'Observable':
         from ..operator import Concat
