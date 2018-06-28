@@ -10,8 +10,5 @@ sphinx_bootstrap_theme = "*"
 sphinx-autobuild = "*"
 travis-sphinx = "*"
 
-[packages]
-travis-sphinx = "*"
-
 [requires]
 python_version = "3.6"

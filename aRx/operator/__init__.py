@@ -39,6 +39,7 @@ from .map import Map, map
 from .max import Max, max
 from .min import Min, min
 from .skip import Skip, skip
+from .stop import Stop, stop
 from .take import Take, take
 from .filter import Filter, filter
 from .concat import Concat, concat
