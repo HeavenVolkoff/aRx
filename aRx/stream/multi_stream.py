@@ -38,9 +38,9 @@ class MultiStream(Observable, Observer[K]):
     async def __asend__(self, value: K) -> None:
         # Filter only open observers to prevent errors due to sending data to
         # closed observers that didn't have their disposed called yet
-        awaitables = (
+        awaitables = [
             obv.asend(value) for obv in self._observers if not obv.closed
-        )
+        ]
 
         # Remove reference early to avoid keeping large objects in memory
         del value
