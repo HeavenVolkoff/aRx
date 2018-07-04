@@ -27,16 +27,20 @@ class Map(Observable):
             self._mapper = mapper
 
         async def __asend__(self, value: K) -> None:
-            try:
-                if iscoroutinefunction(self._mapper):
-                    result = await self._mapper(value, self._index)
-                else:
-                    result = self._mapper(value, self._index)
-            except Exception as err:
-                await super().araise(err)
-            else:
-                await super().__asend__(result)
-                self._index += 1
+            index = self._index
+            self._index += 1
+
+            value = self._mapper(value, index)
+
+            if iscoroutinefunction(self._mapper):
+                value = await value
+
+            awaitable = super().__asend__(value)
+
+            # Remove reference early to avoid keeping large objects in memory
+            del value
+
+            await awaitable
 
     def __init__(
         self, mapper: MapCallable, source: Observable, **kwargs

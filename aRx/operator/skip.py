@@ -22,26 +22,30 @@ class Skip(Observable):
             super().__init__(**kwargs)
 
             self._count = abs(count)
-            self._reverse_queue = deque() \
-                if count <= 0 else None  # type: T.Optional[T.Deque[K]]
+            self._reverse_queue = (
+                deque(maxlen=self._count) if count < 0 else None
+            )  # type: T.Optional[T.Deque[K]]
 
         async def __aclose__(self) -> None:
-            # Clear on close, because they are not needed anymore
-            self._reverse_queue = None
+            if self._reverse_queue is not None:
+                self._reverse_queue.clear()
+
             return await super().__aclose__()
 
         async def __asend__(self, value: K) -> None:
-            if self._count > 0:
+            if self._reverse_queue is not None:
+                value = self._reverse_queue[0]
+                self._reverse_queue.append(value)
+            elif self._count > 0:
                 self._count -= 1
+                return
 
-                if self._reverse_queue:
-                    self._reverse_queue.append(value)
-            else:
-                if self._reverse_queue:
-                    self._reverse_queue.append(value)
-                    value = self._reverse_queue.popleft()
+            awaitable = super().__asend__(value)
 
-                await super().__asend__(value)
+            # Remove reference early to avoid keeping large objects in memory
+            del value
+
+            await awaitable
 
     def __init__(self, count: int, source: Observable, **kwargs) -> None:
         """Skip constructor.

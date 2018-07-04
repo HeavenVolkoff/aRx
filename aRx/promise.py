@@ -3,8 +3,7 @@ __all__ = ("Promise", )
 # Internal
 import typing as T
 
-from asyncio import shield, ensure_future, AbstractEventLoop
-from contextlib import suppress
+from asyncio import shield, ensure_future, CancelledError, AbstractEventLoop
 
 # Project
 from .abstract.promise import Promise as AbstractPromise
@@ -36,13 +35,15 @@ class Promise(AbstractPromise[K]):
 
         try:
             result = await promise
+        except CancelledError as ex:
+            raise ex
         except Exception as ex:
             result = on_reject(ex)
 
         try:
             result = ensure_future(result, loop=loop)
         except TypeError:
-            pass
+            pass  # Result isn't awaitable
         else:
             result = await result
 
@@ -66,15 +67,19 @@ class Promise(AbstractPromise[K]):
         """
         promise = shield(promise, loop=loop)
 
-        with suppress(Exception):
+        try:
             await promise
+        except CancelledError as ex:
+            raise ex
+        except Exception:
+            pass
 
         result = on_resolution()
 
         try:
             result = ensure_future(result, loop=loop)
         except TypeError:
-            pass
+            pass  # Result isn't awaitable
         else:
             result = await result
 
@@ -101,7 +106,7 @@ class Promise(AbstractPromise[K]):
         try:
             result = ensure_future(result, loop=loop)
         except TypeError:
-            pass
+            pass  # Result isn't awaitable
         else:
             result = await result
 

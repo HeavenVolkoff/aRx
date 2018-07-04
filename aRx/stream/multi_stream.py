@@ -1,12 +1,12 @@
 # Internal
 import typing as T
 
-from asyncio import InvalidStateError
+from asyncio import gather as agather, InvalidStateError
 from warnings import warn
 from contextlib import suppress
 
 # Project
-from ..promise import Promise
+from ..error import DisposeWarning, ARxWarning
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..abstract.disposable import Disposable
@@ -33,64 +33,69 @@ class MultiStream(Observable, Observer[K]):
         """
         super().__init__(**kwargs)
 
-        self._observers = []  # type: T.List[T.Tuple[Observer[K], Promise]]
+        self._observers = []  # type: T.List[Observer[K]]
 
     async def __asend__(self, value: K) -> None:
-        for obv, _ in self._observers:
-            # Guard against rare concurrence issue were a stream event can be
-            # called after a observer closed, but before it is disposed.
-            if not obv.closed:
-                await obv.asend(value)
+        # Filter only open observers to prevent errors due to sending data to
+        # closed observers that didn't have their disposed called yet
+        awaitables = (
+            obv.asend(value) for obv in self._observers if not obv.closed
+        )
 
-    async def __araise__(self, ex: Exception) -> bool:
-        for obv, _ in self._observers:
-            # Guard against rare concurrence issue were a stream event can be
-            # called after a observer closed, but before it is disposed.
-            if not obv.closed:
-                await obv.araise(ex)
+        # Remove reference early to avoid keeping large objects in memory
+        del value
 
-        # MultiStream doesn't close on raise
+        await agather(*awaitables)
+
+    async def __araise__(self, main_ex: Exception) -> bool:
+        await agather(
+            *(obv.araise(main_ex) for obv in self._observers if not obv.closed)
+        )
+
         return False
 
     async def __aclose__(self) -> None:
-        for obv, clean_up in self._observers:
-            # Cancel dispose promise
-            clean_up.cancel()
-
-            # Close observers that are open and don't need to outlive stream
-            if not (obv.closed or obv.keep_alive):
-                await obv.aclose()
-
-        # Remove all observer references
-        self._observers = []  # type: T.List[T.Tuple[Observer[K], Promise]]
-
+        # MultiStream should resolve to None when no error is registered
         with suppress(InvalidStateError):
             self.future.set_result(None)
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
-        async def dispose() -> None:
-            # If Stream is closed, things should already be disposed
-            if self.closed:
-                return
+        stream_name = type(self).__qualname__
 
-            clean_up.cancel()
+        async def dispose() -> None:
+            # Cancel dispose promises to ensure no retention
+            dispose_promise.cancel()
+            stream_close_promise.cancel()
 
             try:
                 self._observers.remove(observer)
             except ValueError:
                 warn(
-                    f"Dispose for [{type(observer).__qualname__}] was called "
-                    f"more than once", RuntimeWarning
+                    DisposeWarning(
+                        "Dispose for observation "
+                        f"`[{stream_name}] > [{type(observer).__qualname__}]` "
+                        "was called more than once",
+                    )
                 )
 
-                # Close observers that are open and don't need to outlive stream
             if not (observer.closed or observer.keep_alive):
-                await observer.aclose()
+                try:
+                    await observer.aclose()
+                except Exception as ex:
+                    warn(
+                        ARxWarning(
+                            "Failed to exec aclose on "
+                            f"{type(observer).__qualname__}", ex
+                        )
+                    )
 
-        # Ensure stream closes if observer closes
-        clean_up = Promise(observer, loop=self.loop).lastly(dispose)
+        # Ensure that observable is disposed when it closes
+        dispose_promise = observer.lastly(dispose)
+        # Ensure that observable is disposed when stream closes
+        stream_close_promise = self.lastly(dispose)
 
-        # Add observer, and it's dispose promise to internal list
-        self._observers.append((observer, clean_up))
+        # Add observer to internal list
+        self._observers.append(observer)
 
+        # Return observation disposable
         return AnonymousDisposable(dispose)

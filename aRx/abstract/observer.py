@@ -8,7 +8,7 @@ from asyncio import InvalidStateError
 from warnings import warn
 
 # Project
-from ..error import ObserverClosedError
+from ..error import ObserverClosedError, ARxWarning
 from ..promise import Promise
 from ..disposable import Disposable
 
@@ -26,7 +26,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
             externally.
 
     """
-    __slots__ = ("_closed", "keep_alive", "_close_promise")
+    __slots__ = ("keep_alive", "_close_promise")
 
     def __init__(self, *, keep_alive: bool = False, **kwargs):
         """Observer constructor.
@@ -38,7 +38,6 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
         super().__init__(**kwargs)
         self.keep_alive = keep_alive
 
-        self._closed = False
         # Ensures that observer closes if it's is resolved externally
         self._close_promise = self.lastly(self.aclose)
 
@@ -84,7 +83,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     @property
     def closed(self):
         """Property that indicates if this observer is closed or not."""
-        return self.future.done() or self._closed
+        return self.future.done()
 
     async def asend(self, data: K) -> None:
         """Interface thought which data is inputted.
@@ -98,13 +97,22 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
         """
         if self.closed:
             raise ObserverClosedError(self)
-        await self.__asend__(data)
 
-    async def araise(self, ex: Exception) -> bool:
+        awaitable = self.__asend__(data)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del data
+
+        try:
+            await awaitable
+        except Exception as ex:
+            await self.araise(ex)
+
+    async def araise(self, main_ex: Exception) -> bool:
         """Interface thought which exceptions are inputted.
 
         Arguments:
-            ex: Exception to be inputted.
+            main_ex: Exception to be inputted.
 
         Raises:
             ObserverClosedError: If observer is closed.
@@ -116,15 +124,22 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
         if self.closed:
             raise ObserverClosedError(self)
 
-        should_close = await self.__araise__(ex)
+        try:
+            should_close = await self.__araise__(main_ex)
+        except Exception as ex:
+            should_close = True
+            ex.__cause__ = main_ex
+            main_ex = ex
 
         if should_close:
             try:
-                self.future.set_exception(ex)
+                self.future.set_exception(main_ex)
             except InvalidStateError:
                 warn(
-                    f"{type(self).__qualname__} was put in a InvalidState"
-                    f"during `.araise()`", RuntimeWarning
+                    ARxWarning(
+                        f"{type(self).__qualname__} was already resolved"
+                        " during `.araise()` call to treat:", main_ex
+                    )
                 )
 
         return should_close
@@ -137,19 +152,17 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
 
         """
         # Guard against repeated calls
-        if self.closed:
+        if self._close_promise.future.done():
             return False
 
-        # Set flag to disable further stream actions
-        self._closed = True
-
-        # Cancel close promise
+        # Cancel close guard promise
         self._close_promise.cancel()
 
         # Internal close
-        await self.__aclose__()
-
-        # Cancel future in case it wasn't resolved
-        self.cancel()
+        try:
+            await self.__aclose__()
+        finally:
+            # Cancel future in case it wasn't resolved
+            self.cancel()
 
         return True
