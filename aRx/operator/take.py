@@ -20,33 +20,34 @@ class Take(Observable):
             super().__init__(**kwargs)
 
             self._count = abs(count)
-            self._reverse_queue = deque() \
-                if count <= 0 else None  # type: T.Optional[T.Deque[K]]
+            self._reverse_queue = (
+                deque(maxlen=self._count) if count < 0 else None
+            )  # type: T.Optional[T.Deque[K]]
 
         async def __aclose__(self) -> None:
-            if self._reverse_queue:
-                # Send take values on close
+            if self._reverse_queue is not None:
+                # TODO: Don't hold values in memory more than necessary
                 for value in self._reverse_queue:
-                    await super().__asend__(value)
+                    await super().asend(value)
 
-                self._reverse_queue = None
+                self._reverse_queue.clear()
 
             return await super().__aclose__()
 
         async def __asend__(self, value: K) -> None:
-            if self._count > 0:
-                self._count -= 1
+            if self._reverse_queue is None:
+                if self._count > 0:
+                    self._count -= 1
+                    awaitable = super().__asend__(value)
+                else:
+                    awaitable = self.aclose()
 
-                if self._reverse_queue:
-                    self._reverse_queue.append(value)
-                else:
-                    await super().__asend__(value)
+                # Remove reference early to avoid keeping large objects in memory
+                del value
+
+                await awaitable
             else:
-                if self._reverse_queue:
-                    self._reverse_queue.append(value)
-                    self._reverse_queue.popleft()
-                else:
-                    await super().aclose()
+                self._reverse_queue.append(value)
 
     def __init__(self, count: int, source: Observable, **kwargs) -> None:
         """Take constructor.

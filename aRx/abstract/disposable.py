@@ -2,6 +2,7 @@ __all__ = ("Disposable", "adispose")
 
 # Internal
 from abc import ABCMeta, abstractmethod
+from asyncio import gather
 
 
 class Disposable(object, metaclass=ABCMeta):
@@ -35,13 +36,13 @@ class Disposable(object, metaclass=ABCMeta):
         await self.__adispose__()
 
 
-async def adispose(disposable: Disposable):
+async def adispose(*disposables: Disposable):
     """External access to disposable magic method.
 
     See also: :meth:`~.Disposable.__adispose__`
 
     Arguments:
-        disposable: Object to be disposed.
+        disposables: Objects to be disposed.
 
     """
-    await disposable.__adispose__()
+    await gather(*(disposable.__adispose__() for disposable in disposables))

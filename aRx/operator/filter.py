@@ -18,7 +18,7 @@ FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 class Filter(Observable):
     """Observable that output filtered data from another observable source."""
 
-    class _Sink(SingleStream):
+    class _Sink(SingleStream[K]):
         def __init__(self, predicate: FilterCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -26,18 +26,21 @@ class Filter(Observable):
             self._predicate = predicate
 
         async def __asend__(self, value: K) -> None:
-            try:
-                if iscoroutinefunction(self._predicate):
-                    is_accepted = await self._predicate(value, self._index)
-                else:
-                    is_accepted = self._predicate(value, self._index)
-            except Exception as ex:
-                await self.araise(ex)
-            else:
-                if is_accepted:
-                    await super().__asend__(value)
+            index = self._index
+            self._index += 1
 
-                self._index += 1
+            is_accepted = self._predicate(value, index)
+
+            if iscoroutinefunction(self._predicate):
+                is_accepted = await is_accepted
+
+            if is_accepted:
+                res = super().__asend__(value)
+
+                # Remove reference early to avoid keeping large objects in memory
+                del value
+
+                await res
 
     def __init__(
         self, predicate: FilterCallable, source: Observable, **kwargs

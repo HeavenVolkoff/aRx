@@ -1,13 +1,21 @@
 # Internal
 import typing as T
 
-from asyncio import iscoroutinefunction
+from asyncio import InvalidStateError, iscoroutinefunction
+from warnings import warn
+from contextlib import suppress
 
 # Project
-from ..misc.noop import anoop
+from ..misc.noop import noop
+from ..error import ARxWarning
 from ..abstract.observer import Observer
 
 K = T.TypeVar("K")
+
+
+def default_araise(ex):
+    warn(ARxWarning("Error propagated through AnonymousObserver", ex))
+    return False
 
 
 class AnonymousObserver(Observer[K]):
@@ -20,9 +28,9 @@ class AnonymousObserver(Observer[K]):
 
     def __init__(
         self,
-        asend: T.Callable[[K], T.Any] = anoop,
-        araise: T.Callable[[Exception], T.Any] = anoop,
-        aclose: T.Callable[[], T.Any] = anoop,
+        asend: T.Callable[[K], T.Any] = noop,
+        araise: T.Callable[[Exception], T.Any] = default_araise,
+        aclose: T.Callable[[], T.Any] = noop,
         **kwargs
     ) -> None:
         """AnonymousObserver Constructor.
@@ -44,6 +52,9 @@ class AnonymousObserver(Observer[K]):
         res = self._send(value)
 
         if iscoroutinefunction(self._send):
+            # Remove reference early to avoid keeping large objects in memory
+            del value
+
             await res
 
     async def __araise__(self, ex: Exception) -> bool:
@@ -58,4 +69,7 @@ class AnonymousObserver(Observer[K]):
         res = self._close()
 
         if iscoroutinefunction(self._close):
-            await res
+            res = await res
+
+        with suppress(InvalidStateError):
+            self.future.set_result(res)
