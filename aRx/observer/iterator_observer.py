@@ -52,7 +52,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
 
     async def __aclose__(self) -> None:
         with suppress(InvalidStateError):
-            self.future.set_result(self._counter)
+            self.resolve(self._counter)
 
     async def __anext__(self) -> T.Awaitable[K]:
         while not self._queue:

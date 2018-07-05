@@ -3,132 +3,174 @@ __all__ = ("Promise", )
 # Internal
 import typing as T
 
-from asyncio import shield, ensure_future, CancelledError, AbstractEventLoop
+from asyncio import (
+    shield, ensure_future, CancelledError, AbstractEventLoop, InvalidStateError
+)
 
 # Project
+from .misc.flag import Flag
 from .abstract.promise import Promise as AbstractPromise
 
 K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
+async def _rejection_wrapper(
+    promise: AbstractPromise[K], on_reject: T.Callable[[Exception], L],
+    await_flag: Flag, loop: AbstractEventLoop
+) -> L:
+    """Coroutine that wraps a promise and manages a rejection callback.
+
+    Arguments:
+        promise: Promise to be wrapped.
+        on_reject: Rejection callback.
+        await_flag: Flag that indicates if promise is being awaited.
+        loop: Asyncio loop reference.
+
+    Returns:
+        Callback result.
+
+    """
+    promise = shield(promise, loop=loop)
+
+    try:
+        result = await promise
+    except CancelledError as ex:
+        if await_flag:
+            raise ex
+        else:
+            return
+    except Exception as ex:
+        result = on_reject(ex)
+
+    try:
+        result = ensure_future(result, loop=loop)
+    except TypeError:
+        pass  # Result isn't awaitable
+    else:
+        result = await result
+
+    return result
+
+
+async def _resolution_wrapper(
+    promise: AbstractPromise[K], on_resolution: T.Callable[[], L],
+    await_flag: Flag, loop: AbstractEventLoop
+) -> L:
+    """Coroutine that wraps a promise and manages a resolution callback.
+
+    Arguments:
+        promise: Promise to be wrapped.
+        on_resolution: Resolution callback.
+        await_flag: Flag that indicates if promise is being awaited.
+        loop: Asyncio loop reference.
+
+    Returns:
+        Callback result.
+
+    """
+    promise = shield(promise, loop=loop)
+
+    try:
+        await promise
+    except CancelledError as ex:
+        if await_flag:
+            raise ex
+        else:
+            return
+    except Exception:
+        pass
+
+    result = on_resolution()
+
+    try:
+        result = ensure_future(result, loop=loop)
+    except TypeError:
+        pass  # Result isn't awaitable
+    else:
+        result = await result
+
+    return result
+
+
+async def _fulfillment_wrapper(
+    promise: AbstractPromise[K], on_fulfilled: T.Callable[[K], L],
+    await_flag: Flag, loop: AbstractEventLoop
+) -> L:
+    """Coroutine that wraps a promise and manages a fulfillment callback.
+
+    Arguments:
+        promise: Promise to be wrapped.
+        on_fulfilled: Fulfillment callback.
+        await_flag: Flag that indicates if promise is being awaited.
+        loop: Asyncio loop reference.
+
+    Returns:
+        Callback result.
+
+    """
+    promise = shield(promise, loop=loop)
+
+    try:
+        result = await promise
+    except CancelledError as ex:
+        if await_flag:
+            raise ex
+        else:
+            return
+
+    result = on_fulfilled(result)
+
+    try:
+        result = ensure_future(result, loop=loop)
+    except TypeError:
+        pass  # Result isn't awaitable
+    else:
+        result = await result
+
+    return result
+
+
 class Promise(AbstractPromise[K]):
     """Concrete Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`."""
 
-    @staticmethod
-    async def _rejection_wrapper(
-        promise: AbstractPromise[K], on_reject: T.Callable[[Exception], L],
-        loop: AbstractEventLoop
-    ) -> L:
-        """Coroutine that wraps a promise and manages a rejection callback.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._await_flag = Flag()
 
-        Arguments:
-            promise: Promise to be wrapped.
-            on_reject: Rejection callback.
-            loop: Asyncio loop reference.
-
-        Returns:
-            Callback result.
-
-        """
-        promise = shield(promise, loop=loop)
-
-        try:
-            result = await promise
-        except CancelledError as ex:
-            raise ex
-        except Exception as ex:
-            result = on_reject(ex)
-
-        try:
-            result = ensure_future(result, loop=loop)
-        except TypeError:
-            pass  # Result isn't awaitable
-        else:
-            result = await result
-
-        return result
-
-    @staticmethod
-    async def _resolution_wrapper(
-        promise: AbstractPromise[K], on_resolution: T.Callable[[], L],
-        loop: AbstractEventLoop
-    ) -> L:
-        """Coroutine that wraps a promise and manages a resolution callback.
-
-        Arguments:
-            promise: Promise to be wrapped.
-            on_resolution: Resolution callback.
-            loop: Asyncio loop reference.
-
-        Returns:
-            Callback result.
-
-        """
-        promise = shield(promise, loop=loop)
-
-        try:
-            await promise
-        except CancelledError as ex:
-            raise ex
-        except Exception:
-            pass
-
-        result = on_resolution()
-
-        try:
-            result = ensure_future(result, loop=loop)
-        except TypeError:
-            pass  # Result isn't awaitable
-        else:
-            result = await result
-
-        return result
-
-    @staticmethod
-    async def _fulfillment_wrapper(
-        promise: AbstractPromise[K], on_fulfilled: T.Callable[[K], L],
-        loop: AbstractEventLoop
-    ) -> L:
-        """Coroutine that wraps a promise and manages a fulfillment callback.
-
-        Arguments:
-            promise: Promise to be wrapped.
-            on_fulfilled: Fulfillment callback.
-            loop: Asyncio loop reference.
-
-        Returns:
-            Callback result.
-
-        """
-        result = on_fulfilled(await shield(promise, loop=loop))
-
-        try:
-            result = ensure_future(result, loop=loop)
-        except TypeError:
-            pass  # Result isn't awaitable
-        else:
-            result = await result
-
-        return result
+    def __await__(self):
+        self._await_flag.set_true()
+        return super().__await__()
 
     def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.then`"""
-        return Promise(
-            Promise._fulfillment_wrapper(self, on_fulfilled, self._loop),
+        return ChainPromise(
+            _fulfillment_wrapper(
+                self, on_fulfilled, self._await_flag, self._loop
+            ),
             loop=self._loop
         )
 
     def catch(self, on_reject: T.Callable[[Exception], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.catch`"""
-        return Promise(
-            Promise._rejection_wrapper(self, on_reject, self._loop),
+        return ChainPromise(
+            _rejection_wrapper(self, on_reject, self._await_flag, self._loop),
             loop=self._loop
         )
 
     def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise[L]':
         """See: :meth:`~aRx.abstract.promise.Promise.lastly`"""
-        return Promise(
-            Promise._resolution_wrapper(self, on_fulfilled, self._loop),
+        return ChainPromise(
+            _resolution_wrapper(
+                self, on_fulfilled, self._await_flag, self._loop
+            ),
             loop=self._loop
         )
+
+
+class ChainPromise(Promise[K]):
+    def resolve(self, _: K) -> None:
+        raise InvalidStateError("Chain promise can't be resolve externally")
+
+    def reject(self, _: Exception) -> None:
+        raise InvalidStateError("Chain promise can't be resolve externally")

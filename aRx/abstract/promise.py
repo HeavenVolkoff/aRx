@@ -4,7 +4,7 @@ __all__ = ("Promise", )
 import typing as T
 
 from abc import ABCMeta, abstractmethod
-from asyncio import Future, ensure_future, CancelledError
+from asyncio import Future, ensure_future
 from collections.abc import Awaitable
 
 # Project
@@ -51,10 +51,47 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
     def __and__(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise':
         return self.then(on_fulfilled)
 
-    @property
-    def future(self) -> Future:
-        """Public interface to underlining future."""
-        return self._fut
+    def done(self) -> bool:
+        """Check if promise is done.
+
+        Returns:
+            Boolean indicating if promise is done or not.
+
+        """
+        return self._fut.done()
+
+    def cancel(self) -> bool:
+        """Cancel the promise and the underlining future.
+
+        Returns:
+            Boolean indicating if the cancellation occurred or not.
+
+        """
+        return self._fut.cancel()
+
+    def resolve(self, result: K) -> None:
+        """Resolve Promise with given value.
+
+        Arguments:
+            result: Result to resolve Promise with.
+
+        Raises:
+            InvalidStateError: Raised when promise was already resolved
+
+        """
+        self._fut.set_result(result)
+
+    def reject(self, error: Exception) -> None:
+        """Reject promise with given value.
+
+        Arguments:
+            error: Error to reject Promise with.
+
+        Raises:
+            InvalidStateError: Raised when promise was already resolved
+
+        """
+        self._fut.set_exception(error)
 
     @abstractmethod
     def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise':
@@ -89,23 +126,6 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
 
         """
         raise NotImplemented()
-
-    async def cancel(self) -> bool:
-        """Cancel the promise and the underlining future.
-
-        Returns:
-            Boolean indicating if the cancellation occurred or not.
-
-        """
-        if not self._fut.cancel():
-            return False
-
-        try:
-            await self
-        except CancelledError:
-            pass
-
-        return True
 
     @abstractmethod
     def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise':

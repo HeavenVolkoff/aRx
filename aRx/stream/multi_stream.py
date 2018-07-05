@@ -57,16 +57,15 @@ class MultiStream(Observable, Observer[K]):
     async def __aclose__(self) -> None:
         # MultiStream should resolve to None when no error is registered
         with suppress(InvalidStateError):
-            self.future.set_result(None)
+            self.resolve(None)
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
         stream_name = type(self).__qualname__
 
         async def dispose() -> None:
             # Cancel dispose promises to ensure no retention
-            await agather(
-                dispose_promise.cancel(), stream_close_promise.cancel()
-            )
+            dispose_promise.cancel()
+            stream_close_promise.cancel()
 
             try:
                 self._observers.remove(observer)
