@@ -59,7 +59,7 @@ class Map(Observable):
         self._source = source
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
-        sink = self._Sink(self._mapper)
+        sink = self._MapSink(self._mapper)
 
         try:
             up = observe(self._source, sink)
