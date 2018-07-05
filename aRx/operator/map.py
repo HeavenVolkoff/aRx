@@ -19,7 +19,7 @@ MapCallable = T.Callable[[K, int], T.Union[T.Awaitable[J], J]]
 class Map(Observable):
     """Observable that outputs transmuted data from an observable source."""
 
-    class _Sink(SingleStream[J]):
+    class _MapSink(SingleStream[J]):
         def __init__(self, mapper: MapCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 

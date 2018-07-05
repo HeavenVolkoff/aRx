@@ -18,7 +18,7 @@ StopCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 class Stop(Observable):
     """Observable that stop observable source according to a predicate."""
 
-    class _Sink(SingleStream[K]):
+    class _StopSink(SingleStream[K]):
         def __init__(self, predicate: StopCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -57,7 +57,7 @@ class Stop(Observable):
         self._predicate = predicate
 
     def __observe__(self, observer: Observer) -> Disposable:
-        sink = self._Sink(self._predicate)
+        sink = self._StopSink(self._predicate)
 
         try:
             up = observe(self._source, sink)

@@ -156,13 +156,13 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
             return False
 
         # Cancel close guard promise
-        self._close_promise.cancel()
+        await self._close_promise.cancel()
 
         # Internal close
         try:
             await self.__aclose__()
         finally:
             # Cancel future in case it wasn't resolved
-            self.cancel()
+            await self.cancel()
 
         return True

@@ -15,7 +15,7 @@ K = T.TypeVar('T')
 
 
 class Take(Observable):
-    class _Sink(SingleStream[K]):
+    class _TakeSink(SingleStream[K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -75,7 +75,7 @@ class Take(Observable):
         self._source = source
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
-        sink = self._Sink(self._count)
+        sink = self._TakeSink(self._count)
 
         try:
             up = observe(self._source, sink)
