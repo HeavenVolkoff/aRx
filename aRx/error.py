@@ -24,7 +24,7 @@ class ObserverClosedError(ObserverError):
             instance: Observer instance.
 
         """
-        super().__init__(f"{type(instance).__name__} is closed")
+        super().__init__(f"{type(instance).__qualname__} is closed")
 
     pass
 

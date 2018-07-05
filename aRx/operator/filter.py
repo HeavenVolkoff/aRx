@@ -18,7 +18,7 @@ FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 class Filter(Observable):
     """Observable that output filtered data from another observable source."""
 
-    class _Sink(SingleStream[K]):
+    class _FilterSink(SingleStream[K]):
         def __init__(self, predicate: FilterCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 

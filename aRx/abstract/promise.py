@@ -4,7 +4,7 @@ __all__ = ("Promise", )
 import typing as T
 
 from abc import ABCMeta, abstractmethod
-from asyncio import Future, ensure_future
+from asyncio import Future, ensure_future, CancelledError
 from collections.abc import Awaitable
 
 # Project
@@ -90,14 +90,22 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
         """
         raise NotImplemented()
 
-    def cancel(self) -> bool:
+    async def cancel(self) -> bool:
         """Cancel the promise and the underlining future.
 
         Returns:
             Boolean indicating if the cancellation occurred or not.
 
         """
-        return self._fut.cancel()
+        if not self._fut.cancel():
+            return False
+
+        try:
+            await self
+        except CancelledError:
+            pass
+
+        return True
 
     @abstractmethod
     def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise':

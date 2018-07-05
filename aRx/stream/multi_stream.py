@@ -64,8 +64,9 @@ class MultiStream(Observable, Observer[K]):
 
         async def dispose() -> None:
             # Cancel dispose promises to ensure no retention
-            dispose_promise.cancel()
-            stream_close_promise.cancel()
+            await agather(
+                dispose_promise.cancel(), stream_close_promise.cancel()
+            )
 
             try:
                 self._observers.remove(observer)
