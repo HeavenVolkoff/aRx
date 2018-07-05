@@ -14,7 +14,7 @@ K = T.TypeVar("K")
 
 
 def default_araise(ex):
-    warn(ARxWarning("Error propagated through AnonymousObserver", ex))
+    warn(ARxWarning("Unhandled error propagated through AnonymousObserver", ex))
     return False
 
 
@@ -72,4 +72,4 @@ class AnonymousObserver(Observer[K]):
             res = await res
 
         with suppress(InvalidStateError):
-            self.future.set_result(res)
+            self.resolve(res)

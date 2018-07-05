@@ -76,10 +76,10 @@ class SingleStream(Observable, Observer[K]):
 
         # Resolve internal future
         with suppress(InvalidStateError):
-            self.future.set_result(None)
+            self.resolve(None)
 
         # Close observer if necessary
-        if observer is not None and (observer.closed or observer.keep_alive):
+        if not (observer is None or observer.closed or observer.keep_alive):
             await observer.aclose()
 
     def __observe__(self, observer: Observer[K]) -> Disposable:

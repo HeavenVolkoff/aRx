@@ -83,7 +83,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     @property
     def closed(self):
         """Property that indicates if this observer is closed or not."""
-        return self.future.done()
+        return self.done()
 
     async def asend(self, data: K) -> None:
         """Interface thought which data is inputted.
@@ -133,7 +133,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
 
         if should_close:
             try:
-                self.future.set_exception(main_ex)
+                self.reject(main_ex)
             except InvalidStateError:
                 warn(
                     ARxWarning(
@@ -152,17 +152,17 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
 
         """
         # Guard against repeated calls
-        if self._close_promise.future.done():
+        if self._close_promise.done():
             return False
 
         # Cancel close guard promise
-        await self._close_promise.cancel()
+        self._close_promise.cancel()
 
         # Internal close
         try:
             await self.__aclose__()
         finally:
             # Cancel future in case it wasn't resolved
-            await self.cancel()
+            self.cancel()
 
         return True
