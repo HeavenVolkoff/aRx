@@ -32,6 +32,7 @@ class SingleStream(Observable, Observer[K]):
 
         self._lock = self._loop.create_future()  # type: T.Optional[Future]
         self._observer = None  # type: T.Optional[Observer[K]]
+        self._observer_close_promise = None
 
     @property
     def closed(self):
@@ -74,6 +75,10 @@ class SingleStream(Observable, Observer[K]):
         # Cancel all awaiting event in the case we weren't subscribed
         self._lock.cancel()
 
+        # Cancel observer close guard
+        if self._observer_close_promise is not None:
+            self._observer_close_promise.cancel()
+
         # Resolve internal future
         with suppress(InvalidStateError):
             self.resolve(None)
@@ -93,6 +98,9 @@ class SingleStream(Observable, Observer[K]):
             raise SingleStreamError(
                 "Can't assign multiple observers to a SingleStream"
             )
+
+        # Close Stream when observer closes
+        self._observer_close_promise = observer.lastly(self.aclose)
 
         # Set stream observer
         self._observer = observer
