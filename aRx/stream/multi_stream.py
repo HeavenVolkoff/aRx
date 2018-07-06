@@ -20,7 +20,9 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 K = T.TypeVar("K")
 
 
-async def ensure_action(name, action, dispose):
+async def ensure_action(
+    name: str, action: T.Awaitable, dispose: T.Callable[[], None]
+):
     """Execute action and treat any exception it may raise.
 
     Arguments:
@@ -29,7 +31,7 @@ async def ensure_action(name, action, dispose):
         dispose: Action disposable, for when action fails
     """
     try:
-        await action()
+        await action
     except Exception as ex:
         if not isinstance(ex, ObserverClosedError):
             warn(
