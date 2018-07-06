@@ -1,18 +1,47 @@
+__all__ = ("MultiStream", )
+
 # Internal
 import typing as T
 
 from asyncio import gather as agather, InvalidStateError
-from warnings import warn
+from warnings import warn, catch_warnings, simplefilter as warn_filter
 from contextlib import suppress
+from weakref import WeakKeyDictionary
 
 # Project
-from ..error import DisposeWarning, ARxWarning
+from ..error import (
+    ARxWarning, DisposeWarning, MultiStreamError, ObserverClosedError
+)
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..abstract.disposable import Disposable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
 K = T.TypeVar("K")
+
+
+async def ensure_action(name, action, dispose):
+    """Execute action and treat any exception it may raise.
+
+    Arguments:
+        name: Action name
+        action: Action to be executed
+        dispose: Action disposable, for when action fails
+    """
+    try:
+        await action()
+    except Exception as ex:
+        if not isinstance(ex, ObserverClosedError):
+            warn(
+                ARxWarning(
+                    "Observer was disposed due to unhandled exception during "
+                    f"{name}:", ex
+                )
+            )
+        if dispose is not None:
+            with catch_warnings():
+                warn_filter("ignore", category=DisposeWarning)
+                await dispose()
 
 
 class MultiStream(Observable, Observer[K]):
@@ -34,22 +63,27 @@ class MultiStream(Observable, Observer[K]):
         super().__init__(**kwargs)
 
         self._observers = []  # type: T.List[Observer[K]]
+        self._disposable = WeakKeyDictionary()
 
     async def __asend__(self, value: K) -> None:
-        # Filter only open observers to prevent errors due to sending data to
-        # closed observers that didn't have their disposed called yet
-        awaitables = [
-            obv.asend(value) for obv in self._observers if not obv.closed
-        ]
+        awaitables = tuple(
+            ensure_action(
+                "asend", obv.asend(value), self._disposable.get(obv, None)
+            ) for obv in self._observers if not obv.closed
+        )
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
         await agather(*awaitables)
 
-    async def __araise__(self, main_ex: Exception) -> bool:
+    async def __araise__(self, ex: Exception) -> bool:
         await agather(
-            *(obv.araise(main_ex) for obv in self._observers if not obv.closed)
+            *(
+                ensure_action(
+                    "araise", obv.araise(ex), self._disposable.get(obv, None)
+                ) for obv in self._observers
+            )
         )
 
         return False
@@ -60,6 +94,9 @@ class MultiStream(Observable, Observer[K]):
             self.resolve(None)
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
+        if observer in self._observers:
+            raise MultiStreamError("Duplicate observation")
+
         stream_name = type(self).__qualname__
 
         async def dispose() -> None:
@@ -96,6 +133,7 @@ class MultiStream(Observable, Observer[K]):
 
         # Add observer to internal list
         self._observers.append(observer)
+        self._disposable[observer] = dispose
 
         # Return observation disposable
         return AnonymousDisposable(dispose)
