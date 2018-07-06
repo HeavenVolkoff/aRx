@@ -99,11 +99,11 @@ class SingleStream(Observable, Observer[K]):
                 "Can't assign multiple observers to a SingleStream"
             )
 
-        # Close Stream when observer closes
-        self._observer_close_promise = observer.lastly(self.aclose)
-
         # Set stream observer
         self._observer = observer
+
+        # Close Stream when observer closes
+        self._observer_close_promise = observer.lastly(self.aclose)
 
         # Release any awaiting event
         self._lock.set_result(None)

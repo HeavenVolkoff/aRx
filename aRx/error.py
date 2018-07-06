@@ -34,6 +34,11 @@ class SingleStreamError(ARxError):
     pass
 
 
+class MultiStreamError(ARxError):
+    """aRx error for when SingleStream are subscribe more than once."""
+    pass
+
+
 class ARxWarning(Warning):
     """aRx base warning class."""
 
