@@ -1,3 +1,5 @@
+__all__ = ("Unit", )
+
 # Internal
 import typing as T
 
@@ -13,6 +15,8 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 
 class Unit(Observable, Loopable):
     """Observable that outputs a single value then closes."""
+
+    __slots__ = ("_value", )
 
     @staticmethod
     async def _worker(value: T.Any, observer: Observer) -> None:

@@ -1,3 +1,5 @@
+__all__ = ('AnonymousDisposable', )
+
 # Internal
 import typing as T
 

@@ -1,3 +1,5 @@
+__all__ = ("SingleStream", )
+
 # Internal
 import typing as T
 
@@ -21,6 +23,8 @@ class SingleStream(Observable, Observer[K]):
         The SingleStream is cold in the sense that it will await a observer
         before forwarding any events.
     """
+
+    __slots__ = ("_lock", "_observer", "_observer_close_promise")
 
     def __init__(self, **kwargs) -> None:
         """SingleStream constructor.

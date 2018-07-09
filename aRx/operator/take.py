@@ -1,3 +1,5 @@
+__all__ = ("Take", "take")
+
 # Internal
 import typing as T
 
@@ -16,6 +18,9 @@ K = T.TypeVar('T')
 
 class Take(Observable):
     class _TakeSink(SingleStream[K]):
+
+        __slots__ = ("_count", "_reverse_queue")
+
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -48,6 +53,8 @@ class Take(Observable):
                 await awaitable
             else:
                 self._reverse_queue.append(value)
+
+    __slots__ = ("_count", "_source")
 
     def __init__(self, count: int, source: Observable, **kwargs) -> None:
         """Take constructor.

@@ -1,3 +1,5 @@
+__all__ = ("AnonymousObserver", )
+
 # Internal
 import typing as T
 
@@ -25,6 +27,8 @@ class AnonymousObserver(Observer[K]):
     optional and anonymous functions, asend, araise and aclose. Used for
     listening to a source.
     """
+
+    __slots__ = ("_send", "_raise", "_close")
 
     def __init__(
         self,

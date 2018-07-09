@@ -1,3 +1,5 @@
+__all__ = ("Concat", "concat")
+
 # Internal
 import typing as T
 
@@ -15,6 +17,8 @@ K = T.TypeVar("K")
 
 class Concat(Observable):
     """Observable that is the concatenation of multiple observables sources"""
+
+    __slots__ = ("_sources", )
 
     def __init__(
         self, first: Observable, second: Observable, *rest: Observable, **kwargs

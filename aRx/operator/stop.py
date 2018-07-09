@@ -1,3 +1,5 @@
+__all__ = ("Stop", "stop")
+
 # Internal
 import typing as T
 
@@ -19,6 +21,9 @@ class Stop(Observable):
     """Observable that stop observable source according to a predicate."""
 
     class _StopSink(SingleStream[K]):
+
+        __slots__ = ("_index", "_predicate")
+
         def __init__(self, predicate: StopCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -39,6 +44,8 @@ class Stop(Observable):
             del value
 
             await awaitable
+
+    __slots__ = ("_source", "_predicate")
 
     def __init__(
         self, predicate: StopCallable, source: Observable, **kwargs
