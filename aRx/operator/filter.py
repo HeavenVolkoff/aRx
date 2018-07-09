@@ -21,8 +21,6 @@ class Filter(Observable):
     """Observable that output filtered data from another observable source."""
 
     class _FilterSink(SingleStream[K]):
-        __slots__ = ("_index", "_predicate")
-
         def __init__(self, predicate: FilterCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -45,8 +43,6 @@ class Filter(Observable):
                 del value
 
                 await res
-
-    __slots__ = ("_source", "_predicate")
 
     def __init__(
         self, predicate: FilterCallable, source: Observable, **kwargs

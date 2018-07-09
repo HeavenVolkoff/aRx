@@ -9,20 +9,16 @@ import typing as T
 
 class ARxError(Exception):
     """aRx base error class."""
-    __slots__ = ()
     pass
 
 
 class ObserverError(ARxError):
     """aRx error exclusive to observer."""
-    __slots__ = ()
     pass
 
 
 class ObserverClosedError(ObserverError):
     """aRx error for when observer is used when closed."""
-
-    __slots__ = ()
 
     def __init__(self, instance):
         """ObserverClosedError constructor.
@@ -38,20 +34,16 @@ class ObserverClosedError(ObserverError):
 
 class SingleStreamError(ARxError):
     """aRx error for when SingleStream are subscribe more than once."""
-    __slots__ = ()
     pass
 
 
 class MultiStreamError(ARxError):
     """aRx error for when SingleStream are subscribe more than once."""
-    __slots__ = ()
     pass
 
 
 class ARxWarning(Warning):
     """aRx base warning class."""
-
-    __slots__ = ()
 
     def __init__(self, msg: str, error: T.Optional[Exception] = None):
         from traceback import TracebackException
@@ -66,5 +58,4 @@ class ARxWarning(Warning):
 
 class DisposeWarning(ARxWarning):
     """aRx error for when dispose fails."""
-    __slots__ = ()
     pass

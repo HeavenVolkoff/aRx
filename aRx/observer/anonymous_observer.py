@@ -28,8 +28,6 @@ class AnonymousObserver(Observer[K]):
     listening to a source.
     """
 
-    __slots__ = ("_send", "_raise", "_close")
-
     def __init__(
         self,
         asend: T.Callable[[K], T.Any] = noop,

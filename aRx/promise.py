@@ -134,8 +134,6 @@ async def _fulfillment_wrapper(
 class Promise(AbstractPromise[K]):
     """Concrete Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`."""
 
-    __slots__ = ("_await_flag", )
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._await_flag = Flag()
@@ -171,8 +169,6 @@ class Promise(AbstractPromise[K]):
 
 
 class ChainPromise(Promise[K]):
-    __slots__ = ()
-
     def resolve(self, _: K) -> None:
         raise InvalidStateError("Chain promise can't be resolve externally")
 
