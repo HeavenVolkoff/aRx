@@ -39,7 +39,6 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
         self.keep_alive = keep_alive
 
         # Ensures that observer closes if it's is resolved externally
-        self.__weakref__ = None
         self._close_guard = False
         self._close_promise = self.lastly(self.aclose)
 
