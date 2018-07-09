@@ -17,8 +17,6 @@ class AnonymousDisposable(Disposable):
     optional and anonymous function.
     """
 
-    __slots__ = ("_adispose", )
-
     def __init__(
         self, dispose: T.Callable[[], T.Awaitable[None]] = anoop, **kwargs
     ) -> None:

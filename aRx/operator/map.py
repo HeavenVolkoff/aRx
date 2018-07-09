@@ -22,8 +22,6 @@ class Map(Observable):
     """Observable that outputs transmuted data from an observable source."""
 
     class _MapSink(SingleStream[J]):
-        __slots__ = ("_index", "_mapper")
-
         def __init__(self, mapper: MapCallable, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -45,8 +43,6 @@ class Map(Observable):
             del value
 
             await awaitable
-
-    __slots__ = ("_source", "_mapper")
 
     def __init__(
         self, mapper: MapCallable, source: Observable, **kwargs

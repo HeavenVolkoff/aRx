@@ -16,8 +16,6 @@ K = T.TypeVar("K")
 class IteratorObserver(Observer[K], T.AsyncIterator[K]):
     """An async observer that can be iterated asynchronously."""
 
-    __slots__ = ("_queue", "_counter", "_control")
-
     def __init__(self, **kwargs) -> None:
         """IteratorObserver constructor
 

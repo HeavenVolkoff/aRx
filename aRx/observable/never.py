@@ -10,8 +10,6 @@ from ..disposable import AnonymousDisposable
 class Never(Observable):
     """Observable that never outputs data, but stays open."""
 
-    __slots__ = ()
-
     def __observe__(self, _: Observer) -> Disposable:
         """Do nothing."""
         return AnonymousDisposable()

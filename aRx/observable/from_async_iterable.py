@@ -15,8 +15,6 @@ K = T.TypeVar('K')
 class FromAsyncIterable(Observable, T.Generic[K]):
     """Observable that uses an async iterable as data source."""
 
-    __slots__ = ("_async_iterator", )
-
     @staticmethod
     async def _worker(
         async_iterator: T.AsyncIterator, observer: Observer

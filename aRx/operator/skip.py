@@ -20,9 +20,6 @@ class Skip(Observable):
     """Observable that outputs data from source skipping some."""
 
     class _SkipSink(SingleStream[K]):
-
-        __slots__ = ("_count", "_reverse_queue")
-
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -51,8 +48,6 @@ class Skip(Observable):
             del value
 
             await awaitable
-
-    __slots__ = ("_count", "_source")
 
     def __init__(self, count: int, source: Observable, **kwargs) -> None:
         """Skip constructor.
