@@ -26,7 +26,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
             externally.
 
     """
-    __slots__ = ("keep_alive", "_close_guard", "_close_promise")
+    __slots__ = ("keep_alive", "_close_guard", "_close_promise", "__weakref__")
 
     def __init__(self, *, keep_alive: bool = False, **kwargs):
         """Observer constructor.
@@ -39,6 +39,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
         self.keep_alive = keep_alive
 
         # Ensures that observer closes if it's is resolved externally
+        self.__weakref__ = None
         self._close_guard = False
         self._close_promise = self.lastly(self.aclose)
 
