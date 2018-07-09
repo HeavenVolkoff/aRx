@@ -1,0 +1,16 @@
+language: python
+
+python:
+    - "3.6"
+
+before_install:
+    - pip install pipenv && pipenv install -d --skip-lock;
+
+install:
+    - pipenv run python setup.py install;
+
+script:
+    - pipenv run travis-sphinx build --nowarn --source=docs;
+
+after_success:
+    - pipenv run travis-sphinx deploy;
