@@ -1,3 +1,5 @@
+__all__ = ("Max", "max")
+
 # Internal
 import typing as T
 
@@ -24,6 +26,9 @@ class Max(Observable):
     """
 
     class _MaxSink(SingleStream[K]):
+
+        __slots__ = ("_max", )
+
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -45,6 +50,8 @@ class Max(Observable):
             await awaitable
 
             await super().__aclose__()
+
+    __slots__ = ("_source", )
 
     def __init__(self, source: Observable, **kwargs) -> None:
         """Max constructor.

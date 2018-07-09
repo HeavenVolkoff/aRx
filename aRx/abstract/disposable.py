@@ -2,7 +2,7 @@ __all__ = ("Disposable", "adispose")
 
 # Internal
 from abc import ABCMeta, abstractmethod
-from asyncio import gather
+from asyncio import gather as agather
 
 
 class Disposable(object, metaclass=ABCMeta):
@@ -45,4 +45,4 @@ async def adispose(*disposables: Disposable):
         disposables: Objects to be disposed.
 
     """
-    await gather(*(disposable.__adispose__() for disposable in disposables))
+    await agather(*(disposable.__adispose__() for disposable in disposables))

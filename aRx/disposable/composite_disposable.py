@@ -1,9 +1,13 @@
+__all__ = ('CompositeDisposable', )
+
 # Project
 from ..abstract.disposable import Disposable, adispose
 
 
 class CompositeDisposable(Disposable):
     """A disposable that is a composition of various disposable."""
+
+    __slots__ = ("_disposables", )
 
     @staticmethod
     def _validate_mapper(disposable):

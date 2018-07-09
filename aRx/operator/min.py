@@ -1,3 +1,5 @@
+__all__ = ("Min", "min")
+
 # Internal
 import typing as T
 
@@ -24,6 +26,9 @@ class Min(Observable):
     """
 
     class _MinSink(SingleStream[K]):
+
+        __slots__ = ("_min", )
+
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 
@@ -45,6 +50,8 @@ class Min(Observable):
             await awaitable
 
             await super().__aclose__()
+
+    __slots__ = ("_source", )
 
     def __init__(self, source: Observable, **kwargs) -> None:
         """Min constructor.

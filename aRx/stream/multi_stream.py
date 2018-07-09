@@ -55,6 +55,8 @@ class MultiStream(Observable, Observer[K]):
         there are currently no observer running.
     """
 
+    __slots__ = ("_observers", "_disposable")
+
     def __init__(self, **kwargs) -> None:
         """MultiStream constructor
 
