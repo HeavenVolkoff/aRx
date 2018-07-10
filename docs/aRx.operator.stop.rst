@@ -1,5 +1,5 @@
-aRx.operator.stop module
-========================
+aRx.operator.stop
+=================
 
 .. automodule:: aRx.operator.stop
     :members:
