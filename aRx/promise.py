@@ -132,7 +132,10 @@ async def _fulfillment_wrapper(
 
 
 class Promise(AbstractPromise[K]):
-    """Concrete Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`."""
+    """Concrete Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`.
+    
+    See: :class:`~aRx.abstract.promise.Promise` for more information on the Promise abstract interface.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -143,7 +146,14 @@ class Promise(AbstractPromise[K]):
         return super().__await__()
 
     def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise[L]':
-        """See: :meth:`~aRx.abstract.promise.Promise.then`"""
+        """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
+        The :class:`~typing.Coroutine` will await the promise resolution and,
+        if no exception is raised, it will call the callback with the promise 
+        result.
+
+        See: :meth:`~aRx.abstract.promise.Promise.then` for more information.
+
+        """
         return ChainPromise(
             _fulfillment_wrapper(
                 self, on_fulfilled, self._await_flag, self._loop
@@ -152,14 +162,27 @@ class Promise(AbstractPromise[K]):
         )
 
     def catch(self, on_reject: T.Callable[[Exception], L]) -> 'Promise[L]':
-        """See: :meth:`~aRx.abstract.promise.Promise.catch`"""
+        """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
+        The :class:`~typing.Coroutine` will await the promise resolution and,
+        if a exception is raised, it will call the callback with the promise 
+        exception.
+
+        See: :meth:`~aRx.abstract.promise.Promise.catch` for more information.
+        
+        """
         return ChainPromise(
             _rejection_wrapper(self, on_reject, self._await_flag, self._loop),
             loop=self._loop
         )
 
     def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise[L]':
-        """See: :meth:`~aRx.abstract.promise.Promise.lastly`"""
+        """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
+        The :class:`~typing.Coroutine` will await the promise resolution and 
+        call the callback.
+
+        See: :meth:`~aRx.abstract.promise.Promise.catch` for more information.
+        
+        """
         return ChainPromise(
             _resolution_wrapper(
                 self, on_fulfilled, self._await_flag, self._loop
@@ -169,8 +192,22 @@ class Promise(AbstractPromise[K]):
 
 
 class ChainPromise(Promise[K]):
+    """A special promise implementation used by the chained callback Promises."""
+
     def resolve(self, _: K) -> None:
+        """See: :meth:`~aRx.abstract.promise.Promise.resolve` for more information.
+        
+        Raises:
+            InvalidStateError: Chained promises aren't allowed to be resolved externally.
+
+        """
         raise InvalidStateError("Chain promise can't be resolve externally")
 
     def reject(self, _: Exception) -> None:
+        """See: :meth:`~aRx.abstract.promise.Promise.reject` for more information.
+        
+        Raises:
+            InvalidStateError: Chained promises aren't allowed to be resolved externally.
+
+        """
         raise InvalidStateError("Chain promise can't be resolve externally")

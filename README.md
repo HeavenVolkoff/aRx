@@ -1,10 +1,11 @@
 # aRx
 
-Async/await Reactive Tools for Python 3.6+
+Asynchronous Reactive eXtensions for Python 3.6+.
 
-Modified from [aioreactive](https://github.com/dbrattli/aioreactive)
+Derived from [aioreactive](https://github.com/dbrattli/aioreactive)
+Inspired by [RxPY](https://github.com/ReactiveX/RxPY)
 
-## Documentation
+## Documentation (WIP)
 > [link](https://HeavenVolkoff.github.io/aRx)
 
 ## License & Copyright
