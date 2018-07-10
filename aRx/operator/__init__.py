@@ -19,15 +19,14 @@ Example using operator to filter odd numbers from a Iterable source.
 
     from aRx import observable, operator as op
     from aRx.observer import AnonymousObserver
-    from aRx.subscribe import inquire
 
     async def run():
-        # Observer that will print all data that passes through
+        # Observer that will print all data that passes through it
         async with AnonymousObserver(asend=lambda x: print(x)) as listener:
             # Apply filter operator to source observable
-            add_obv = observable.FromIterable(range(100)) | op.filter(lambda x: bool(x % 2))
-            # Subscribe listener to filtered observable
-            await inquire(listener, add_obv)
+            source = observable.FromIterable(range(100)) | op.filter(lambda x: bool(x % 2))
+            # Subscribe listener to filtered observable, and await for all data to be processed
+            await observable.observe(source, listener)
 """
 
 __all__ = (
