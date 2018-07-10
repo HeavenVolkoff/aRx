@@ -3,7 +3,7 @@ __all__ = ('AnonymousDisposable', )
 # Internal
 import typing as T
 
-from asyncio import iscoroutinefunction
+from asyncio import iscoroutine
 
 # Project
 from ..misc.noop import anoop
@@ -18,7 +18,9 @@ class AnonymousDisposable(Disposable):
     """
 
     def __init__(
-        self, dispose: T.Callable[[], T.Awaitable[None]] = anoop, **kwargs
+        self,
+        dispose: T.Callable[[], T.Union[T.Awaitable[None], None]] = anoop,
+        **kwargs
     ) -> None:
         """AnonymousDisposable constructor.
 
@@ -29,14 +31,15 @@ class AnonymousDisposable(Disposable):
             dispose: Callback to be used as the custom close logic
                 implementation.
             kwargs: Keyword parameters for super.
-        """
-        if not iscoroutinefunction(dispose):
-            raise TypeError("Parameter dispose must be a coroutine")
 
+        """
         super().__init__(**kwargs)
 
         self._adispose = dispose
 
     async def __adispose__(self) -> None:
         """Call anonymous function on dispose."""
-        await self._adispose()
+        dispose = self._adispose()
+
+        if iscoroutine(dispose):
+            await dispose
