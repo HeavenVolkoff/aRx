@@ -180,7 +180,7 @@ class Promise(AbstractPromise[K]):
         The :class:`~typing.Coroutine` will await the promise resolution and 
         call the callback.
 
-        See: :meth:`~aRx.abstract.promise.Promise.catch` for more information.
+        See: :meth:`~aRx.abstract.promise.Promise.lastly` for more information.
         
         """
         return ChainPromise(
