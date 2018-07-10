@@ -15,4 +15,5 @@ Submodules
    aRx.operator.min
    aRx.operator.skip
    aRx.operator.take
+   aRx.operator.stop
 
