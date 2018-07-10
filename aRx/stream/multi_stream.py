@@ -3,21 +3,70 @@ __all__ = ("MultiStream", )
 # Internal
 import typing as T
 
-from asyncio import gather as agather, InvalidStateError
-from warnings import warn, catch_warnings, simplefilter as warn_filter
+from weakref import WeakKeyDictionary, ReferenceType
+from asyncio import gather as agather, InvalidStateError, CancelledError
+from warnings import warn
+from functools import partial
 from contextlib import suppress
-from weakref import WeakKeyDictionary
 
 # Project
-from ..error import (
-    ARxWarning, DisposeWarning, MultiStreamError, ObserverClosedError
-)
+from ..misc.flag import Flag
+from ..error import (ARxWarning, MultiStreamError, ObserverClosedError)
+from ..promise import Promise
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..abstract.disposable import Disposable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
 K = T.TypeVar("K")
+
+
+# Allow List to be weak referenced
+class List(list):
+    pass
+
+
+# Observation dispose
+async def dispose_observation(
+    disposed: Flag,
+    promises: T.List[Promise[None]],
+    *,
+    _observer: ReferenceType,
+    _observers: ReferenceType,
+) -> None:
+    # Guard against repeated calls
+    if disposed:
+        return
+
+    disposed.set_true()
+
+    # Cancel dispose promises to ensure no retention
+    for promise in promises:
+        promise.cancel()
+
+    # Clear cancelled promises
+    promises.clear()
+
+    # Remove observer from internal list and close it
+    observer = _observer()
+    if observer is not None:
+        observers = _observers()
+        if observers is not None:
+            try:
+                observers.remove(observer)
+            except ValueError:
+                pass  # Already removed ignore
+
+        if not (observer.closed or observer.keep_alive):
+            try:
+                await observer.aclose()
+            except Exception as ex:
+                warn(
+                    ARxWarning(
+                        "Failed to exec aclose on "
+                        f"{type(observer).__qualname__}", ex
+                    )
+                )
 
 
 async def ensure_action(
@@ -33,7 +82,7 @@ async def ensure_action(
     try:
         await action
     except Exception as ex:
-        if not isinstance(ex, ObserverClosedError):
+        if not isinstance(ex, (ObserverClosedError, CancelledError)):
             warn(
                 ARxWarning(
                     "Observer was disposed due to unhandled exception during "
@@ -41,9 +90,7 @@ async def ensure_action(
                 )
             )
         if dispose is not None:
-            with catch_warnings():
-                warn_filter("ignore", category=DisposeWarning)
-                await dispose()
+            await dispose()
 
 
 class MultiStream(Observable, Observer[K]):
@@ -64,7 +111,7 @@ class MultiStream(Observable, Observer[K]):
         """
         super().__init__(**kwargs)
 
-        self._observers = []  # type: T.List[Observer[K]]
+        self._observers = List()  # type: T.List[Observer[K]]
         self._disposable = WeakKeyDictionary()
 
     async def __asend__(self, value: K) -> None:
@@ -96,46 +143,27 @@ class MultiStream(Observable, Observer[K]):
             self.resolve(None)
 
     def __observe__(self, observer: Observer[K]) -> Disposable:
+        # Guard against repeated observation
         if observer in self._observers:
             raise MultiStreamError("Duplicate observation")
 
-        stream_name = type(self).__qualname__
-
-        async def dispose() -> None:
-            # Cancel dispose promises to ensure no retention
-            dispose_promise.cancel()
-            stream_close_promise.cancel()
-
-            try:
-                self._observers.remove(observer)
-            except ValueError:
-                warn(
-                    DisposeWarning(
-                        "Dispose for observation "
-                        f"`[{stream_name}] > [{type(observer).__qualname__}]` "
-                        "was called more than once",
-                    )
-                )
-
-            if not (observer.closed or observer.keep_alive):
-                try:
-                    await observer.aclose()
-                except Exception as ex:
-                    warn(
-                        ARxWarning(
-                            "Failed to exec aclose on "
-                            f"{type(observer).__qualname__}", ex
-                        )
-                    )
-
-        # Ensure that observable is disposed when it closes
-        dispose_promise = observer.lastly(dispose)
-        # Ensure that observable is disposed when stream closes
-        stream_close_promise = self.lastly(dispose)
-
-        # Add observer to internal list
+        # Add observer to internal observation list
         self._observers.append(observer)
+
+        promises = []
+        dispose = partial(
+            dispose_observation,
+            Flag(),
+            promises,
+            _observer=ReferenceType(observer),
+            _observers=ReferenceType(self._observers),
+        )
+
+        # Save weakref to dispose
         self._disposable[observer] = dispose
+
+        # Ensure that observable is disposed when it or the stream closes
+        promises.extend((observer.lastly(dispose), self.lastly(dispose)))
 
         # Return observation disposable
         return AnonymousDisposable(dispose)
