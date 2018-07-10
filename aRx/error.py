@@ -1,6 +1,6 @@
 __all__ = (
     "ARxError", "ObserverError", "ObserverClosedError", "SingleStreamError",
-    "MultiStreamError", "ARxWarning", "DisposeWarning"
+    "MultiStreamError", "ARxWarning"
 )
 
 # Internal
@@ -61,8 +61,3 @@ class ARxWarning(Warning):
             )
 
         super().__init__(msg)
-
-
-class DisposeWarning(ARxWarning):
-    """aRx error for when dispose fails."""
-    pass

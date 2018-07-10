@@ -18,7 +18,7 @@ StopCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
 class Stop(Observable):
-    """Observable that stop observable source according to a predicate."""
+    """Observable that stops according to a predicate."""
 
     class _StopSink(SingleStream[K]):
         def __init__(self, predicate: StopCallable, **kwargs) -> None:
@@ -35,9 +35,9 @@ class Stop(Observable):
             if iscoroutinefunction(self._predicate):
                 must_stop = await must_stop
 
-            # Remove reference early to avoid keeping large objects in memory
             awaitable = self.aclose() if must_stop else super().__asend__(value)
 
+            # Remove reference early to avoid keeping large objects in memory
             del value
 
             await awaitable
