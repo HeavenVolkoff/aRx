@@ -135,6 +135,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
         if should_close:
             try:
                 self.reject(main_ex)
+                # TODO: Should we await aclose?
             except InvalidStateError:
                 warn(
                     ARxWarning(
