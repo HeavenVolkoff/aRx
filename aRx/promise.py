@@ -56,7 +56,7 @@ async def _rejection_wrapper(
 async def _resolution_wrapper(
     promise: AbstractPromise[K], on_resolution: T.Callable[[], L],
     await_flag: Flag, loop: AbstractEventLoop
-) -> L:
+) -> K:
     """Coroutine that wraps a promise and manages a resolution callback.
 
     Arguments:
@@ -72,24 +72,26 @@ async def _resolution_wrapper(
     promise = shield(promise, loop=loop)
 
     try:
-        await promise
+        result = await promise
     except CancelledError as ex:
         if await_flag:
             raise ex
         else:
             return
-    except Exception:
-        pass
+    except Exception as ex:
+        result = ex
 
-    result = on_resolution()
+    resolution_result = on_resolution()
 
     try:
-        result = ensure_future(result, loop=loop)
+        resolution_result = ensure_future(resolution_result, loop=loop)
     except TypeError:
         pass  # Result isn't awaitable
     else:
-        result = await result
+        # Resolution callback result is ignored
+        await resolution_result
 
+    # The Promise result is propagated
     return result
 
 
@@ -175,7 +177,7 @@ class Promise(AbstractPromise[K]):
             loop=self._loop
         )
 
-    def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise[L]':
+    def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise[K]':
         """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
         The :class:`~typing.Coroutine` will await the promise resolution and 
         call the callback.
