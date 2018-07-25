@@ -31,10 +31,8 @@ async def _rejection_wrapper(
         Callback result.
 
     """
-    promise = shield(promise, loop=loop)
-
     try:
-        result = await promise
+        return await shield(promise, loop=loop)
     except CancelledError as ex:
         if await_flag:
             raise ex
@@ -43,14 +41,14 @@ async def _rejection_wrapper(
     except Exception as ex:
         result = on_reject(ex)
 
-    try:
-        result = ensure_future(result, loop=loop)
-    except TypeError:
-        pass  # Result isn't awaitable
-    else:
-        result = await result
+        try:
+            result = ensure_future(result, loop=loop)
+        except TypeError:
+            pass  # Result isn't awaitable
+        else:
+            result = await result
 
-    return result
+        return result
 
 
 async def _resolution_wrapper(
@@ -69,30 +67,22 @@ async def _resolution_wrapper(
         Callback result.
 
     """
-    promise = shield(promise, loop=loop)
-
     try:
-        result = await promise
+        return await shield(promise, loop=loop)
     except CancelledError as ex:
         if await_flag:
             raise ex
         else:
             return
-    except Exception as ex:
-        result = ex
+    finally:
+        resolution_result = on_resolution()
 
-    resolution_result = on_resolution()
-
-    try:
-        resolution_result = ensure_future(resolution_result, loop=loop)
-    except TypeError:
-        pass  # Result isn't awaitable
-    else:
-        # Resolution callback result is ignored
-        await resolution_result
-
-    # The Promise result is propagated
-    return result
+        try:
+            resolution_result = ensure_future(resolution_result, loop=loop)
+        except TypeError:
+            pass  # Result isn't awaitable
+        else:
+            await resolution_result
 
 
 async def _fulfillment_wrapper(
@@ -111,10 +101,8 @@ async def _fulfillment_wrapper(
         Callback result.
 
     """
-    promise = shield(promise, loop=loop)
-
     try:
-        result = await promise
+        result = await shield(promise, loop=loop)
     except CancelledError as ex:
         if await_flag:
             raise ex
