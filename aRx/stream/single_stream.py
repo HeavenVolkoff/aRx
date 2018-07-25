@@ -38,10 +38,9 @@ class SingleStream(Observable, Observer[K]):
 
     @property
     def closed(self):
-        """Property that indicates if this observer is closed or not."""
+        """Property that indicates if this stream is closed or not."""
         return super().closed or (
-            # Guard against rare concurrence issue were a stream event can be
-            # called after a observer closed, but before it is disposed.
+            # Also report closed when observer is closed
             self._observer is not None and self._observer.closed
         )
 
