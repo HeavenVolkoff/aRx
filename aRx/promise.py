@@ -3,8 +3,13 @@ __all__ = ("Promise", )
 # Internal
 import typing as T
 
-from asyncio import (shield, ensure_future, CancelledError, InvalidStateError)
-from contextlib import AbstractContextManager
+from contextlib import ExitStack
+from asyncio import shield, ensure_future, CancelledError, InvalidStateError
+
+try:
+    from contextlib import AsyncExitStack
+except ImportError:
+    from async_exit_stack import AsyncExitStack
 
 # Project
 from .abstract.promise import Promise as AbstractPromise
@@ -14,11 +19,18 @@ L = T.TypeVar("L")
 
 
 def contains_cancelled_error(ex: T.Optional[Exception]):
-    return isinstance(ex, Exception) and (
-        isinstance(ex, CancelledError)
+    if isinstance(ex, Exception) and (
+        getattr(ex, "__has_cancelled_error__", False)
+        or isinstance(ex, CancelledError)
         or contains_cancelled_error(ex.__cause__)
         or contains_cancelled_error(ex.__context__)
-    )
+    ):
+        try:
+            setattr(ex, "__has_cancelled_error__", True)
+        except AttributeError:
+            pass
+        return True
+    return False
 
 
 class Promise(AbstractPromise[K]):
@@ -60,10 +72,10 @@ class Promise(AbstractPromise[K]):
         return ResolutionPromise(self, on_resolved, loop=self._loop)
 
 
-class ChainPromise(Promise[K], AbstractContextManager):
+class ChainPromise(Promise[K]):
     """A special promise implementation used by the chained callback Promises."""
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def _check_cancelled_exit(self, _, exc_value, __):
         if contains_cancelled_error(exc_value) and not self._awaited:
             return True
 
@@ -108,7 +120,9 @@ class FulfillmentPromise(ChainPromise[L]):
             Callback result.
 
         """
-        with self:
+        with ExitStack() as stack:
+            stack.push(self._check_cancelled_exit)
+
             result = on_fulfilled(await shield(promise, loop=self.loop))
 
             try:
@@ -141,14 +155,16 @@ class RejectionPromise(ChainPromise[L]):
             Callback result.
 
         """
-        with self:
+        with ExitStack() as stack:
+            stack.push(self._check_cancelled_exit)
+
             try:
                 return await shield(promise, loop=self.loop)
             except Exception as ex:
-                try:
-                    if self._cancelled:
-                        return
+                if contains_cancelled_error(ex):
+                    raise ex
 
+                try:
                     result = on_reject(ex)
 
                     try:
@@ -156,10 +172,6 @@ class RejectionPromise(ChainPromise[L]):
                     except TypeError:
                         pass
                     else:
-                        if contains_cancelled_error(ex):
-                            # Defer cancel to give task time to begin execution
-                            self.loop.call_soon(result.cancel)
-
                         result = await result
 
                     return result
@@ -191,13 +203,8 @@ class ResolutionPromise(ChainPromise[K]):
             Callback result.
 
         """
-        try:
-            from contextlib import AsyncExitStack
-        except ImportError:
-            from async_exit_stack import AsyncExitStack
-
         async with AsyncExitStack() as stack:
-            stack.push(self)
+            stack.push(self._check_cancelled_exit)
 
             @stack.push_async_callback
             async def resolution():
