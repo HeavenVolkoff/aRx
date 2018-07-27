@@ -5,7 +5,6 @@ import typing as T
 
 from abc import ABCMeta, abstractmethod
 from asyncio import Future, ensure_future
-from collections.abc import Awaitable
 
 # Project
 from .loopable import Loopable
@@ -14,7 +13,7 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
+class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
     """A abstract Promise implementation that encapsulate an awaitable.
 
     .. Warning::
@@ -23,7 +22,7 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
         maintained.
     """
 
-    __slots__ = ("_fut", )
+    __slots__ = ("_fut", "_awaited", "_cancelled")
 
     def __init__(self, awaitable: T.Optional[T.Awaitable[K]] = None, **kwargs):
         """Promise constructor.
@@ -38,8 +37,11 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
             self.loop.create_future()
             if awaitable is None else ensure_future(awaitable, loop=self.loop)
         )  # type: Future
+        self._awaited = False
+        self._cancelled = False
 
     def __await__(self) -> T.Generator[T.Any, None, K]:
+        self._awaited = True
         return self._fut.__await__()
 
     def __or__(self, on_reject: T.Callable[[Exception], T.Any]) -> 'Promise':
@@ -67,7 +69,17 @@ class Promise(Awaitable, Loopable, T.Generic[K], metaclass=ABCMeta):
             Boolean indicating if the cancellation occurred or not.
 
         """
+        self._cancelled = True
         return self._fut.cancel()
+
+    def cancelled(self) -> bool:
+        """Indicates whether promise is cancelled or not.
+
+        Returns:
+            Boolean indicating if promise is cancelled or not.
+
+        """
+        return self._fut.cancelled()
 
     def resolve(self, result: K) -> None:
         """Resolve Promise with given value.

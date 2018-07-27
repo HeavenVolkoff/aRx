@@ -19,7 +19,7 @@ class AnonymousDisposable(Disposable):
 
     def __init__(
         self,
-        dispose: T.Callable[[], T.Union[T.Awaitable[None], None]] = anoop,
+        dispose: T.Callable[[], T.Union[T.Awaitable[T.Any], T.Any]] = anoop,
         **kwargs
     ) -> None:
         """AnonymousDisposable constructor.

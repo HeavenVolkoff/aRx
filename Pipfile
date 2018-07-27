@@ -10,5 +10,8 @@ sphinx_bootstrap_theme = "*"
 sphinx-autobuild = "*"
 travis-sphinx = "*"
 
+[packages]
+async-exit-stack = {version = "*", markers="python_version < '3.7'"}
+
 [requires]
 python_version = "3.6"
