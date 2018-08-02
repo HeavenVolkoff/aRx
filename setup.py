@@ -42,6 +42,11 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
     ],
+    extras_require={
+        ':python_version<"3.7"': [
+            'async-exit-stack'
+        ]
+    },
     tests_require=['pytest', "pytest-asyncio"],
     setup_requires=['pytest-runner'],
     python_requires=">=3.6",
