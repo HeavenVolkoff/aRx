@@ -19,17 +19,16 @@ class FromAsyncIterable(Observable, T.Generic[K]):
     async def _worker(
         async_iterator: T.AsyncIterator, observer: Observer
     ) -> None:
-        ex = None
-        while ex is None:
-            try:
-                # TODO: FIX in Python 3.7
-                data = await async_iterator.__anext__()
-            except Exception as _ex:
-                ex = _ex
-            else:
-                await observer.asend(data)
+        try:
+            async for data in async_iterator:
+                if observer.closed:
+                    break
 
-        if isinstance(ex, StopAsyncIteration) or not await observer.araise(ex):
+                await observer.asend(data)
+        except Exception as ex:
+            await observer.araise(ex)
+
+        if not (observer.closed or observer.keep_alive):
             await observer.aclose()
 
     def __init__(self, async_iterable: T.AsyncIterable[K], **kwargs) -> None:
@@ -42,20 +41,20 @@ class FromAsyncIterable(Observable, T.Generic[K]):
         """
         super().__init__(**kwargs)
 
-        # TODO: FIX in Python 3.7
+        # Internal
         self._async_iterator = async_iterable.__aiter__()
 
     def __observe__(self, observer: Observer) -> Disposable:
         """Schedule async iterator flush and register observer."""
-        if self._async_iterator is not None:
+        task = None
+        if getattr(self, "_async_iterator", None) is not None:
             task = observer.loop.create_task(
                 FromAsyncIterable._worker(self._async_iterator, observer)
             )
 
             # Clear reference to prevent reiterations
-            self._async_iterator = None
+            del self._async_iterator
+        elif not (observer.closed or observer.keep_alive):
+            observer.loop.create_task(observer.aclose())
 
-        async def cancel():
-            task.cancel()
-
-        return AnonymousDisposable(cancel)
+        return AnonymousDisposable(None if task is None else task.cancel)

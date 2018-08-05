@@ -18,7 +18,7 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-def contains_cancelled_error(ex: T.Optional[Exception]):
+def contains_cancelled_error(ex: T.Optional[BaseException]):
     if isinstance(ex, Exception) and (
         getattr(ex, "__has_cancelled_error__", False)
         or isinstance(ex, CancelledError)
@@ -100,9 +100,11 @@ class ChainPromise(Promise[K]):
 
 class FulfillmentPromise(ChainPromise[L]):
     def __init__(
-        self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L],
-        **kwargs
-    ):
+        self,
+        promise: AbstractPromise,
+        on_fulfilled: T.Callable[[K], L],
+        **kwargs,
+    ) -> None:
         super().__init__(
             awaitable=self._wrapper(promise, on_fulfilled), **kwargs
         )
@@ -126,20 +128,24 @@ class FulfillmentPromise(ChainPromise[L]):
             result = on_fulfilled(await shield(promise, loop=self.loop))
 
             try:
-                result = ensure_future(result, loop=self.loop)
+                result_fut = ensure_future(
+                    result, loop=self.loop
+                )  # type: T.Awaitable[L]
             except TypeError:
                 pass
             else:
-                result = await result
+                result = await result_fut
 
             return result
 
 
 class RejectionPromise(ChainPromise[L]):
     def __init__(
-        self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L],
-        **kwargs
-    ):
+        self,
+        promise: AbstractPromise,
+        on_reject: T.Callable[[Exception], L],
+        **kwargs,
+    ) -> None:
         super().__init__(awaitable=self._wrapper(promise, on_reject), **kwargs)
 
     async def _wrapper(
@@ -168,11 +174,13 @@ class RejectionPromise(ChainPromise[L]):
                     result = on_reject(ex)
 
                     try:
-                        result = ensure_future(result, loop=self.loop)
+                        result_fut = ensure_future(
+                            result, loop=self.loop
+                        )  # type: T.Awaitable[L]
                     except TypeError:
                         pass
                     else:
-                        result = await result
+                        result = await result_fut
 
                     return result
                 except Exception as _ex:
@@ -183,9 +191,11 @@ class RejectionPromise(ChainPromise[L]):
 
 class ResolutionPromise(ChainPromise[K]):
     def __init__(
-        self, promise: AbstractPromise, on_resolution: T.Callable[[], L],
-        **kwargs
-    ):
+        self,
+        promise: AbstractPromise,
+        on_resolution: T.Callable[[], L],
+        **kwargs,
+    ) -> None:
         super().__init__(
             awaitable=self._wrapper(promise, on_resolution), **kwargs
         )

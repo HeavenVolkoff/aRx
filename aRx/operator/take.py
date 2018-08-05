@@ -13,7 +13,7 @@ from ..abstract.observable import Observable, observe
 from ..abstract.disposable import Disposable, adispose
 from ..disposable import CompositeDisposable
 
-K = T.TypeVar('T')
+K = T.TypeVar('K')
 
 
 class Take(Observable):

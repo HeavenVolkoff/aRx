@@ -29,22 +29,24 @@ class Max(Observable):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 
-            self._max = None  # type: T.Optional[K]
-
         async def __asend__(self, value: K) -> None:
-            if value > self._max:
-                self._max = value
+            try:
+                is_greater = value > getattr(self, "_max")
+            except AttributeError:
+                is_greater = True
+
+            if is_greater:
+                setattr(self, "_max", value)
 
         async def __aclose__(self) -> None:
-            max_value = self._max
-            self._max = None
-
-            awaitable = super().asend(max_value)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del max_value
-
-            await awaitable
+            try:
+                awaitable = super().asend(getattr(self, "_max"))
+                # Remove reference early to avoid keeping large objects in memory
+                delattr(self, "_max")
+            except AttributeError:
+                pass
+            else:
+                await awaitable
 
             await super().__aclose__()
 

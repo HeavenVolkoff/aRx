@@ -6,7 +6,7 @@ import typing as T
 from asyncio import iscoroutine
 
 # Project
-from ..misc.noop import anoop
+from ..misc.noop import noop
 from ..abstract.disposable import Disposable
 
 
@@ -18,9 +18,7 @@ class AnonymousDisposable(Disposable):
     """
 
     def __init__(
-        self,
-        dispose: T.Callable[[], T.Union[T.Awaitable[T.Any], T.Any]] = anoop,
-        **kwargs
+        self, dispose: T.Optional[T.Callable[[], T.Any]] = None, **kwargs
     ) -> None:
         """AnonymousDisposable constructor.
 
@@ -35,7 +33,7 @@ class AnonymousDisposable(Disposable):
         """
         super().__init__(**kwargs)
 
-        self._adispose = dispose
+        self._adispose = noop if dispose is None else dispose
 
     async def __adispose__(self) -> None:
         """Call anonymous function on dispose."""

@@ -1,8 +1,5 @@
 __all__ = ("Empty", )
 
-# Internal
-from asyncio import Task
-
 # Project
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
@@ -14,10 +11,7 @@ class Empty(Observable):
     """Observable that doesn't output data and closes as soon as possible."""
 
     def __observe__(self, observer: Observer) -> Disposable:
-        """Register a call to observable `close`_ on loop."""
-        task = observer.loop.create_task(observer.aclose())  # type: Task
+        if not (observer.closed or observer.keep_alive):
+            observer.loop.create_task(observer.aclose())
 
-        async def dispose():
-            task.cancel()
-
-        return AnonymousDisposable(dispose)
+        return AnonymousDisposable()

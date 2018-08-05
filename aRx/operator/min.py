@@ -29,22 +29,24 @@ class Min(Observable):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 
-            self._min = None  # type: T.Optional[K]
-
         async def __asend__(self, value: K) -> None:
-            if value < self._min:
-                self._min = value
+            try:
+                is_greater = value < getattr(self, "_min")
+            except AttributeError:
+                is_greater = True
+
+            if is_greater:
+                setattr(self, "_min", value)
 
         async def __aclose__(self) -> None:
-            min_value = self._min
-            self._min = None
-
-            awaitable = super().asend(min_value)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del min_value
-
-            await awaitable
+            try:
+                awaitable = super().asend(getattr(self, "_min"))
+                # Remove reference early to avoid keeping large objects in memory
+                delattr(self, "_min")
+            except AttributeError:
+                pass
+            else:
+                await awaitable
 
             await super().__aclose__()
 

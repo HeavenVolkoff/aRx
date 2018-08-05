@@ -11,7 +11,12 @@ class Loopable(object):
 
     __slots__ = ("_loop", )
 
-    def __init__(self, *, loop: T.Optional[AbstractEventLoop] = None, **kwargs):
+    def __init__(
+        self,
+        *,
+        loop: T.Optional[AbstractEventLoop] = None,
+        **kwargs,
+    ) -> None:
         """Loopable constructor.
 
         Arguments:

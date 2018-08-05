@@ -28,7 +28,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
     """
     __slots__ = ("keep_alive", "_close_guard", "_close_promise")
 
-    def __init__(self, *, keep_alive: bool = False, **kwargs):
+    def __init__(self, *, keep_alive: bool = False, **kwargs) -> None:
         """Observer constructor.
 
         Arguments:

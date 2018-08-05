@@ -84,7 +84,7 @@ class MultiStream(Observable, Observer[K]):
         with suppress(InvalidStateError):
             self.resolve(None)
 
-    def __observe__(self, observer: Observer[K]) -> Disposable:
+    def __observe__(self, observer) -> Disposable:
         # Guard against repeated observation
         if observer in self._observers:
             raise MultiStreamError("Duplicate observation")

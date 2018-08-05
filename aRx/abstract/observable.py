@@ -67,4 +67,9 @@ def observe(observable: Observable, observer: Observer) -> Disposable:
     Returns:
         Disposable that undoes this subscription.
     """
+    from ..error import ObserverClosedError
+
+    if observer.closed:
+        raise ObserverClosedError(observer)
+
     return observable.__observe__(observer)

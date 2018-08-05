@@ -24,7 +24,11 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
 
     __slots__ = ("_fut", "_awaited", "_cancelled")
 
-    def __init__(self, awaitable: T.Optional[T.Awaitable[K]] = None, **kwargs):
+    def __init__(
+        self,
+        awaitable: T.Optional[T.Awaitable[K]] = None,
+        **kwargs,
+    ) -> None:
         """Promise constructor.
 
         Arguments:
@@ -43,15 +47,6 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
     def __await__(self) -> T.Generator[T.Any, None, K]:
         self._awaited = True
         return self._fut.__await__()
-
-    def __or__(self, on_reject: T.Callable[[Exception], T.Any]) -> 'Promise':
-        return self.catch(on_reject)
-
-    def __gt__(self, on_resolution: T.Callable[[], L]) -> 'Promise':
-        return self.lastly(on_resolution)
-
-    def __and__(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise':
-        return self.then(on_fulfilled)
 
     def done(self) -> bool:
         """Check if promise is done.

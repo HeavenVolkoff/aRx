@@ -32,7 +32,7 @@ class SingleStream(Observable, Observer[K]):
         """
         super().__init__(**kwargs)
 
-        self._lock = self._loop.create_future()  # type: T.Optional[Future]
+        self._lock = self._loop.create_future()  # type: Future
         self._observer = None  # type: T.Optional[Observer[K]]
         self._observer_close_promise = None
 
@@ -51,6 +51,9 @@ class SingleStream(Observable, Observer[K]):
         except CancelledError:
             pass
         else:
+            if self._observer is None:
+                raise RuntimeError("Observer is None")
+
             awaitable = self._observer.asend(value)
 
             # Remove reference early to avoid keeping large objects in memory
@@ -64,6 +67,9 @@ class SingleStream(Observable, Observer[K]):
         except CancelledError:
             pass
         else:
+            if self._observer is None:
+                raise RuntimeError("Observer is None")
+
             await self._observer.araise(ex)
 
         # SingleStream doesn't close on raise
@@ -88,7 +94,7 @@ class SingleStream(Observable, Observer[K]):
         if not (observer is None or observer.closed or observer.keep_alive):
             await observer.aclose()
 
-    def __observe__(self, observer: Observer[K]) -> Disposable:
+    def __observe__(self, observer) -> Disposable:
         """Start streaming.
 
         Raises:

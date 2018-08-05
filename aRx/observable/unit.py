@@ -30,7 +30,8 @@ class Unit(Observable, Loopable):
             else:
                 await observer.asend(value)
 
-        await observer.aclose()
+        if not (observer.closed or observer.keep_alive):
+            await observer.aclose()
 
     def __init__(self, value, **kwargs) -> None:
         """Unit constructor
@@ -41,14 +42,11 @@ class Unit(Observable, Loopable):
         """
         super().__init__(**kwargs)
 
-        # Public
+        # Internal
         self._value = value
 
     def __observe__(self, observer: Observer) -> Disposable:
         # Add worker execution to loop queue
         task = observer.loop.create_task(Unit._worker(self._value, observer))
 
-        async def cancel():
-            task.cancel()
-
-        return AnonymousDisposable(cancel)
+        return AnonymousDisposable(task.cancel)

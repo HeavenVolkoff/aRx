@@ -25,17 +25,19 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         super().__init__(**kwargs)
 
         # Private
-        self._queue = deque()  # type: T.Deque[T.Tuple[bool, K]]
+        self._queue = (
+            deque()
+        )  # type:   T.Deque[T.Tuple[bool, T.Union[K, Exception]]]
         self._counter = 0
         self._control = self.loop.create_future()  # type: Future
 
     @property
-    def _next_value(self) -> T.Tuple[bool, K]:
+    def _next_value(self) -> T.Tuple[bool, T.Union[K, Exception]]:
         """Shortcut to self._queue"""
         return self._queue.popleft()
 
     @_next_value.setter
-    def _next_value(self, value: T.Tuple[bool, K]) -> None:
+    def _next_value(self, value: T.Tuple[bool, T.Union[K, Exception]]) -> None:
         self._queue.append(value)
 
         with suppress(InvalidStateError):
@@ -56,7 +58,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         with suppress(InvalidStateError):
             self.resolve(self._counter)
 
-    async def __anext__(self) -> T.Awaitable[K]:
+    async def __anext__(self):
         while not self._queue:
             if self.closed:
                 raise StopAsyncIteration()

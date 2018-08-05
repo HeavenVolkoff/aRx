@@ -15,14 +15,13 @@ from ..disposable import CompositeDisposable
 
 K = T.TypeVar('K')
 J = T.TypeVar('J')
-MapCallable = T.Callable[[K, int], T.Union[T.Awaitable[J], J]]
 
 
 class Map(Observable):
     """Observable that outputs transmuted data from an observable source."""
 
     class _MapSink(SingleStream[J]):
-        def __init__(self, mapper: MapCallable, **kwargs) -> None:
+        def __init__(self, mapper: T.Callable[[K, int], J], **kwargs) -> None:
             super().__init__(**kwargs)
 
             self._index = 0
@@ -32,20 +31,23 @@ class Map(Observable):
             index = self._index
             self._index += 1
 
-            value = self._mapper(value, index)
-
-            if iscoroutinefunction(self._mapper):
-                value = await value
-
-            awaitable = super().__asend__(value)
+            result = self._mapper(value, index)
 
             # Remove reference early to avoid keeping large objects in memory
             del value
 
+            if iscoroutinefunction(self._mapper):
+                result = await result
+
+            awaitable = super().__asend__(result)
+
+            # Remove reference early to avoid keeping large objects in memory
+            del result
+
             await awaitable
 
     def __init__(
-        self, mapper: MapCallable, source: Observable, **kwargs
+        self, mapper: T.Callable[[K, int], J], source: Observable, **kwargs
     ) -> None:
         """Map constructor.
 
@@ -74,7 +76,7 @@ class Map(Observable):
             raise exc
 
 
-def map(mapper: MapCallable) -> T.Callable[[], Map]:
+def map(mapper: T.Callable[[K, int], J]) -> T.Callable[[], Map]:
     """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:

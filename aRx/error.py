@@ -45,7 +45,8 @@ class MultiStreamError(ARxError):
 class ARxWarning(Warning):
     """aRx base warning class."""
 
-    def __init__(self, msg: str, exception: T.Optional[Exception] = None):
+    def __init__(self, msg: str,
+                 exception: T.Optional[Exception] = None) -> None:
         """ARxWarning constructor.
         
         Arguments:
