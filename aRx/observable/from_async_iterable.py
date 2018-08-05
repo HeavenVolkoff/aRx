@@ -47,7 +47,7 @@ class FromAsyncIterable(Observable, T.Generic[K]):
     def __observe__(self, observer: Observer) -> Disposable:
         """Schedule async iterator flush and register observer."""
         task = None
-        if getattr(self, "_async_iterator", None) is not None:
+        if hasattr(self, "_async_iterator"):
             task = observer.loop.create_task(
                 FromAsyncIterable._worker(self._async_iterator, observer)
             )

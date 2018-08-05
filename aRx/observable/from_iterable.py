@@ -45,7 +45,7 @@ class FromIterable(Observable, T.Generic[K]):
     def __observe__(self, observer: Observer) -> Disposable:
         """Schedule iterator flush and register observer."""
         task = None
-        if getattr(self, "_iterator", None) is not None:
+        if hasattr(self, "_iterator"):
             task = observer.loop.create_task(
                 FromIterable._worker(self._iterator, observer)
             )
