@@ -1,10 +1,9 @@
-__all__ = ("Never", )
+__all__ = ("Never",)
 
-# Project
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable
-from ..abstract.disposable import Disposable
 from ..disposable import AnonymousDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable
+from ..abstract.observable import Observable
 
 
 class Never(Observable):

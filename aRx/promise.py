@@ -1,18 +1,11 @@
-__all__ = ("Promise", )
+__all__ = ("Promise",)
 
-# Internal
 import typing as T
-
+from asyncio import CancelledError, InvalidStateError, shield, ensure_future
 from contextlib import ExitStack
-from asyncio import shield, ensure_future, CancelledError, InvalidStateError
 
-try:
-    from contextlib import AsyncExitStack
-except ImportError:
-    from async_exit_stack import AsyncExitStack
-
-# Project
 from .abstract.promise import Promise as AbstractPromise
+from .misc.async_exit_stack import AsyncExitStack
 
 K = T.TypeVar("K")
 L = T.TypeVar("L")
@@ -39,7 +32,7 @@ class Promise(AbstractPromise[K]):
     See: :class:`~aRx.abstract.promise.Promise` for more information on the Promise abstract interface.
     """
 
-    def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise[L]':
+    def then(self, on_fulfilled: T.Callable[[K], L]) -> "Promise[L]":
         """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
         The :class:`~typing.Coroutine` will await the promise resolution and,
         if no exception is raised, it will call the callback with the promise 
@@ -50,7 +43,7 @@ class Promise(AbstractPromise[K]):
         """
         return FulfillmentPromise(self, on_fulfilled, loop=self._loop)
 
-    def catch(self, on_reject: T.Callable[[Exception], L]) -> 'Promise[L]':
+    def catch(self, on_reject: T.Callable[[Exception], L]) -> "Promise[L]":
         """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
         The :class:`~typing.Coroutine` will await the promise resolution and,
         if a exception is raised, it will call the callback with the promise 
@@ -61,7 +54,7 @@ class Promise(AbstractPromise[K]):
         """
         return RejectionPromise(self, on_reject, loop=self._loop)
 
-    def lastly(self, on_resolved: T.Callable[[], L]) -> 'Promise[K]':
+    def lastly(self, on_resolved: T.Callable[[], L]) -> "Promise[K]":
         """Concrete implementation that wraps the received callback on a :class:`~typing.Coroutine`.
         The :class:`~typing.Coroutine` will await the promise resolution and
         call the callback.
@@ -100,14 +93,9 @@ class ChainPromise(Promise[K]):
 
 class FulfillmentPromise(ChainPromise[L]):
     def __init__(
-        self,
-        promise: AbstractPromise,
-        on_fulfilled: T.Callable[[K], L],
-        **kwargs,
+        self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L], **kwargs
     ) -> None:
-        super().__init__(
-            awaitable=self._wrapper(promise, on_fulfilled), **kwargs
-        )
+        super().__init__(awaitable=self._wrapper(promise, on_fulfilled), **kwargs)
 
     async def _wrapper(
         self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L]
@@ -141,10 +129,7 @@ class FulfillmentPromise(ChainPromise[L]):
 
 class RejectionPromise(ChainPromise[L]):
     def __init__(
-        self,
-        promise: AbstractPromise,
-        on_reject: T.Callable[[Exception], L],
-        **kwargs,
+        self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L], **kwargs
     ) -> None:
         super().__init__(awaitable=self._wrapper(promise, on_reject), **kwargs)
 
@@ -191,14 +176,9 @@ class RejectionPromise(ChainPromise[L]):
 
 class ResolutionPromise(ChainPromise[K]):
     def __init__(
-        self,
-        promise: AbstractPromise,
-        on_resolution: T.Callable[[], L],
-        **kwargs,
+        self, promise: AbstractPromise, on_resolution: T.Callable[[], L], **kwargs
     ) -> None:
-        super().__init__(
-            awaitable=self._wrapper(promise, on_resolution), **kwargs
-        )
+        super().__init__(awaitable=self._wrapper(promise, on_resolution), **kwargs)
 
     async def _wrapper(
         self, promise: AbstractPromise, on_resolution: T.Callable[[], L]

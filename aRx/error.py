@@ -1,19 +1,24 @@
 __all__ = (
-    "ARxError", "ObserverError", "ObserverClosedError", "SingleStreamError",
-    "MultiStreamError", "ARxWarning"
+    "ARxError",
+    "ObserverError",
+    "ObserverClosedError",
+    "SingleStreamError",
+    "MultiStreamError",
+    "ARxWarning",
 )
 
-# Internal
 import typing as T
 
 
 class ARxError(Exception):
     """aRx base error class."""
+
     pass
 
 
 class ObserverError(ARxError):
     """aRx error exclusive to :class:`~aRx.abstract.observer.Observer`."""
+
     pass
 
 
@@ -34,19 +39,20 @@ class ObserverClosedError(ObserverError):
 
 class SingleStreamError(ARxError):
     """aRx error exclusive to :class:`~aRx.stream.single_stream.SingleStream`."""
+
     pass
 
 
 class MultiStreamError(ARxError):
     """aRx error exclusive to :class:`~aRx.stream.multi_stream.MultiStream`."""
+
     pass
 
 
 class ARxWarning(Warning):
     """aRx base warning class."""
 
-    def __init__(self, msg: str,
-                 exception: T.Optional[Exception] = None) -> None:
+    def __init__(self, msg: str, exception: T.Optional[Exception] = None) -> None:
         """ARxWarning constructor.
         
         Arguments:
@@ -56,9 +62,7 @@ class ARxWarning(Warning):
         """
         if exception is not None:
             from traceback import TracebackException
-            msg += (
-                "\n" +
-                "".join(TracebackException.from_exception(exception).format())
-            )
+
+            msg += "\n" + "".join(TracebackException.from_exception(exception).format())
 
         super().__init__(msg)

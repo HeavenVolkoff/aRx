@@ -1,19 +1,16 @@
 __all__ = ("Stop", "stop")
 
-# Internal
 import typing as T
-
 from asyncio import iscoroutinefunction
 from functools import partial
 
-# Project
-from ..stream.single_stream import SingleStream
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable, observe
-from ..abstract.disposable import Disposable, adispose
 from ..disposable import CompositeDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable, adispose
+from ..abstract.observable import Observable, observe
+from ..stream.single_stream import SingleStream
 
-K = T.TypeVar('K')
+K = T.TypeVar("K")
 StopCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
@@ -42,9 +39,7 @@ class Stop(Observable):
 
             await awaitable
 
-    def __init__(
-        self, predicate: StopCallable, source: Observable, **kwargs
-    ) -> None:
+    def __init__(self, predicate: StopCallable, source: Observable, **kwargs) -> None:
         """Stop constructor.
 
         Arguments:

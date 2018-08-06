@@ -1,18 +1,15 @@
-__all__ = ("MultiStream", )
+__all__ = ("MultiStream",)
 
-# Internal
 import typing as T
-
-from asyncio import Event, gather as agather, InvalidStateError
+from asyncio import Event, InvalidStateError, gather as agather
 from warnings import warn
 from contextlib import suppress
 
-# Project
 from ..error import ARxWarning, MultiStreamError
 from ..promise import Promise
 from ..abstract.observer import Observer
-from ..abstract.observable import Observable
 from ..abstract.disposable import Disposable
+from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
 K = T.TypeVar("K")
@@ -36,8 +33,7 @@ async def dispose_observation(
         except Exception as ex:
             warn(
                 ARxWarning(
-                    "Failed to exec aclose on "
-                    f"{type(observer).__qualname__}", ex
+                    "Failed to exec aclose on " f"{type(observer).__qualname__}", ex
                 )
             )
 
@@ -73,9 +69,7 @@ class MultiStream(Observable, Observer[K]):
         await agather(*awaitables)
 
     async def __araise__(self, ex: Exception) -> bool:
-        await agather(
-            *(obv.araise(ex) for obv in self._observers if not obv.closed)
-        )
+        await agather(*(obv.araise(ex) for obv in self._observers if not obv.closed))
 
         return False
 

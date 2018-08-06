@@ -1,15 +1,12 @@
-__all__ = ("Unit", )
+__all__ = ("Unit",)
 
-# Internal
 import typing as T
-
 from asyncio import ensure_future
 
-# Project
-from ..abstract.observer import Observer
 from ..abstract.loopable import Loopable
-from ..abstract.observable import Observable
+from ..abstract.observer import Observer
 from ..abstract.disposable import Disposable
+from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
 

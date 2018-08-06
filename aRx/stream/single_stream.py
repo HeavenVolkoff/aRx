@@ -1,8 +1,7 @@
-__all__ = ("SingleStream", )
+__all__ = ("SingleStream",)
 
 # Internal
 import typing as T
-
 from asyncio import Future, CancelledError, InvalidStateError
 from contextlib import suppress
 
@@ -41,7 +40,8 @@ class SingleStream(Observable, Observer[K]):
         """Property that indicates if this stream is closed or not."""
         return super().closed or (
             # Also report closed when observer is closed
-            self._observer is not None and self._observer.closed
+            self._observer is not None
+            and self._observer.closed
         )
 
     async def __asend__(self, value: K):
@@ -102,9 +102,7 @@ class SingleStream(Observable, Observer[K]):
 
         """
         if self._observer is not None:
-            raise SingleStreamError(
-                "Can't assign multiple observers to a SingleStream"
-            )
+            raise SingleStreamError("Can't assign multiple observers to a SingleStream")
 
         # Set stream observer
         self._observer = observer

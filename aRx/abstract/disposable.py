@@ -1,6 +1,5 @@
 __all__ = ("Disposable", "adispose")
 
-# Internal
 from abc import ABCMeta, abstractmethod
 from asyncio import gather as agather
 

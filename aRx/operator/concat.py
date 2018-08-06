@@ -1,16 +1,13 @@
 __all__ = ("Concat", "concat")
 
-# Internal
 import typing as T
-
 from functools import partial
 
-# Project
-from ..stream.single_stream import SingleStream
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable, observe
-from ..abstract.disposable import Disposable, adispose
 from ..disposable import CompositeDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable, adispose
+from ..abstract.observable import Observable, observe
+from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
 
@@ -38,8 +35,7 @@ class Concat(Observable):
 
         try:
             return CompositeDisposable(
-                *map(lambda s: observe(s, sink), self._sources),
-                observe(sink, observer)
+                *map(lambda s: observe(s, sink), self._sources), observe(sink, observer)
             )
         except Exception as exc:
             # Dispose sink if there is a exception during observation set-up

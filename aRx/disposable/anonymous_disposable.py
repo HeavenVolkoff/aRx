@@ -1,11 +1,8 @@
-__all__ = ('AnonymousDisposable', )
+__all__ = ("AnonymousDisposable",)
 
-# Internal
 import typing as T
-
 from asyncio import iscoroutine
 
-# Project
 from ..misc.noop import noop
 from ..abstract.disposable import Disposable
 

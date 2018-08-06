@@ -1,20 +1,17 @@
 __all__ = ("Map", "map")
 
-# Internal
 import typing as T
-
 from asyncio import iscoroutinefunction
 from functools import partial
 
-# Project
-from ..stream.single_stream import SingleStream
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable, observe
-from ..abstract.disposable import Disposable, adispose
 from ..disposable import CompositeDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable, adispose
+from ..abstract.observable import Observable, observe
+from ..stream.single_stream import SingleStream
 
-K = T.TypeVar('K')
-J = T.TypeVar('J')
+K = T.TypeVar("K")
+J = T.TypeVar("J")
 
 
 class Map(Observable):

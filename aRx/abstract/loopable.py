@@ -1,22 +1,15 @@
-__all__ = ("Loopable", )
+__all__ = ("Loopable",)
 
-# Internal
 import typing as T
-
 from asyncio import AbstractEventLoop, get_event_loop
 
 
 class Loopable(object):
     """Interface for easy access to asyncio loop."""
 
-    __slots__ = ("_loop", )
+    __slots__ = ("_loop",)
 
-    def __init__(
-        self,
-        *,
-        loop: T.Optional[AbstractEventLoop] = None,
-        **kwargs,
-    ) -> None:
+    def __init__(self, *, loop: T.Optional[AbstractEventLoop] = None, **kwargs) -> None:
         """Loopable constructor.
 
         Arguments:

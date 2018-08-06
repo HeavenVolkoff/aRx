@@ -1,13 +1,10 @@
-__all__ = ("IteratorObserver", )
+__all__ = ("IteratorObserver",)
 
-# Internal
 import typing as T
-
 from asyncio import Future, InvalidStateError
 from contextlib import suppress
 from collections import deque
 
-# Project
 from ..abstract.observer import Observer
 
 K = T.TypeVar("K")
@@ -25,9 +22,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         super().__init__(**kwargs)
 
         # Private
-        self._queue = (
-            deque()
-        )  # type:   T.Deque[T.Tuple[bool, T.Union[K, Exception]]]
+        self._queue = deque()  # type:   T.Deque[T.Tuple[bool, T.Union[K, Exception]]]
         self._counter = 0
         self._control = self.loop.create_future()  # type: Future
 

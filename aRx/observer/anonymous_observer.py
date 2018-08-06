@@ -1,15 +1,12 @@
-__all__ = ("AnonymousObserver", )
+__all__ = ("AnonymousObserver",)
 
-# Internal
 import typing as T
-
 from asyncio import InvalidStateError, iscoroutinefunction
 from warnings import warn
 from contextlib import suppress
 
-# Project
-from ..misc.noop import noop
 from ..error import ARxWarning
+from ..misc.noop import noop
 from ..abstract.observer import Observer
 
 K = T.TypeVar("K")

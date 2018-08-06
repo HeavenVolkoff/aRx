@@ -1,19 +1,16 @@
 __all__ = ("Filter", "filter")
 
-# Internal
 import typing as T
-
 from asyncio import iscoroutinefunction
 from functools import partial
 
-# Project
-from ..stream.single_stream import SingleStream
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable, observe
-from ..abstract.disposable import Disposable, adispose
 from ..disposable import CompositeDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable, adispose
+from ..abstract.observable import Observable, observe
+from ..stream.single_stream import SingleStream
 
-K = T.TypeVar('K')
+K = T.TypeVar("K")
 FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
@@ -44,9 +41,7 @@ class Filter(Observable):
 
                 await res
 
-    def __init__(
-        self, predicate: FilterCallable, source: Observable, **kwargs
-    ) -> None:
+    def __init__(self, predicate: FilterCallable, source: Observable, **kwargs) -> None:
         """Filter constructor.
 
         Arguments:

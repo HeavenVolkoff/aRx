@@ -1,14 +1,11 @@
-__all__ = ("Observer", )
+__all__ = ("Observer",)
 
-# Internal
 import typing as T
-
 from abc import ABCMeta, abstractmethod
 from asyncio import InvalidStateError
 from warnings import warn
 
-# Project
-from ..error import ObserverClosedError, ARxWarning
+from ..error import ARxWarning, ObserverClosedError
 from ..promise import Promise
 from ..disposable import Disposable
 
@@ -26,6 +23,7 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
             externally.
 
     """
+
     __slots__ = ("keep_alive", "_close_guard", "_close_promise")
 
     def __init__(self, *, keep_alive: bool = False, **kwargs) -> None:
@@ -140,7 +138,8 @@ class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
                 warn(
                     ARxWarning(
                         f"{type(self).__qualname__} was already resolved"
-                        " during `.araise()` call to treat:", main_ex
+                        " during `.araise()` call to treat:",
+                        main_ex,
                     )
                 )
 

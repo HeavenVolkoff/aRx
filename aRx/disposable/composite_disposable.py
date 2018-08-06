@@ -1,6 +1,5 @@
-__all__ = ('CompositeDisposable', )
+__all__ = ("CompositeDisposable",)
 
-# Project
 from ..abstract.disposable import Disposable, adispose
 
 

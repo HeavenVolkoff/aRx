@@ -1,15 +1,13 @@
-__all__ = ("FromIterable", )
+__all__ = ("FromIterable",)
 
-# Internal
 import typing as T
 
-# Project
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable
-from ..abstract.disposable import Disposable
 from ..disposable import AnonymousDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable
+from ..abstract.observable import Observable
 
-K = T.TypeVar('K')
+K = T.TypeVar("K")
 
 
 class FromIterable(Observable, T.Generic[K]):
@@ -20,10 +18,13 @@ class FromIterable(Observable, T.Generic[K]):
         try:
             for data in iterator:
                 if observer.closed:
-                    break
+                    return
 
                 await observer.asend(data)
         except Exception as ex:
+            if observer.closed:
+                return
+
             await observer.araise(ex)
 
         if not (observer.closed or observer.keep_alive):

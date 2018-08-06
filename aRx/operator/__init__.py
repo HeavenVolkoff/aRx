@@ -30,8 +30,22 @@ Example using operator to filter odd numbers from a Iterable source.
 """
 
 __all__ = (
-    "map", "Map", "max", "Max", "Min", "min", "skip", "Skip", "stop", "Stop",
-    "take", "Take", "filter", "Filter", "concat", "Concat"
+    "map",
+    "Map",
+    "max",
+    "Max",
+    "Min",
+    "min",
+    "skip",
+    "Skip",
+    "stop",
+    "Stop",
+    "take",
+    "Take",
+    "filter",
+    "Filter",
+    "concat",
+    "Concat",
 )
 
 from .map import Map, map

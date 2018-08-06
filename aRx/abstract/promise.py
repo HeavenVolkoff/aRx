@@ -1,12 +1,9 @@
-__all__ = ("Promise", )
+__all__ = ("Promise",)
 
-# Internal
 import typing as T
-
 from abc import ABCMeta, abstractmethod
 from asyncio import Future, ensure_future
 
-# Project
 from .loopable import Loopable
 
 K = T.TypeVar("K")
@@ -24,11 +21,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
 
     __slots__ = ("_fut", "_awaited", "_cancelled")
 
-    def __init__(
-        self,
-        awaitable: T.Optional[T.Awaitable[K]] = None,
-        **kwargs,
-    ) -> None:
+    def __init__(self, awaitable: T.Optional[T.Awaitable[K]] = None, **kwargs) -> None:
         """Promise constructor.
 
         Arguments:
@@ -39,7 +32,8 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
 
         self._fut = (
             self.loop.create_future()
-            if awaitable is None else ensure_future(awaitable, loop=self.loop)
+            if awaitable is None
+            else ensure_future(awaitable, loop=self.loop)
         )  # type: Future
         self._awaited = False
         self._cancelled = False
@@ -101,7 +95,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         self._fut.set_exception(error)
 
     @abstractmethod
-    def then(self, on_fulfilled: T.Callable[[K], L]) -> 'Promise':
+    def then(self, on_fulfilled: T.Callable[[K], L]) -> "Promise":
         """Chain a callback to be executed when the Promise resolves.
 
         Arguments:
@@ -118,7 +112,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    def catch(self, on_reject: T.Callable[[Exception], L]) -> 'Promise':
+    def catch(self, on_reject: T.Callable[[Exception], L]) -> "Promise":
         """Chain a callback to be executed when the Promise fails to resolve.
 
         Arguments:
@@ -135,7 +129,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    def lastly(self, on_fulfilled: T.Callable[[], L]) -> 'Promise':
+    def lastly(self, on_fulfilled: T.Callable[[], L]) -> "Promise":
         """Chain a callback to be executed when the Promise concludes.
 
         Arguments:

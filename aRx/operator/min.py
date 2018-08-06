@@ -1,16 +1,14 @@
 __all__ = ("Min", "min")
 
-# Internal
 import typing as T
 
-# Project
-from ..stream.single_stream import SingleStream
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable, observe
-from ..abstract.disposable import Disposable, adispose
 from ..disposable import CompositeDisposable
+from ..abstract.observer import Observer
+from ..abstract.disposable import Disposable, adispose
+from ..abstract.observable import Observable, observe
+from ..stream.single_stream import SingleStream
 
-K = T.TypeVar('K')
+K = T.TypeVar("K")
 
 
 class Min(Observable):
