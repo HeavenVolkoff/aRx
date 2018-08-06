@@ -14,9 +14,7 @@ class AnonymousDisposable(Disposable):
     optional and anonymous function.
     """
 
-    def __init__(
-        self, dispose: T.Optional[T.Callable[[], T.Any]] = None, **kwargs
-    ) -> None:
+    def __init__(self, dispose: T.Optional[T.Callable[[], T.Any]] = None, **kwargs) -> None:
         """AnonymousDisposable constructor.
 
         Raises:

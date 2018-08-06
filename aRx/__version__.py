@@ -11,6 +11,4 @@ __authors__ = "Vítor Augusto da Silva Vasconcellos, Børge Lanes, Dag Brattli"
 __copyright__ = "See COPYRIGHT file"
 __maintainer__ = "Vítor Augusto da Silva Vasconcellos"
 __description__ = "Asynchronous Reactive eXtensions for Python 3.6+"
-__maintainer_email__ = (
-    '"Vítor Augusto da Silva Vasconcellos" ' "<vasconcellos.dev@gmail.com>"
-)
+__maintainer_email__ = '"Vítor Augusto da Silva Vasconcellos" ' "<vasconcellos.dev@gmail.com>"

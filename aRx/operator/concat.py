@@ -15,9 +15,7 @@ K = T.TypeVar("K")
 class Concat(Observable):
     """Observable that is the concatenation of multiple observables sources"""
 
-    def __init__(
-        self, first: Observable, second: Observable, *rest: Observable, **kwargs
-    ) -> None:
+    def __init__(self, first: Observable, second: Observable, *rest: Observable, **kwargs) -> None:
         """Concat constructor.
 
         Arguments:

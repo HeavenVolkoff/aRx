@@ -26,9 +26,7 @@ class FromAsyncIterable(Observable, T.Generic[K]):
             # Redirect any error to observer
             stack.push_async_exit(
                 lambda _, exc, __: (
-                    None
-                    if observer.closed
-                    else (observer.loop.create_task(observer.araise(exc)))
+                    None if observer.closed else (observer.loop.create_task(observer.araise(exc)))
                 )
             )
 

@@ -43,9 +43,7 @@ class Map(Observable):
 
             await awaitable
 
-    def __init__(
-        self, mapper: T.Callable[[K, int], J], source: Observable, **kwargs
-    ) -> None:
+    def __init__(self, mapper: T.Callable[[K, int], J], source: Observable, **kwargs) -> None:
         """Map constructor.
 
         Arguments:

@@ -31,11 +31,7 @@ async def dispose_observation(
         try:
             await observer.aclose()
         except Exception as ex:
-            warn(
-                ARxWarning(
-                    "Failed to exec aclose on " f"{type(observer).__qualname__}", ex
-                )
-            )
+            warn(ARxWarning("Failed to exec aclose on " f"{type(observer).__qualname__}", ex))
 
 
 class MultiStream(Observable, Observer[K]):
@@ -59,9 +55,7 @@ class MultiStream(Observable, Observer[K]):
         self._observers = []  # type: T.List[Observer[K]]
 
     async def __asend__(self, value: K) -> None:
-        awaitables = tuple(
-            obv.asend(value) for obv in self._observers if not obv.closed
-        )
+        awaitables = tuple(obv.asend(value) for obv in self._observers if not obv.closed)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
@@ -91,9 +85,7 @@ class MultiStream(Observable, Observer[K]):
         dispose_observer = observer.lastly(dispose_event.set)
 
         # Set-up dispose execution
-        dispose_promise = Promise(
-            dispose_observation(observer, self._observers, dispose_event)
-        )
+        dispose_promise = Promise(dispose_observation(observer, self._observers, dispose_event))
         dispose_promise.lastly(dispose_stream.cancel)
         dispose_promise.lastly(dispose_observer.cancel)
 

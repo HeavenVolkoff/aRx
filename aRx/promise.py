@@ -97,9 +97,7 @@ class FulfillmentPromise(ChainPromise[L]):
     ) -> None:
         super().__init__(awaitable=self._wrapper(promise, on_fulfilled), **kwargs)
 
-    async def _wrapper(
-        self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L]
-    ) -> L:
+    async def _wrapper(self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L]) -> L:
         """Coroutine that wraps a promise and manages a fulfillment callback.
 
         Arguments:
@@ -116,9 +114,7 @@ class FulfillmentPromise(ChainPromise[L]):
             result = on_fulfilled(await shield(promise, loop=self.loop))
 
             try:
-                result_fut = ensure_future(
-                    result, loop=self.loop
-                )  # type: T.Awaitable[L]
+                result_fut = ensure_future(result, loop=self.loop)  # type: T.Awaitable[L]
             except TypeError:
                 pass
             else:
@@ -133,9 +129,7 @@ class RejectionPromise(ChainPromise[L]):
     ) -> None:
         super().__init__(awaitable=self._wrapper(promise, on_reject), **kwargs)
 
-    async def _wrapper(
-        self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L]
-    ) -> L:
+    async def _wrapper(self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L]) -> L:
         """Coroutine that wraps a promise and manages a rejection callback.
 
         Arguments:
@@ -159,9 +153,7 @@ class RejectionPromise(ChainPromise[L]):
                     result = on_reject(ex)
 
                     try:
-                        result_fut = ensure_future(
-                            result, loop=self.loop
-                        )  # type: T.Awaitable[L]
+                        result_fut = ensure_future(result, loop=self.loop)  # type: T.Awaitable[L]
                     except TypeError:
                         pass
                     else:
@@ -180,9 +172,7 @@ class ResolutionPromise(ChainPromise[K]):
     ) -> None:
         super().__init__(awaitable=self._wrapper(promise, on_resolution), **kwargs)
 
-    async def _wrapper(
-        self, promise: AbstractPromise, on_resolution: T.Callable[[], L]
-    ) -> K:
+    async def _wrapper(self, promise: AbstractPromise, on_resolution: T.Callable[[], L]) -> K:
         """Coroutine that wraps a promise and manages a resolution callback.
 
         Arguments:

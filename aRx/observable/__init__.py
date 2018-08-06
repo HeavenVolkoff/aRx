@@ -1,14 +1,6 @@
 """aRx observable implementations."""
 
-__all__ = (
-    "Unit",
-    "Never",
-    "Empty",
-    "FromAsyncIterable",
-    "FromIterable",
-    "Observable",
-    "observe",
-)
+__all__ = ("Unit", "Never", "Empty", "FromAsyncIterable", "FromIterable", "Observable", "observe")
 
 from .unit import Unit
 from .never import Never

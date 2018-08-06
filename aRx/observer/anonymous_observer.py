@@ -30,7 +30,7 @@ class AnonymousObserver(Observer[K]):
         asend: T.Callable[[K], T.Any] = noop,
         araise: T.Callable[[Exception], T.Any] = default_araise,
         aclose: T.Callable[[], T.Any] = noop,
-        **kwargs
+        **kwargs,
     ) -> None:
         """AnonymousObserver Constructor.
 

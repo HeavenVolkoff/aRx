@@ -10,9 +10,7 @@ class CompositeDisposable(Disposable):
     def _validate_mapper(disposable):
         return isinstance(disposable, Disposable)
 
-    def __init__(
-        self, first: Disposable, second: Disposable, *rest: Disposable, **kwargs
-    ) -> None:
+    def __init__(self, first: Disposable, second: Disposable, *rest: Disposable, **kwargs) -> None:
         """CompositeDisposable constructor.
 
         Raises:
