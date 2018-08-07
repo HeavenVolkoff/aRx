@@ -1,3 +1,9 @@
+"""Work derived from async-timeout.
+
+Reference: https://github.com/aio-libs/async-timeout
+See original license in: ../licenses/LICENSE.async_timeout.txt
+"""
+
 import typing as T
 import asyncio
 from asyncio import AbstractEventLoop, get_event_loop

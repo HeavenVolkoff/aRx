@@ -11,7 +11,7 @@ Inspired by [RxPY](https://github.com/ReactiveX/RxPY)
 
 ## License & Copyright
 Original Work:
->[The MIT License (MIT)](./LICENSE.original.md)
+>[The MIT License (MIT)](licenses/LICENSE.aioreactive.txt)
 >
 >[Copyright (c) 2016 Børge Lanes, Dag Brattli.](./COPYRIGHT.md)
 
