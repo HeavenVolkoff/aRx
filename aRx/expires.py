@@ -58,8 +58,9 @@ class expires:
         return self
 
     def __exit__(self, exc_type: T.Type[BaseException], exc: BaseException, _) -> bool:
-        self._cancel_handler.cancel()
-        self._cancel_handler = None
+        if self._cancel_handler is not None:
+            self._cancel_handler.cancel()
+            self._cancel_handler = None
 
         if exc_type is asyncio.CancelledError and self._cancelled:
             raise asyncio.TimeoutError
