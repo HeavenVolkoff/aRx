@@ -6,7 +6,6 @@ from warnings import warn
 from contextlib import suppress
 
 from ..error import ARxWarning
-from ..misc.noop import noop
 from ..abstract.observer import Observer
 
 K = T.TypeVar("K")
