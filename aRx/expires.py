@@ -9,10 +9,12 @@ import asyncio
 from asyncio import AbstractEventLoop, get_event_loop
 from weakref import ReferenceType
 
+from .abstract.loopable import Loopable
+
 current_task = getattr(asyncio, "current_task", asyncio.Task.current_task)
 
 
-class expires:
+class expires(Loopable):
     """timeout context manager.
 
     Useful in cases when you want to apply timeout logic around block
@@ -27,32 +29,33 @@ class expires:
     loop - asyncio compatible event loop
     """
 
-    def __init__(self, timeout: T.Optional[float], *, loop: AbstractEventLoop = None) -> None:
+    def __init__(self, timeout: T.Optional[float], **kwargs) -> None:
         """expires Constructor."""
+        super().__init__(**kwargs)
+
         # Internal
-        self._loop = get_event_loop() if loop is None else loop
+        self._expired = False
         self._timeout = timeout
-        self._cancel_at = 0.0
-        self._cancelled = False
+        self._expire_at = 0.0
         self._cancel_handler = None  # type: T.Optional[asyncio.Handle]
 
     def __enter__(self) -> "expires":
-        self._cancelled = False
+        self._expired = False
 
         if self._timeout is not None:
             # Get current task
-            task = current_task(self._loop)
+            task = current_task(self.loop)
             if task is None:
                 raise RuntimeError("Timeout context manager should be used inside a task")
 
             task_ref = ReferenceType(task)
-            self._cancel_at = self._loop.time()
+            self._expire_at = self.loop.time()
             if self._timeout <= 0:
-                self._cancel_handler = self._loop.call_soon(self._cancel_task, task_ref)
+                self._cancel_handler = self.loop.call_soon(self._expire_task, task_ref)
             else:
-                self._cancel_at += self._timeout
-                self._cancel_handler = self._loop.call_at(
-                    self._cancel_at, self._cancel_task, task_ref
+                self._expire_at += self._timeout
+                self._cancel_handler = self.loop.call_at(
+                    self._expire_at, self._expire_task, task_ref
                 )
 
         return self
@@ -62,23 +65,23 @@ class expires:
             self._cancel_handler.cancel()
             self._cancel_handler = None
 
-        if exc_type is asyncio.CancelledError and self._cancelled:
+        if exc_type is asyncio.CancelledError and self._expired:
             raise asyncio.TimeoutError
 
         return False
 
-    def _cancel_task(self, task_ref: ReferenceType) -> None:
+    def _expire_task(self, task_ref: ReferenceType) -> None:
         task = task_ref()
         if task is not None:
             task.cancel()
-            self._cancelled = True
+            self._expired = True
 
     @property
     def remaining(self) -> float:
         """Time remaining for task to be cancelled."""
-        return max(self._cancel_at - self._loop.time(), 0.0)
+        return max(self._expire_at - self.loop.time(), 0.0)
 
     @property
-    def cancelled(self) -> bool:
+    def expired(self) -> bool:
         """Whether task was cancelled or not."""
-        return self._cancelled
+        return self._expired
