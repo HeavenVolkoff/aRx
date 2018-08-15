@@ -27,9 +27,9 @@ class AnonymousObserver(Observer[K]):
 
     def __init__(
         self,
-        asend: T.Callable[[K], T.Any] = noop,
+        asend: T.Callable[[K], T.Any] = lambda x: x,
         araise: T.Callable[[Exception], T.Any] = default_araise,
-        aclose: T.Callable[[], T.Any] = noop,
+        aclose: T.Callable[[], T.Any] = lambda: None,
         **kwargs,
     ) -> None:
         """AnonymousObserver Constructor.

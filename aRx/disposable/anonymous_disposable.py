@@ -3,7 +3,6 @@ __all__ = ("AnonymousDisposable",)
 import typing as T
 from asyncio import iscoroutine
 
-from ..misc.noop import noop
 from ..abstract.disposable import Disposable
 
 
@@ -28,7 +27,7 @@ class AnonymousDisposable(Disposable):
         """
         super().__init__(**kwargs)
 
-        self._adispose = noop if dispose is None else dispose
+        self._adispose = lambda: None if dispose is None else dispose
 
     async def __adispose__(self) -> None:
         """Call anonymous function on dispose."""
