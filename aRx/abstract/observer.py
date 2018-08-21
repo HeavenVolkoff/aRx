@@ -10,9 +10,10 @@ from ..promise import Promise
 from ..disposable import Disposable
 
 K = T.TypeVar("K")
+J = T.TypeVar("J")
 
 
-class Observer(Promise, Disposable, T.Generic[K], metaclass=ABCMeta):
+class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
     """Observer abstract class.
 
     An observer represents a data sink, where data can be sent to and

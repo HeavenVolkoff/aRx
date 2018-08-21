@@ -7,32 +7,42 @@ from .observer import Observer
 from .disposable import Disposable
 
 K = T.TypeVar("K")
+J = T.TypeVar("J")
 
 
-class Observable(object, metaclass=ABCMeta):
+class Observable(T.Generic[K], metaclass=ABCMeta):
     """Observable abstract class.
 
     An observable is a data generator to which observers can subscribe.
     """
 
+    def __init__(self, **kwargs):
+        """Observable constructor.
+
+        Arguments:
+            kwargs: Keyword parameters for super.
+
+        """
+        super().__init__(**kwargs)  # type: ignore
+
     __slots__ = ()
 
-    def __or__(self, other: T.Callable[["Observable"], "Observable"]) -> "Observable":
+    def __or__(self, other: T.Callable[["Observable[K]"], "Observable[J]"]) -> "Observable[J]":
         return other(self)
 
-    def __gt__(self, observer: Observer) -> Disposable:
+    def __gt__(self, observer: Observer[K, T.Any]) -> Disposable:
         return observe(self, observer)
 
-    def __add__(self, other: "Observable") -> "Observable":
+    def __add__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
         from ..operator import Concat
 
         return Concat(self, other)
 
-    def __iadd__(self, other: "Observable") -> "Observable":
-        return self.__add__(other)
+    def __iadd__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
+        return self + other  # type: ignore
 
     @abstractmethod
-    def __observe__(self, observer: Observer[K]) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
         """Interface through which observers are subscribed.
 
         Define how each observers is subscribed into this observable and the
@@ -50,7 +60,7 @@ class Observable(object, metaclass=ABCMeta):
         raise NotImplemented()
 
 
-def observe(observable: Observable, observer: Observer) -> Disposable:
+def observe(observable: Observable[K], observer: Observer[K, T.Any]) -> Disposable:
     """External access to observable magic method.
 
     See also: :meth:`~.Observable.__observe__`

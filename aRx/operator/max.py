@@ -1,4 +1,4 @@
-__all__ = ("Max", "max")
+__all__ = ("Max", "max_op")
 
 import typing as T
 
@@ -11,7 +11,7 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
-class Max(Observable):
+class Max(Observable[K]):
     """Observable that outputs the largest data read from an observable source.
 
     .. Note::
@@ -59,7 +59,7 @@ class Max(Observable):
         self._source = source
 
     def __observe__(self, observer: Observer) -> Disposable:
-        sink = self._MaxSink()
+        sink = self._MaxSink()  # type: Max._MaxSink[K]
 
         try:
             up = observe(self._source, sink)
@@ -72,7 +72,7 @@ class Max(Observable):
             raise exc
 
 
-def max() -> T.Type[Max]:
+def max_op() -> T.Type[Max]:
     """Implementation of :class:`~.Max` to be used with operator semantics.
 
     Returns:

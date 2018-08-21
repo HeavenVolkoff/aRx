@@ -1,4 +1,4 @@
-__all__ = ("Filter", "filter_op")
+__all__ = ("Assert", "assert_op")
 
 import typing as T
 from asyncio import iscoroutinefunction
@@ -11,37 +11,38 @@ from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
-FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
+AssertCallable = T.Callable[[K], T.Union[T.Awaitable[bool], bool]]
 
 
-class Filter(Observable[K]):
-    """Observable that output filtered data from another observable source."""
+class Assert(Observable[K]):
+    """Observable that raises exception if predicate is false."""
 
-    class _FilterSink(SingleStream[K]):
-        def __init__(self, predicate: FilterCallable, **kwargs) -> None:
+    class _AssertSink(SingleStream[K]):
+        def __init__(self, predicate: AssertCallable, exc: Exception, **kwargs) -> None:
             super().__init__(**kwargs)
 
-            self._index = 0
+            self._exc = exc
             self._predicate = predicate
 
         async def __asend__(self, value: K) -> None:
-            index = self._index
-            self._index += 1
-
-            is_accepted = self._predicate(value, index)
+            is_valid = self._predicate(value)
 
             if iscoroutinefunction(self._predicate):
-                is_accepted = await T.cast(T.Awaitable[bool], is_accepted)
+                is_valid = await T.cast(T.Awaitable[bool], is_valid)
 
-            if is_accepted:
-                res = super().__asend__(value)
+            if not is_valid:
+                raise self._exc
 
-                # Remove reference early to avoid keeping large objects in memory
-                del value
+            res = super().__asend__(value)
 
-                await res
+            # Remove reference early to avoid keeping large objects in memory
+            del value
 
-    def __init__(self, predicate: FilterCallable, source: Observable, **kwargs) -> None:
+            await res
+
+    def __init__(
+        self, predicate: AssertCallable, exc: Exception, source: Observable, **kwargs
+    ) -> None:
         """Filter constructor.
 
         Arguments:
@@ -52,11 +53,14 @@ class Filter(Observable[K]):
         """
         super().__init__(**kwargs)
 
+        self._exc = exc
         self._source = source
         self._predicate = predicate
 
     def __observe__(self, observer: Observer) -> Disposable:
-        sink = self._FilterSink(self._predicate)  # type: Filter._FilterSink[K]
+        sink = self._AssertSink(
+            self._predicate, self._exc, loop=observer.loop
+        )  # type: Assert._AssertSink[K]
 
         try:
             up = observe(self._source, sink)
@@ -69,11 +73,11 @@ class Filter(Observable[K]):
             raise exc
 
 
-def filter_op(predicate: FilterCallable) -> T.Callable[[], Filter]:
+def assert_op(predicate: AssertCallable, exc: Exception) -> T.Callable[[], Assert]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return partial(Filter, predicate)
+    return partial(Assert, predicate, exc)

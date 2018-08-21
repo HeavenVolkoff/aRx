@@ -1,4 +1,4 @@
-__all__ = ("Skip", "skip")
+__all__ = ("Skip", "skip_op")
 
 import typing as T
 from functools import partial
@@ -13,7 +13,7 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
-class Skip(Observable):
+class Skip(Observable[K]):
     """Observable that outputs data from source skipping some."""
 
     class _SkipSink(SingleStream[K]):
@@ -66,8 +66,8 @@ class Skip(Observable):
         self._count = count
         self._source = source
 
-    def __observe__(self, observer: Observer[K]) -> Disposable:
-        sink = self._SkipSink(self._count)
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+        sink = self._SkipSink(self._count)  # type: Skip._SkipSink[K]
 
         try:
             up = observe(self._source, sink)
@@ -80,7 +80,7 @@ class Skip(Observable):
             raise exc
 
 
-def skip(count: int) -> T.Callable[[], Skip]:
+def skip_op(count: int) -> T.Callable[[], Skip]:
     """Partial implementation of :class:`~.Skip` to be used with operator semantics.
 
     Returns:

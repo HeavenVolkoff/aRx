@@ -1,4 +1,4 @@
-__all__ = ("Take", "take")
+__all__ = ("Take", "take_op")
 
 import typing as T
 from functools import partial
@@ -13,7 +13,7 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
-class Take(Observable):
+class Take(Observable[K]):
     class _TakeSink(SingleStream[K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
@@ -73,8 +73,8 @@ class Take(Observable):
         self._count = count
         self._source = source
 
-    def __observe__(self, observer: Observer[K]) -> Disposable:
-        sink = self._TakeSink(self._count)
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+        sink = self._TakeSink(self._count)  # type: Take._TakeSink[K]
 
         try:
             up = observe(self._source, sink)
@@ -87,7 +87,7 @@ class Take(Observable):
             raise exc
 
 
-def take(count: int) -> T.Callable[[], Take]:
+def take_op(count: int) -> T.Callable[[], Take]:
     """Partial implementation of :class:`~.Take` to be used with operator semantics.
 
     Returns:

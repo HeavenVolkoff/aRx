@@ -6,11 +6,12 @@ from contextlib import suppress
 from collections import deque
 
 from ..abstract.observer import Observer
+from ..abstract.observable import Observable
 
 K = T.TypeVar("K")
 
 
-class IteratorObserver(Observer[K], T.AsyncIterator[K]):
+class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
     """An async observer that can be iterated asynchronously."""
 
     def __init__(self, **kwargs) -> None:

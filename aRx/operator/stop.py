@@ -1,4 +1,4 @@
-__all__ = ("Stop", "stop")
+__all__ = ("Stop", "stop_op")
 
 import typing as T
 from asyncio import iscoroutinefunction
@@ -14,7 +14,7 @@ K = T.TypeVar("K")
 StopCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
-class Stop(Observable):
+class Stop(Observable[K]):
     """Observable that stops according to a predicate."""
 
     class _StopSink(SingleStream[K]):
@@ -30,7 +30,7 @@ class Stop(Observable):
 
             must_stop = self._predicate(value, index)
             if iscoroutinefunction(self._predicate):
-                must_stop = await must_stop
+                must_stop = await T.cast(T.Awaitable[bool], must_stop)
 
             awaitable = self.aclose() if must_stop else super().__asend__(value)
 
@@ -53,8 +53,8 @@ class Stop(Observable):
         self._source = source
         self._predicate = predicate
 
-    def __observe__(self, observer: Observer) -> Disposable:
-        sink = self._StopSink(self._predicate)
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+        sink = self._StopSink(self._predicate)  # type: Stop._StopSink[K]
 
         try:
             up = observe(self._source, sink)
@@ -67,7 +67,7 @@ class Stop(Observable):
             raise exc
 
 
-def stop(predicate: StopCallable) -> T.Callable[[], Stop]:
+def stop_op(predicate: StopCallable) -> T.Callable[[], Stop]:
     """Partial implementation of :class:`~.Stop` to be used with operator semantics.
 
     Returns:

@@ -1,4 +1,4 @@
-__all__ = ("Min", "min")
+__all__ = ("Min", "min_op")
 
 import typing as T
 
@@ -11,7 +11,7 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
-class Min(Observable):
+class Min(Observable[K]):
     """Observable that outputs the largest data read from an observable source.
 
     .. Note::
@@ -59,7 +59,7 @@ class Min(Observable):
         self._source = source
 
     def __observe__(self, observer: Observer) -> Disposable:
-        sink = self._MinSink()
+        sink = self._MinSink()  # type: Min._MinSink
 
         try:
             up = observe(self._source, sink)
@@ -72,7 +72,7 @@ class Min(Observable):
             raise exc
 
 
-def min() -> T.Type[Min]:
+def min_op() -> T.Type[Min]:
     """Implementation of :class:`~.Min` to be used with operator semantics.
 
     Returns:

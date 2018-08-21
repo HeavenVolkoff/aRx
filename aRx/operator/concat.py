@@ -1,4 +1,4 @@
-__all__ = ("Concat", "concat")
+__all__ = ("Concat", "concat_op")
 
 import typing as T
 from functools import partial
@@ -12,7 +12,7 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
-class Concat(Observable):
+class Concat(Observable[K]):
     """Observable that is the concatenation of multiple observables sources"""
 
     def __init__(self, first: Observable, second: Observable, *rest: Observable, **kwargs) -> None:
@@ -23,13 +23,14 @@ class Concat(Observable):
             second: Second observable to be concatenated.
             rest: Optional observables to be concatenated.
             kwargs: Keyword parameters for super.
+
         """
         super().__init__(**kwargs)
 
         self._sources = (first, second) + rest
 
-    def __observe__(self, observer: Observer[K]) -> Disposable:
-        sink = SingleStream()
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+        sink = SingleStream()  # type: SingleStream[K]
 
         try:
             return CompositeDisposable(
@@ -41,7 +42,7 @@ class Concat(Observable):
             raise exc
 
 
-def concat(first: Observable) -> T.Callable[[], Concat]:
+def concat_op(first: Observable[K]) -> T.Callable[[], Concat]:
     """Partial implementation of :class:`~.Concat` to be used with operator semantics.
 
     Returns:

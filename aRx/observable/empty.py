@@ -6,7 +6,7 @@ from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 
 
-class Empty(Observable):
+class Empty(Observable[None]):
     """Observable that doesn't output data and closes as soon as possible."""
 
     def __observe__(self, observer: Observer) -> Disposable:

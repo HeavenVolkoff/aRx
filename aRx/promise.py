@@ -114,7 +114,7 @@ class FulfillmentPromise(ChainPromise[L]):
             result = on_fulfilled(await shield(promise, loop=self.loop))
 
             try:
-                result_fut = ensure_future(result, loop=self.loop)  # type: T.Awaitable[L]
+                result_fut = ensure_future(T.cast(T.Awaitable[L], result), loop=self.loop)
             except TypeError:
                 pass
             else:
@@ -153,7 +153,7 @@ class RejectionPromise(ChainPromise[L]):
                     result = on_reject(ex)
 
                     try:
-                        result_fut = ensure_future(result, loop=self.loop)  # type: T.Awaitable[L]
+                        result_fut = ensure_future(T.cast(T.Awaitable[L], result), loop=self.loop)
                     except TypeError:
                         pass
                     else:
@@ -194,7 +194,7 @@ class ResolutionPromise(ChainPromise[K]):
                 result = on_resolution()
 
                 try:
-                    result = ensure_future(result, loop=self.loop)
+                    result = ensure_future(T.cast(T.Awaitable[L], result), loop=self.loop)
                 except TypeError:
                     pass  # Result isn't awaitable
                 else:

@@ -34,4 +34,4 @@ class AnonymousDisposable(Disposable):
         dispose = self._adispose()
 
         if iscoroutine(dispose):
-            await dispose
+            await T.cast(T.Awaitable[T.Any], dispose)

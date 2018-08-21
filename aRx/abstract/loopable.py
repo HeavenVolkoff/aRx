@@ -16,7 +16,7 @@ class Loopable(object):
             loop: Existing asyncio loop to be used.
             kwargs: Keyword parameters for super.
         """
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
 
         self._loop = get_event_loop() if loop is None else loop
 

@@ -1,12 +1,11 @@
 __all__ = ("SingleStream",)
 
-# Internal
 import typing as T
 from asyncio import Future, CancelledError, InvalidStateError
 from contextlib import suppress
 
-# Project
 from ..error import SingleStreamError
+from ..promise import Promise
 from ..abstract.observer import Observer
 from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
@@ -14,7 +13,7 @@ from ..abstract.observable import Observable
 K = T.TypeVar("K")
 
 
-class SingleStream(Observable, Observer[K]):
+class SingleStream(Observer[K, None], Observable[K]):
     """Cold stream tightly coupled with a single observer.
 
     .. Note::
@@ -27,13 +26,14 @@ class SingleStream(Observable, Observer[K]):
         """SingleStream constructor.
 
         Arguments:
-            kwargs: Super classes named parameters
+            kwargs: Super classes named parameters.
+
         """
         super().__init__(**kwargs)
 
         self._lock = self._loop.create_future()  # type: Future
-        self._observer = None  # type: T.Optional[Observer[K]]
-        self._observer_close_promise = None
+        self._observer = None  # type: T.Optional[Observer[K, T.Any]]
+        self._observer_close_promise = None  # type: T.Optional[Promise]
 
     @property
     def closed(self):
@@ -94,7 +94,7 @@ class SingleStream(Observable, Observer[K]):
         if not (observer is None or observer.closed or observer.keep_alive):
             await observer.aclose()
 
-    def __observe__(self, observer) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
         """Start streaming.
 
         Raises:

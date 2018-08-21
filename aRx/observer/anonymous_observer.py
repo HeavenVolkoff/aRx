@@ -9,6 +9,7 @@ from ..error import ARxWarning
 from ..abstract.observer import Observer
 
 K = T.TypeVar("K")
+J = T.TypeVar("J")
 
 
 def default_araise(ex):
@@ -16,7 +17,7 @@ def default_araise(ex):
     return False
 
 
-class AnonymousObserver(Observer[K]):
+class AnonymousObserver(Observer[K, J]):
     """An anonymous Observer.
 
     Creates as sink where the implementation is provided by three

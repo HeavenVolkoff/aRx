@@ -12,6 +12,7 @@ from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
+J = T.TypeVar("J")
 K = T.TypeVar("K")
 
 
@@ -34,7 +35,7 @@ async def dispose_observation(
             warn(ARxWarning("Failed to exec aclose on " f"{type(observer).__qualname__}", ex))
 
 
-class MultiStream(Observable, Observer[K]):
+class MultiStream(Observer[K, None], Observable[K]):
     """Hot stream that can be observed by multiple observers.
 
     .. Note::
@@ -52,7 +53,7 @@ class MultiStream(Observable, Observer[K]):
         """
         super().__init__(**kwargs)
 
-        self._observers = []  # type: T.List[Observer[K]]
+        self._observers = []  # type: T.List[Observer[K, T.Any]]
 
     async def __asend__(self, value: K) -> None:
         awaitables = tuple(obv.asend(value) for obv in self._observers if not obv.closed)

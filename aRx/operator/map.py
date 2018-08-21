@@ -1,4 +1,4 @@
-__all__ = ("Map", "map")
+__all__ = ("Map", "map_op")
 
 import typing as T
 from asyncio import iscoroutinefunction
@@ -10,21 +10,24 @@ from ..abstract.disposable import Disposable, adispose
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
-K = T.TypeVar("K")
 J = T.TypeVar("J")
+K = T.TypeVar("K")
+L = T.TypeVar("L")
+M = T.TypeVar("M")
+MapCallable = T.Callable[[J, int], K]
 
 
-class Map(Observable):
+class Map(T.Generic[J, K], Observable[K]):
     """Observable that outputs transmuted data from an observable source."""
 
-    class _MapSink(SingleStream[J]):
-        def __init__(self, mapper: T.Callable[[K, int], J], **kwargs) -> None:
+    class _MapSink(T.Generic[L, M], SingleStream[M]):
+        def __init__(self, mapper: T.Callable[[L, int], M], **kwargs) -> None:
             super().__init__(**kwargs)
 
             self._index = 0
             self._mapper = mapper
 
-        async def __asend__(self, value: K) -> None:
+        async def __asend__(self, value: L) -> None:
             index = self._index
             self._index += 1
 
@@ -34,7 +37,7 @@ class Map(Observable):
             del value
 
             if iscoroutinefunction(self._mapper):
-                result = await result
+                result = await T.cast(T.Awaitable[M], result)
 
             awaitable = super().__asend__(result)
 
@@ -43,7 +46,7 @@ class Map(Observable):
 
             await awaitable
 
-    def __init__(self, mapper: T.Callable[[K, int], J], source: Observable, **kwargs) -> None:
+    def __init__(self, mapper: MapCallable, source: Observable[K], **kwargs) -> None:
         """Map constructor.
 
         Arguments:
@@ -57,8 +60,8 @@ class Map(Observable):
         self._mapper = mapper
         self._source = source
 
-    def __observe__(self, observer: Observer[K]) -> Disposable:
-        sink = self._MapSink(self._mapper)
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+        sink = self._MapSink(self._mapper)  # type: Map._MapSink[J, K]
 
         try:
             up = observe(self._source, sink)
@@ -71,7 +74,7 @@ class Map(Observable):
             raise exc
 
 
-def map(mapper: T.Callable[[K, int], J]) -> T.Callable[[], Map]:
+def map_op(mapper: MapCallable) -> T.Callable[[], Map]:
     """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:

@@ -29,30 +29,13 @@ Example using operator to filter odd numbers from a Iterable source.
             await observable.observe(source, listener)
 """
 
-__all__ = (
-    "map",
-    "Map",
-    "max",
-    "Max",
-    "Min",
-    "min",
-    "skip",
-    "Skip",
-    "stop",
-    "Stop",
-    "take",
-    "Take",
-    "filter",
-    "Filter",
-    "concat",
-    "Concat",
-)
 
-from .map import Map, map
-from .max import Max, max
-from .min import Min, min
-from .skip import Skip, skip
-from .stop import Stop, stop
-from .take import Take, take
-from .filter import Filter, filter
-from .concat import Concat, concat
+from .map import Map, map_op
+from .max import Max, max_op
+from .min import Min, min_op
+from .skip import Skip, skip_op
+from .stop import Stop, stop_op
+from .take import Take, take_op
+from .concat import Concat, concat_op
+from .filter import Filter, filter_op
+from .assertion import Assert, assert_op

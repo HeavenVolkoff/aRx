@@ -10,7 +10,7 @@ from ..abstract.observable import Observable
 K = T.TypeVar("K")
 
 
-class FromIterable(Observable, T.Generic[K]):
+class FromIterable(Observable[K]):
     """Observable that uses an iterable as data source."""
 
     @staticmethod

@@ -13,7 +13,7 @@ from ..misc.async_exit_stack import AsyncExitStack
 K = T.TypeVar("K")
 
 
-class FromAsyncIterable(Observable, T.Generic[K]):
+class FromAsyncIterable(Observable[K]):
     """Observable that uses an async iterable as data source."""
 
     @staticmethod
