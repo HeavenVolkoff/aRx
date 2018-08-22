@@ -39,7 +39,7 @@ class expires(Loopable):
         self._expire_at = 0.0
         self._cancel_handler = None  # type: T.Optional[asyncio.Handle]
 
-    def __enter__(self) -> "expires":
+    def start(self) -> "expires":
         self._expired = False
 
         if self._timeout is not None:
@@ -59,6 +59,9 @@ class expires(Loopable):
                 )
 
         return self
+
+    def __enter__(self) -> "expires":
+        return self.start()
 
     def __exit__(self, exc_type: T.Type[BaseException], exc: BaseException, _) -> bool:
         if self._cancel_handler is not None:
