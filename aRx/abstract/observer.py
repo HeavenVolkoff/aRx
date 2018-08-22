@@ -165,7 +165,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         try:
             await self.__aclose__()
         finally:
-            # Cancel future in case it wasn't resolved
+            # Cancel in case we didn't get resolved
             self.cancel()
 
         return True
