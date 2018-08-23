@@ -27,7 +27,7 @@ class Max(Observable[K]):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 
-        async def __asend__(self, value: K) -> None:
+        async def __asend__(self, value: K):
             try:
                 is_greater = value > getattr(self, "_max")
             except AttributeError:
@@ -36,7 +36,7 @@ class Max(Observable[K]):
             if is_greater:
                 setattr(self, "_max", value)
 
-        async def __aclose__(self) -> None:
+        async def __aclose__(self):
             try:
                 awaitable = super().asend(getattr(self, "_max"))
                 # Remove reference early to avoid keeping large objects in memory

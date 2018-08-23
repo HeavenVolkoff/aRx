@@ -24,7 +24,7 @@ class Filter(Observable[K]):
             self._index = 0
             self._predicate = predicate
 
-        async def __asend__(self, value: K) -> None:
+        async def __asend__(self, value: K):
             index = self._index
             self._index += 1
 

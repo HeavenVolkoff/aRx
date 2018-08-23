@@ -27,7 +27,7 @@ class Map(T.Generic[J, K], Observable[K]):
             self._index = 0
             self._mapper = mapper
 
-        async def __asend__(self, value: L) -> None:
+        async def __asend__(self, value: L):
             index = self._index
             self._index += 1
 

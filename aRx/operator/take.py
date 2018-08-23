@@ -23,7 +23,7 @@ class Take(Observable[K]):
                 deque(maxlen=self._count) if count < 0 else None
             )  # type: T.Optional[T.Deque[K]]
 
-        async def __aclose__(self) -> None:
+        async def __aclose__(self):
             if self._reverse_queue is not None:
                 # TODO: Don't hold values in memory more than necessary
                 for value in self._reverse_queue:
@@ -33,7 +33,7 @@ class Take(Observable[K]):
 
             return await super().__aclose__()
 
-        async def __asend__(self, value: K) -> None:
+        async def __asend__(self, value: K):
             if self._reverse_queue is None:
                 if self._count > 0:
                     self._count -= 1

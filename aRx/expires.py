@@ -6,15 +6,16 @@ See original license in: ../licenses/LICENSE.async_timeout.txt
 
 import typing as T
 import asyncio
-from asyncio import AbstractEventLoop, get_event_loop
+from asyncio import Task, Handle, TimeoutError, CancelledError
 from weakref import ReferenceType
+from contextlib import AbstractContextManager
 
 from .abstract.loopable import Loopable
 
 current_task = getattr(asyncio, "current_task", asyncio.Task.current_task)
 
 
-class expires(Loopable):
+class expires(AbstractContextManager, Loopable):
     """timeout context manager.
 
     Useful in cases when you want to apply timeout logic around block
@@ -36,46 +37,52 @@ class expires(Loopable):
         # Internal
         self._expired = False
         self._timeout = timeout
+        self._task_ref = None  # type: T.Optional[ReferenceType[Task]]
         self._expire_at = 0.0
-        self._cancel_handler = None  # type: T.Optional[asyncio.Handle]
+        self._cancel_handler = None  # type: T.Optional[Handle]
 
-    def start(self) -> "expires":
+    def __enter__(self) -> "expires":
         self._expired = False
 
         if self._timeout is not None:
             # Get current task
-            task = current_task(self.loop)
-            if task is None:
-                raise RuntimeError("Timeout context manager should be used inside a task")
+            if self._task_ref is None:
+                task = current_task(self.loop)
+                if task is None:
+                    raise RuntimeError("Timeout context manager should be used inside a task")
 
-            task_ref = ReferenceType(task)
+                self.task_ref = ReferenceType(task)
+
             self._expire_at = self.loop.time()
             if self._timeout <= 0:
-                self._cancel_handler = self.loop.call_soon(self._expire_task, task_ref)
+                self._cancel_handler = self.loop.call_soon(self._expire_task)
             else:
                 self._expire_at += self._timeout
-                self._cancel_handler = self.loop.call_at(
-                    self._expire_at, self._expire_task, task_ref
-                )
+                self._cancel_handler = self.loop.call_at(self._expire_at, self._expire_task)
 
         return self
 
-    def __enter__(self) -> "expires":
-        return self.start()
-
-    def __exit__(self, exc_type: T.Type[BaseException], exc: BaseException, _) -> bool:
-        if self._cancel_handler is not None:
+    def __exit__(
+        self, exc_type: T.Optional[T.Type[BaseException]], exc: T.Optional[BaseException], _
+    ) -> bool:
+        if self._cancel_handler:
             self._cancel_handler.cancel()
             self._cancel_handler = None
 
-        if exc_type is asyncio.CancelledError and self._expired:
-            raise asyncio.TimeoutError
+        if self._task_ref:
+            self._task_ref = None
+
+        if exc_type is CancelledError and self._expired:
+            raise TimeoutError
 
         return False
 
-    def _expire_task(self, task_ref: ReferenceType) -> None:
-        task = task_ref()
-        if task is not None:
+    def _expire_task(self):
+        if self.task_ref is None:
+            return
+
+        task = self.task_ref()
+        if task:
             task.cancel()
             self._expired = True
 
@@ -88,3 +95,9 @@ class expires(Loopable):
     def expired(self) -> bool:
         """Whether task was cancelled or not."""
         return self._expired
+
+    def reset(self):
+        task_ref = self.task_ref
+        self.__exit__(None, None, None)
+        self._task_ref = task_ref
+        self.__enter__()

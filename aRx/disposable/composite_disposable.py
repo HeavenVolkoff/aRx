@@ -32,6 +32,6 @@ class CompositeDisposable(Disposable):
 
         self._disposables = disposables
 
-    async def __adispose__(self) -> None:
+    async def __adispose__(self):
         """Call all registered disposables on dispose."""
         await adispose(*self._disposables)

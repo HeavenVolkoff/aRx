@@ -40,7 +40,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         """Property that indicates if this stream is closed or not."""
         return super().closed or (
             # Also report closed when observer is closed
-            self._observer is not None
+            self._observer
             and self._observer.closed
         )
 
@@ -75,7 +75,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         # SingleStream doesn't close on raise
         return False
 
-    async def __aclose__(self) -> None:
+    async def __aclose__(self):
         observer = self._observer
         self._observer = None
 
@@ -83,7 +83,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         self._lock.cancel()
 
         # Cancel observer close guard
-        if self._observer_close_promise is not None:
+        if self._observer_close_promise:
             self._observer_close_promise.cancel()
 
         # Resolve internal future
@@ -101,7 +101,7 @@ class SingleStream(Observer[K, None], Observable[K]):
             SingleStreamMultipleError
 
         """
-        if self._observer is not None:
+        if self._observer:
             raise SingleStreamError("Can't assign multiple observers to a SingleStream")
 
         # Set stream observer

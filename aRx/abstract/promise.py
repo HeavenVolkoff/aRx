@@ -70,7 +70,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         """
         return self._fut.cancelled()
 
-    def resolve(self, result: K) -> None:
+    def resolve(self, result: K):
         """Resolve Promise with given value.
 
         Arguments:
@@ -82,7 +82,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         """
         self._fut.set_result(result)
 
-    def reject(self, error: Exception) -> None:
+    def reject(self, error: Exception):
         """Reject promise with given value.
 
         Arguments:

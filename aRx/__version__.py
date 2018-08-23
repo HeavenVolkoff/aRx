@@ -5,7 +5,7 @@ __email__ = (
     "<vasconcellos.dev@gmail.com>"
 )
 __title__ = "aRx"
-__version__ = "0.7.5rc9"
+__version__ = "0.7.5rc10"
 __license__ = "Mozilla Public License 2.0 (MPL 2.0)"
 __authors__ = "Vítor Augusto da Silva Vasconcellos, Børge Lanes, Dag Brattli"
 __copyright__ = "See COPYRIGHT file"

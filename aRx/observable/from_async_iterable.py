@@ -17,7 +17,7 @@ class FromAsyncIterable(Observable[K]):
     """Observable that uses an async iterable as data source."""
 
     @staticmethod
-    async def _worker(async_iterator: T.AsyncIterator, observer: Observer) -> None:
+    async def _worker(async_iterator: T.AsyncIterator, observer: Observer):
         async with AsyncExitStack() as stack:
             if isinstance(async_iterator, T.AsyncGenerator):
                 # Ensure async_generator gets closed

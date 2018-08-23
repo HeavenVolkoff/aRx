@@ -14,7 +14,7 @@ class FromIterable(Observable[K]):
     """Observable that uses an iterable as data source."""
 
     @staticmethod
-    async def _worker(iterator: T.Iterator, observer: Observer) -> None:
+    async def _worker(iterator: T.Iterator, observer: Observer):
         try:
             for data in iterator:
                 if observer.closed:

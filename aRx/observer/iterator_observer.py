@@ -33,7 +33,7 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
         return self._queue.popleft()
 
     @_next_value.setter
-    def _next_value(self, value: T.Tuple[bool, T.Union[K, Exception]]) -> None:
+    def _next_value(self, value: T.Tuple[bool, T.Union[K, Exception]]):
         self._queue.append(value)
 
         with suppress(InvalidStateError):
@@ -42,7 +42,7 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
     def __aiter__(self) -> T.AsyncIterator[K]:
         return self
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K):
         self._counter += 1
         self._next_value = (False, value)
 
@@ -50,7 +50,7 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
         self._next_value = (True, err)
         return True
 
-    async def __aclose__(self) -> None:
+    async def __aclose__(self):
         with suppress(InvalidStateError):
             self.resolve(self._counter)
 

@@ -25,13 +25,13 @@ class Skip(Observable[K]):
                 deque(maxlen=self._count) if count < 0 else None
             )  # type: T.Optional[T.Deque[K]]
 
-        async def __aclose__(self) -> None:
+        async def __aclose__(self):
             if self._reverse_queue is not None:
                 self._reverse_queue.clear()
 
             return await super().__aclose__()
 
-        async def __asend__(self, value: K) -> None:
+        async def __asend__(self, value: K):
             if self._reverse_queue is not None:
                 value = self._reverse_queue[0]
                 self._reverse_queue.append(value)

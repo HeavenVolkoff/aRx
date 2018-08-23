@@ -29,7 +29,7 @@ class AnonymousDisposable(Disposable):
 
         self._adispose = lambda: None if dispose is None else dispose
 
-    async def __adispose__(self) -> None:
+    async def __adispose__(self):
         """Call anonymous function on dispose."""
         dispose = self._adispose()
 

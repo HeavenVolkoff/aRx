@@ -47,7 +47,7 @@ class AnonymousObserver(Observer[K, J]):
         self._raise = araise
         self._close = aclose
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K):
         res = self._send(value)
 
         if iscoroutinefunction(self._send):
@@ -64,7 +64,7 @@ class AnonymousObserver(Observer[K, J]):
 
         return bool(res)
 
-    async def __aclose__(self) -> None:
+    async def __aclose__(self):
         res = self._close()
 
         if iscoroutinefunction(self._close):

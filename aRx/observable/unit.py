@@ -14,7 +14,7 @@ class Unit(Observable, Loopable):
     """Observable that outputs a single value then closes."""
 
     @staticmethod
-    async def _worker(value: T.Any, observer: Observer) -> None:
+    async def _worker(value: T.Any, observer: Observer):
         try:
             value = ensure_future(value)
         except TypeError:

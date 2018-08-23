@@ -72,7 +72,7 @@ class ChainPromise(Promise[K]):
         if contains_cancelled_error(exc_value) and not self._awaited:
             return True
 
-    def resolve(self, _: K) -> None:
+    def resolve(self, _: K):
         """See: :meth:`~aRx.abstract.promise.Promise.resolve` for more information.
         
         Raises:
@@ -81,7 +81,7 @@ class ChainPromise(Promise[K]):
         """
         raise InvalidStateError("Chain promise can't be resolved externally")
 
-    def reject(self, _: Exception) -> None:
+    def reject(self, _: Exception):
         """See: :meth:`~aRx.abstract.promise.Promise.reject` for more information.
         
         Raises:

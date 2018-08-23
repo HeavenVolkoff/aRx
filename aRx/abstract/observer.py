@@ -42,7 +42,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         self._close_promise = self.lastly(self.aclose)
 
     @abstractmethod
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K):
         """Processing of input data.
 
         Raises:
@@ -68,7 +68,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    async def __aclose__(self) -> None:
+    async def __aclose__(self):
         """Actions to be taken during close.
 
         Raises:
@@ -85,7 +85,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         """Property that indicates if this observer is closed or not."""
         return self.done()
 
-    async def asend(self, data: K) -> None:
+    async def asend(self, data: K):
         """Interface thought which data is inputted.
 
         Raises:

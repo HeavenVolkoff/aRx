@@ -19,7 +19,7 @@ K = T.TypeVar("K")
 # Observation dispose
 async def dispose_observation(
     observer: Observer, observers: T.List[Observer], dispose_event: Event
-) -> None:
+):
     # Wait external signal
     await dispose_event.wait()
 
@@ -55,7 +55,7 @@ class MultiStream(Observer[K, None], Observable[K]):
 
         self._observers = []  # type: T.List[Observer[K, T.Any]]
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K):
         awaitables = tuple(obv.asend(value) for obv in self._observers if not obv.closed)
 
         # Remove reference early to avoid keeping large objects in memory
@@ -68,7 +68,7 @@ class MultiStream(Observer[K, None], Observable[K]):
 
         return False
 
-    async def __aclose__(self) -> None:
+    async def __aclose__(self):
         # MultiStream should resolve to None when no error is registered
         with suppress(InvalidStateError):
             self.resolve(None)

@@ -60,7 +60,7 @@ class ARxWarning(Warning):
             exception: Optional exception to be added to the warning message.
 
         """
-        if exception is not None:
+        if exception:
             from traceback import TracebackException
 
             msg += "\n" + "".join(TracebackException.from_exception(exception).format())
