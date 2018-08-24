@@ -16,7 +16,7 @@ K = T.TypeVar("K")
 class Filter(Observable[K]):
     """Observable that output filtered data from another observable source."""
 
-    class _FilterSink(SingleStream[K]):
+    class _FilterSink(SingleStream[K, K]):
         def __init__(
             self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
         ) -> None:

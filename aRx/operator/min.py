@@ -23,7 +23,7 @@ class Min(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    class _MinSink(SingleStream[K]):
+    class _MinSink(SingleStream[K, K]):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 

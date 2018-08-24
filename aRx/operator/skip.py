@@ -16,7 +16,7 @@ K = T.TypeVar("K")
 class Skip(Observable[K]):
     """Observable that outputs data from source skipping some."""
 
-    class _SkipSink(SingleStream[K]):
+    class _SkipSink(SingleStream[K, K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
 

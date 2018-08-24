@@ -42,7 +42,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         self._close_promise = self.lastly(self.aclose)
 
     @abstractmethod
-    async def __asend__(self, value: K):
+    async def __asend__(self, value):
         """Processing of input data.
 
         Raises:

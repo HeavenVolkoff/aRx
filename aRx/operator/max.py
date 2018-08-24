@@ -23,7 +23,7 @@ class Max(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    class _MaxSink(SingleStream[K]):
+    class _MaxSink(SingleStream[K, K]):
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
 

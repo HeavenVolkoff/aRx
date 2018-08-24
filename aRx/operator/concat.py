@@ -33,7 +33,7 @@ class Concat(Observable[J]):
         self._sources = observables
 
     def __observe__(self, observer: Observer[J, T.Any]) -> Disposable:
-        sink = SingleStream()  # type: SingleStream[J]
+        sink = SingleStream()  # type: SingleStream[J, J]
 
         try:
             return CompositeDisposable(
@@ -45,11 +45,11 @@ class Concat(Observable[J]):
             raise exc
 
 
-def concat_op(first: Observable[K]) -> T.Callable[[Observable[L]], Concat[T.Union[K, L]]]:
+def concat_op(first: Observable[K]) -> T.Callable[[Observable[L]], Concat]:
     """Partial implementation of :class:`~.Concat` to be used with operator semantics.
 
     Returns:
         Partial implementation of Concat
 
     """
-    return T.cast(T.Callable[[Observable], Concat[J]], partial(Concat, first))
+    return T.cast(T.Callable[[Observable], Concat], partial(Concat, first))

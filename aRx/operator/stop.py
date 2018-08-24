@@ -16,7 +16,7 @@ K = T.TypeVar("K")
 class Stop(Observable[K]):
     """Observable that stops according to a predicate."""
 
-    class _StopSink(SingleStream[K]):
+    class _StopSink(SingleStream[K, K]):
         def __init__(
             self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
         ) -> None:

@@ -14,7 +14,7 @@ K = T.TypeVar("K")
 
 
 class Take(Observable[K]):
-    class _TakeSink(SingleStream[K]):
+    class _TakeSink(SingleStream[K, K]):
         def __init__(self, count: int, **kwargs) -> None:
             super().__init__(**kwargs)
 

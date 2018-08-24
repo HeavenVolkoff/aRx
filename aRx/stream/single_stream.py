@@ -10,10 +10,11 @@ from ..abstract.observer import Observer
 from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 
+J = T.TypeVar("J")
 K = T.TypeVar("K")
 
 
-class SingleStream(Observer[K, None], Observable[K]):
+class SingleStream(T.Generic[J, K], Observer[J, None], Observable[K]):
     """Cold stream tightly coupled with a single observer.
 
     .. Note::

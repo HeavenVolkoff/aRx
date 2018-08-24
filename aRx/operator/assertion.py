@@ -16,7 +16,7 @@ K = T.TypeVar("K")
 class Assert(Observable[K]):
     """Observable that raises exception if predicate is false."""
 
-    class _AssertSink(SingleStream[K]):
+    class _AssertSink(SingleStream[K, K]):
         def __init__(
             self,
             predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],

@@ -12,21 +12,19 @@ from ..stream.single_stream import SingleStream
 
 J = T.TypeVar("J")
 K = T.TypeVar("K")
-L = T.TypeVar("L")
-M = T.TypeVar("M")
 
 
 class Map(T.Generic[J, K], Observable[K]):
     """Observable that outputs transmuted data from an observable source."""
 
-    class _MapSink(T.Generic[L, M], SingleStream[M]):
-        def __init__(self, mapper: T.Callable[[L, int], M], **kwargs) -> None:
+    class _MapSink(SingleStream[J, K]):
+        def __init__(self, mapper: T.Callable[[J, int], K], **kwargs) -> None:
             super().__init__(**kwargs)
 
             self._index = 0
             self._mapper = mapper
 
-        async def __asend__(self, value: L):
+        async def __asend__(self, value: J):
             index = self._index
             self._index += 1
 
@@ -36,7 +34,7 @@ class Map(T.Generic[J, K], Observable[K]):
             del value
 
             if iscoroutinefunction(self._mapper):
-                result = await T.cast(T.Awaitable[M], result)
+                result = await T.cast(T.Awaitable[K], result)
 
             awaitable = super().__asend__(result)
 
@@ -45,7 +43,7 @@ class Map(T.Generic[J, K], Observable[K]):
 
             await awaitable
 
-    def __init__(self, mapper: T.Callable[[J, int], K], source: Observable[K], **kwargs) -> None:
+    def __init__(self, mapper: T.Callable[[J, int], K], source: Observable[J], **kwargs) -> None:
         """Map constructor.
 
         Arguments:
@@ -73,11 +71,11 @@ class Map(T.Generic[J, K], Observable[K]):
             raise exc
 
 
-def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[K]], Map]:
+def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[J]], Map]:
     """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:
         Partial implementation of Map
 
     """
-    return T.cast(T.Callable[[Observable[K]], Map], partial(Map, mapper))
+    return T.cast(T.Callable[[Observable[J]], Map], partial(Map, mapper))
