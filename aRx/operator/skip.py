@@ -46,7 +46,7 @@ class Skip(Observable[K]):
 
             await awaitable
 
-    def __init__(self, count: int, source: Observable, **kwargs) -> None:
+    def __init__(self, count: int, source: Observable[K], **kwargs) -> None:
         """Skip constructor.
 
         .. Note::
@@ -80,11 +80,11 @@ class Skip(Observable[K]):
             raise exc
 
 
-def skip_op(count: int) -> T.Callable[[], Skip]:
+def skip_op(count: int) -> T.Callable[[Observable[K]], Skip]:
     """Partial implementation of :class:`~.Skip` to be used with operator semantics.
 
     Returns:
         Partial implementation of Skip.
 
     """
-    return partial(Skip, count)
+    return T.cast(T.Callable[[Observable[K]], Skip], partial(Skip, count))

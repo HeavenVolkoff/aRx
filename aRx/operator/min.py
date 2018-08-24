@@ -48,7 +48,7 @@ class Min(Observable[K]):
 
             await super().__aclose__()
 
-    def __init__(self, source: Observable, **kwargs) -> None:
+    def __init__(self, source: Observable[K], **kwargs) -> None:
         """Min constructor.
 
         Arguments:
@@ -58,7 +58,7 @@ class Min(Observable[K]):
         super().__init__(**kwargs)
         self._source = source
 
-    def __observe__(self, observer: Observer) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
         sink = self._MinSink()  # type: Min._MinSink
 
         try:

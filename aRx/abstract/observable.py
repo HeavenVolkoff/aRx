@@ -33,7 +33,7 @@ class Observable(T.Generic[K], metaclass=ABCMeta):
     def __gt__(self, observer: Observer[K, T.Any]) -> Disposable:
         return observe(self, observer)
 
-    def __add__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
+    def __add__(self, other: "Observable[J]") -> "Observable":
         from ..operator import Concat
 
         return Concat(self, other)

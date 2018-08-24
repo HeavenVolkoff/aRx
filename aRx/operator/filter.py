@@ -11,14 +11,15 @@ from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
-FilterCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
 class Filter(Observable[K]):
     """Observable that output filtered data from another observable source."""
 
     class _FilterSink(SingleStream[K]):
-        def __init__(self, predicate: FilterCallable, **kwargs) -> None:
+        def __init__(
+            self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
+        ) -> None:
             super().__init__(**kwargs)
 
             self._index = 0
@@ -41,7 +42,12 @@ class Filter(Observable[K]):
 
                 await res
 
-    def __init__(self, predicate: FilterCallable, source: Observable, **kwargs) -> None:
+    def __init__(
+        self,
+        predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]],
+        source: Observable[K],
+        **kwargs,
+    ) -> None:
         """Filter constructor.
 
         Arguments:
@@ -55,7 +61,7 @@ class Filter(Observable[K]):
         self._source = source
         self._predicate = predicate
 
-    def __observe__(self, observer: Observer) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
         sink = self._FilterSink(self._predicate)  # type: Filter._FilterSink[K]
 
         try:
@@ -69,11 +75,13 @@ class Filter(Observable[K]):
             raise exc
 
 
-def filter_op(predicate: FilterCallable) -> T.Callable[[], Filter]:
+def filter_op(
+    predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
+) -> T.Callable[[Observable[K]], Filter]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return partial(Filter, predicate)
+    return T.cast(T.Callable[[Observable[K]], Filter], partial(Filter, predicate))

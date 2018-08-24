@@ -9,28 +9,31 @@ from ..abstract.disposable import Disposable, adispose
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
+J = T.TypeVar("J")
 K = T.TypeVar("K")
+L = T.TypeVar("L")
 
 
-class Concat(Observable[K]):
+class Concat(Observable[J]):
     """Observable that is the concatenation of multiple observables sources"""
 
-    def __init__(self, first: Observable, second: Observable, *rest: Observable, **kwargs) -> None:
+    def __init__(self, *observables: Observable[J], **kwargs) -> None:
         """Concat constructor.
 
         Arguments:
-            first: First observable to be concatenated.
-            second: Second observable to be concatenated.
-            rest: Optional observables to be concatenated.
+            observables: Observables to be concatenated.
             kwargs: Keyword parameters for super.
 
         """
         super().__init__(**kwargs)
 
-        self._sources = (first, second) + rest
+        # Must have at least two observables
+        assert len(observables) > 1
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = SingleStream()  # type: SingleStream[K]
+        self._sources = observables
+
+    def __observe__(self, observer: Observer[J, T.Any]) -> Disposable:
+        sink = SingleStream()  # type: SingleStream[J]
 
         try:
             return CompositeDisposable(
@@ -42,11 +45,11 @@ class Concat(Observable[K]):
             raise exc
 
 
-def concat_op(first: Observable[K]) -> T.Callable[[], Concat]:
+def concat_op(first: Observable[K]) -> T.Callable[[Observable[L]], Concat[T.Union[K, L]]]:
     """Partial implementation of :class:`~.Concat` to be used with operator semantics.
 
     Returns:
         Partial implementation of Concat
 
     """
-    return partial(Concat, first)
+    return T.cast(T.Callable[[Observable], Concat[J]], partial(Concat, first))

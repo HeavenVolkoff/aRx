@@ -11,14 +11,18 @@ from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
-AssertCallable = T.Callable[[K], T.Union[T.Awaitable[bool], bool]]
 
 
 class Assert(Observable[K]):
     """Observable that raises exception if predicate is false."""
 
     class _AssertSink(SingleStream[K]):
-        def __init__(self, predicate: AssertCallable, exc: Exception, **kwargs) -> None:
+        def __init__(
+            self,
+            predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
+            exc: Exception,
+            **kwargs,
+        ) -> None:
             super().__init__(**kwargs)
 
             self._exc = exc
@@ -41,7 +45,11 @@ class Assert(Observable[K]):
             await res
 
     def __init__(
-        self, predicate: AssertCallable, exc: Exception, source: Observable, **kwargs
+        self,
+        predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
+        exc: Exception,
+        source: Observable[K],
+        **kwargs,
     ) -> None:
         """Filter constructor.
 
@@ -57,7 +65,7 @@ class Assert(Observable[K]):
         self._source = source
         self._predicate = predicate
 
-    def __observe__(self, observer: Observer) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
         sink = self._AssertSink(
             self._predicate, self._exc, loop=observer.loop
         )  # type: Assert._AssertSink[K]
@@ -73,11 +81,13 @@ class Assert(Observable[K]):
             raise exc
 
 
-def assert_op(predicate: AssertCallable, exc: Exception) -> T.Callable[[], Assert]:
+def assert_op(
+    predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]], exc: Exception
+) -> T.Callable[[Observable[K]], Assert]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return partial(Assert, predicate, exc)
+    return T.cast(T.Callable[[Observable[K]], Assert], partial(Assert, predicate, exc))

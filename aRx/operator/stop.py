@@ -11,14 +11,15 @@ from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
-StopCallable = T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
 
 
 class Stop(Observable[K]):
     """Observable that stops according to a predicate."""
 
     class _StopSink(SingleStream[K]):
-        def __init__(self, predicate: StopCallable, **kwargs) -> None:
+        def __init__(
+            self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
+        ) -> None:
             super().__init__(**kwargs)
 
             self._index = 0
@@ -39,7 +40,12 @@ class Stop(Observable[K]):
 
             await awaitable
 
-    def __init__(self, predicate: StopCallable, source: Observable, **kwargs) -> None:
+    def __init__(
+        self,
+        predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]],
+        source: Observable[K],
+        **kwargs,
+    ) -> None:
         """Stop constructor.
 
         Arguments:
@@ -67,11 +73,13 @@ class Stop(Observable[K]):
             raise exc
 
 
-def stop_op(predicate: StopCallable) -> T.Callable[[], Stop]:
+def stop_op(
+    predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
+) -> T.Callable[[Observable[K]], Stop]:
     """Partial implementation of :class:`~.Stop` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Stop
 
     """
-    return partial(Stop, predicate)
+    return T.cast(T.Callable[[Observable[K]], Stop], partial(Stop, predicate))

@@ -14,7 +14,6 @@ J = T.TypeVar("J")
 K = T.TypeVar("K")
 L = T.TypeVar("L")
 M = T.TypeVar("M")
-MapCallable = T.Callable[[J, int], K]
 
 
 class Map(T.Generic[J, K], Observable[K]):
@@ -46,7 +45,7 @@ class Map(T.Generic[J, K], Observable[K]):
 
             await awaitable
 
-    def __init__(self, mapper: MapCallable, source: Observable[K], **kwargs) -> None:
+    def __init__(self, mapper: T.Callable[[J, int], K], source: Observable[K], **kwargs) -> None:
         """Map constructor.
 
         Arguments:
@@ -74,11 +73,11 @@ class Map(T.Generic[J, K], Observable[K]):
             raise exc
 
 
-def map_op(mapper: MapCallable) -> T.Callable[[], Map]:
+def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[K]], Map]:
     """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:
         Partial implementation of Map
 
     """
-    return partial(Map, mapper)
+    return T.cast(T.Callable[[Observable[K]], Map], partial(Map, mapper))

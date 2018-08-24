@@ -48,7 +48,7 @@ class Take(Observable[K]):
             else:
                 self._reverse_queue.append(value)
 
-    def __init__(self, count: int, source: Observable, **kwargs) -> None:
+    def __init__(self, count: int, source: Observable[K], **kwargs) -> None:
         """Take constructor.
 
         .. Note::
@@ -87,11 +87,11 @@ class Take(Observable[K]):
             raise exc
 
 
-def take_op(count: int) -> T.Callable[[], Take]:
+def take_op(count: int) -> T.Callable[[Observable[K]], Take]:
     """Partial implementation of :class:`~.Take` to be used with operator semantics.
 
     Returns:
         Partial implementation of Take.
 
     """
-    return partial(Take, count)
+    return T.cast(T.Callable[[Observable[K]], Take], partial(Take, count))
