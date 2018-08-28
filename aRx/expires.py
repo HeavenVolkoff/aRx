@@ -51,7 +51,7 @@ class expires(AbstractContextManager, Loopable):
                 if task is None:
                     raise RuntimeError("Timeout context manager should be used inside a task")
 
-                self.task_ref = ReferenceType(task)
+                self._task_ref = ReferenceType(task)
 
             self._expire_at = self.loop.time()
             if self._timeout <= 0:
@@ -78,10 +78,10 @@ class expires(AbstractContextManager, Loopable):
         return False
 
     def _expire_task(self):
-        if self.task_ref is None:
+        if self._task_ref is None:
             return
 
-        task = self.task_ref()
+        task = self._task_ref()
         if task:
             task.cancel()
             self._expired = True
@@ -97,7 +97,8 @@ class expires(AbstractContextManager, Loopable):
         return self._expired
 
     def reset(self):
-        task_ref = self.task_ref
-        self.__exit__(None, None, None)
-        self._task_ref = task_ref
-        self.__enter__()
+        task_ref = self._task_ref
+        if task_ref:
+            self.__exit__(None, None, None)
+            self._task_ref = task_ref
+            self.__enter__()
