@@ -5,7 +5,7 @@ from asyncio import Event, InvalidStateError, gather as agather
 from warnings import warn
 from contextlib import suppress
 
-from ..error import ARxWarning, MultiStreamError
+from ..error import ARxWarning, MultiStreamError, ObserverClosedError
 from ..promise import Promise
 from ..abstract.observer import Observer
 from ..abstract.disposable import Disposable
@@ -56,15 +56,34 @@ class MultiStream(Observer[K, None], Observable[K]):
         self._observers = []  # type: T.List[Observer[K, T.Any]]
 
     async def __asend__(self, value: K):
-        awaitables = tuple(obv.asend(value) for obv in self._observers if not obv.closed)
+        awaitable = agather(
+            *tuple(obv.asend(value) for obv in self._observers if not obv.closed),
+            return_exceptions=True,
+        )
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        await agather(*awaitables)
+        exceptions = await awaitable  # type: T.List[T.Optional[Exception]]
+
+        for idx, exc in enumerate(exceptions):
+            if isinstance(exc, Exception):
+                if not isinstance(exc, ObserverClosedError) or (
+                    len(self._observers) >= len(exceptions) and not self._observers[idx].closed
+                ):
+                    raise exc
 
     async def __araise__(self, ex: Exception) -> bool:
-        await agather(*(obv.araise(ex) for obv in self._observers if not obv.closed))
+        exceptions = await agather(
+            *(obv.araise(ex) for obv in self._observers if not obv.closed), return_exceptions=True
+        )  # type: T.List[T.Optional[Exception]]
+
+        for idx, exc in enumerate(exceptions):
+            if isinstance(exc, Exception):
+                if not isinstance(exc, ObserverClosedError) or (
+                    len(self._observers) >= len(exceptions) and not self._observers[idx].closed
+                ):
+                    raise exc
 
         return False
 
