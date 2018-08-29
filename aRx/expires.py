@@ -7,7 +7,6 @@ See original license in: ../licenses/LICENSE.async_timeout.txt
 import typing as T
 import asyncio
 from asyncio import Task, Handle, TimeoutError, CancelledError
-from weakref import ReferenceType
 from contextlib import AbstractContextManager
 
 from .abstract.loopable import Loopable
@@ -35,9 +34,9 @@ class expires(AbstractContextManager, Loopable):
         super().__init__(**kwargs)
 
         # Internal
+        self._task = None  # type: T.Optional[Task]
         self._expired = False
         self._timeout = timeout
-        self._task_ref = None  # type: T.Optional[ReferenceType[Task]]
         self._expire_at = 0.0
         self._cancel_handler = None  # type: T.Optional[Handle]
 
@@ -46,12 +45,12 @@ class expires(AbstractContextManager, Loopable):
 
         if self._timeout is not None:
             # Get current task
-            if self._task_ref is None:
+            if self._task is None:
                 task = current_task(self.loop)
                 if task is None:
                     raise RuntimeError("Timeout context manager should be used inside a task")
 
-                self._task_ref = ReferenceType(task)
+                self._task = task
 
             self._expire_at = self.loop.time()
             if self._timeout <= 0:
@@ -69,8 +68,8 @@ class expires(AbstractContextManager, Loopable):
             self._cancel_handler.cancel()
             self._cancel_handler = None
 
-        if self._task_ref:
-            self._task_ref = None
+        if self._task:
+            self._task = None
 
         if exc_type is CancelledError and self._expired:
             raise TimeoutError
@@ -78,12 +77,8 @@ class expires(AbstractContextManager, Loopable):
         return False
 
     def _expire_task(self):
-        if self._task_ref is None:
-            return
-
-        task = self._task_ref()
-        if task:
-            task.cancel()
+        if self._task is not None:
+            self._task.cancel()
             self._expired = True
 
     @property
@@ -97,8 +92,8 @@ class expires(AbstractContextManager, Loopable):
         return self._expired
 
     def reset(self):
-        task_ref = self._task_ref
-        if task_ref:
+        task = self._task
+        if task:
             self.__exit__(None, None, None)
-            self._task_ref = task_ref
+            self._task = task
             self.__enter__()
