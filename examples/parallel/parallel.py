@@ -1,11 +1,11 @@
 import time
 import asyncio
 import logging
+from threading import current_thread
 from asyncio.futures import wrap_future
 from concurrent.futures import ThreadPoolExecutor
-from threading import current_thread
 
-from aioreactive.core import AsyncObservable, Operators as op
+from aioreactive.core import Operators as op, AsyncObservable
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -14,17 +14,9 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 
 def long_running(value) -> int:
-    print(
-        "Long running ({0}) on thread {1}".format(value,
-                                                  current_thread().name)
-    )
+    print("Long running ({0}) on thread {1}".format(value, current_thread().name))
     time.sleep(3)
-    print(
-        "Long running, done ({0}) on thread {1}".format(
-            value,
-            current_thread().name
-        )
-    )
+    print("Long running, done ({0}) on thread {1}".format(value, current_thread().name))
     return value
 
 
@@ -40,7 +32,7 @@ async def main() -> None:
         print(x)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
     loop.close()

@@ -59,6 +59,7 @@ class MultiStream(Observer[K, None], Observable[K]):
         awaitable = agather(
             *tuple(obv.asend(value) for obv in self._observers if not obv.closed),
             return_exceptions=True,
+            loop=self.loop,
         )
 
         # Remove reference early to avoid keeping large objects in memory
@@ -75,7 +76,9 @@ class MultiStream(Observer[K, None], Observable[K]):
 
     async def __araise__(self, ex: Exception) -> bool:
         exceptions = await agather(
-            *(obv.araise(ex) for obv in self._observers if not obv.closed), return_exceptions=True
+            *(obv.araise(ex) for obv in self._observers if not obv.closed),
+            loop=self.loop,
+            return_exceptions=True,
         )  # type: T.List[T.Optional[Exception]]
 
         for idx, exc in enumerate(exceptions):

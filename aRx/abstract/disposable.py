@@ -1,7 +1,8 @@
 __all__ = ("Disposable", "adispose")
 
+import typing as T
 from abc import ABCMeta, abstractmethod
-from asyncio import gather as agather
+from asyncio import AbstractEventLoop, gather as agather
 
 
 class Disposable(object, metaclass=ABCMeta):
@@ -35,13 +36,14 @@ class Disposable(object, metaclass=ABCMeta):
         await self.__adispose__()
 
 
-async def adispose(*disposables: Disposable):
+async def adispose(*disposables: Disposable, loop: T.Optional[AbstractEventLoop] = None):
     """External access to disposable magic method.
 
     See also: :meth:`~.Disposable.__adispose__`
 
     Arguments:
         disposables: Objects to be disposed.
+        loop: Event loop.
 
     """
-    await agather(*(disposable.__adispose__() for disposable in disposables))
+    await agather(*(disposable.__adispose__() for disposable in disposables), loop=loop)

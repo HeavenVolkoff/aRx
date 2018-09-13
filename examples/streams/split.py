@@ -1,9 +1,7 @@
 """Example to show how to split a stream into two substreams."""
 import asyncio
 
-from aioreactive.core import subscribe, AsyncAnonymousObserver
-
-from aioreactive.core import AsyncObservable, Operators as op
+from aioreactive.core import Operators as op, AsyncObservable, AsyncAnonymousObserver, subscribe
 
 
 async def main():
@@ -20,7 +18,7 @@ async def main():
     await subscribe(evens, AsyncAnonymousObserver(mysink))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
     loop.close()

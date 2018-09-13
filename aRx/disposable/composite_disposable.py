@@ -1,9 +1,10 @@
 __all__ = ("CompositeDisposable",)
 
+from ..abstract.loopable import Loopable
 from ..abstract.disposable import Disposable, adispose
 
 
-class CompositeDisposable(Disposable):
+class CompositeDisposable(Disposable, Loopable):
     """A disposable that is a composition of various disposable."""
 
     @staticmethod
@@ -34,4 +35,4 @@ class CompositeDisposable(Disposable):
 
     async def __adispose__(self):
         """Call all registered disposables on dispose."""
-        await adispose(*self._disposables)
+        await adispose(*self._disposables, loop=self.loop)

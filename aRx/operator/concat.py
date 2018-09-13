@@ -37,12 +37,13 @@ class Concat(Observable[J]):
 
         try:
             return CompositeDisposable(
-                *map(lambda s: observe(s, sink), self._sources), observe(sink, observer)
+                *map(lambda s: observe(s, sink), self._sources),
+                observe(sink, observer),
+                loop=observer.loop,
             )
-        except Exception as exc:
+        finally:
             # Dispose sink if there is a exception during observation set-up
-            observer.loop.create_task(adispose(sink))
-            raise exc
+            observer.loop.create_task(adispose(sink, loop=observer.loop))
 
 
 def concat_op(first: Observable[K]) -> T.Callable[[Observable[L]], Concat]:

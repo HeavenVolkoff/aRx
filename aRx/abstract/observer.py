@@ -2,12 +2,14 @@ __all__ = ("Observer",)
 
 import typing as T
 from abc import ABCMeta, abstractmethod
-from asyncio import InvalidStateError
+from asyncio import Task, InvalidStateError, gather as agather
+from weakref import WeakSet
 from warnings import warn
 
 from ..error import ARxWarning, ObserverClosedError
 from ..promise import Promise
 from ..disposable import Disposable
+from ..misc.current_task import current_task
 
 K = T.TypeVar("K")
 J = T.TypeVar("J")
@@ -39,6 +41,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
 
         # Ensures that observer closes if it's is resolved externally
         self._close_guard = False
+        self._propagation: WeakSet[Task] = WeakSet()
         self._close_promise = self.lastly(self.aclose)
 
     @abstractmethod
@@ -83,7 +86,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
     @property
     def closed(self):
         """Property that indicates if this observer is closed or not."""
-        return self.done()
+        return self.done() or self._close_guard
 
     async def asend(self, data: K):
         """Interface thought which data is inputted.
@@ -98,6 +101,8 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         if self.closed:
             raise ObserverClosedError(self)
 
+        self._propagation.add(current_task(loop=self.loop))
+
         awaitable = self.__asend__(data)
 
         # Remove reference early to avoid keeping large objects in memory
@@ -106,7 +111,16 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         try:
             await awaitable
         except Exception as ex:
-            await self.araise(ex)
+            if not self.closed:
+                await self.araise(ex)
+            else:
+                warn(
+                    ARxWarning(
+                        f"{type(self).__qualname__} was already resolved"
+                        " during `.asend()` call to treat:",
+                        ex,
+                    )
+                )
 
     async def araise(self, main_ex: Exception) -> bool:
         """Interface thought which exceptions are inputted.
@@ -123,6 +137,8 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         """
         if self.closed:
             raise ObserverClosedError(self)
+
+        self._propagation.add(current_task(loop=self.loop))
 
         try:
             should_close = await self.__araise__(main_ex)
@@ -156,10 +172,14 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         # Guard against repeated calls
         if self._close_guard:
             return False
+
         self._close_guard = True
 
         # Cancel close promise
         self._close_promise.cancel()
+
+        # Await all propagation before closing stream
+        await agather(*self._propagation, loop=self.loop)
 
         # Internal close
         try:

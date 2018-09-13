@@ -1,8 +1,7 @@
 import asyncio
 from tkinter import *
 
-from aioreactive.core import subscribe, AsyncAnonymousObserver
-from aioreactive.core import AsyncStream
+from aioreactive.core import AsyncStream, AsyncAnonymousObserver, subscribe
 from aioreactive.operator.pipe import delay
 
 
@@ -46,7 +45,7 @@ async def main(loop) -> None:
         await asyncio.sleep(0.005)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main(loop))
     loop.close()

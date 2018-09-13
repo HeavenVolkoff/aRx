@@ -5,13 +5,11 @@ See original license in: ../licenses/LICENSE.async_timeout.txt
 """
 
 import typing as T
-import asyncio
 from asyncio import Task, Handle, TimeoutError, CancelledError
 from contextlib import AbstractContextManager
 
 from .abstract.loopable import Loopable
-
-current_task = getattr(asyncio, "current_task", asyncio.Task.current_task)
+from .misc.current_task import current_task
 
 
 class expires(AbstractContextManager, Loopable):

@@ -68,10 +68,10 @@ class Filter(Observable[K]):
             up = observe(self._source, sink)
             down = observe(sink, observer)
 
-            return CompositeDisposable(up, down)
+            return CompositeDisposable(up, down, loop=observer.loop)
         except Exception as exc:
             # Dispose sink if there is a exception during observation set-up
-            observer.loop.create_task(adispose(sink))
+            observer.loop.create_task(adispose(sink, loop=observer.loop))
             raise exc
 
 
