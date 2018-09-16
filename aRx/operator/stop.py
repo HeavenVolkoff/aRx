@@ -13,32 +13,33 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
+class _StopSink(SingleStream[K, K]):
+    def __init__(
+        self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
+    ) -> None:
+        super().__init__(**kwargs)
+
+        self._index = 0
+        self._predicate = predicate
+
+    async def __asend__(self, value: K):
+        index = self._index
+        self._index += 1
+
+        must_stop = self._predicate(value, index)
+        if iscoroutinefunction(self._predicate):
+            must_stop = await T.cast(T.Awaitable[bool], must_stop)
+
+        awaitable = self.aclose() if must_stop else super().__asend__(value)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del value
+
+        await awaitable
+
+
 class Stop(Observable[K]):
     """Observable that stops according to a predicate."""
-
-    class _StopSink(SingleStream[K, K]):
-        def __init__(
-            self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
-        ) -> None:
-            super().__init__(**kwargs)
-
-            self._index = 0
-            self._predicate = predicate
-
-        async def __asend__(self, value: K):
-            index = self._index
-            self._index += 1
-
-            must_stop = self._predicate(value, index)
-            if iscoroutinefunction(self._predicate):
-                must_stop = await T.cast(T.Awaitable[bool], must_stop)
-
-            awaitable = self.aclose() if must_stop else super().__asend__(value)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del value
-
-            await awaitable
 
     def __init__(
         self,
@@ -60,7 +61,7 @@ class Stop(Observable[K]):
         self._predicate = predicate
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._StopSink(self._predicate)  # type: Stop._StopSink[K]
+        sink: _StopSink[K] = _StopSink(self._predicate)
 
         try:
             up = observe(self._source, sink)

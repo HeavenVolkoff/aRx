@@ -19,7 +19,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         maintained.
     """
 
-    __slots__ = ("_fut", "_awaited", "_cancelled")
+    __slots__ = ("_fut", "_directly_cancelled")
 
     def __init__(self, awaitable: T.Optional[T.Awaitable[K]] = None, **kwargs) -> None:
         """Promise constructor.
@@ -30,16 +30,14 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         """
         super().__init__(**kwargs)
 
-        self._fut = (
+        self._fut: Future = (
             self.loop.create_future()
             if awaitable is None
             else ensure_future(awaitable, loop=self.loop)
-        )  # type: Future
-        self._awaited = False
-        self._cancelled = False
+        )
+        self._directly_cancelled = False
 
     def __await__(self) -> T.Generator[T.Any, None, K]:
-        self._awaited = True
         return self._fut.__await__()
 
     def done(self) -> bool:
@@ -58,7 +56,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
             Boolean indicating if the cancellation occurred or not.
 
         """
-        self._cancelled = True
+        self._directly_cancelled = True
         return self._fut.cancel()
 
     def cancelled(self) -> bool:

@@ -1,11 +1,13 @@
-__all__ = ("FromIterable",)
-
 import typing as T
+from asyncio import FIRST_COMPLETED, Future, CancelledError, wait
 
 from ..disposable import AnonymousDisposable
 from ..abstract.observer import Observer
 from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
+
+__all__ = ("FromIterable",)
+
 
 K = T.TypeVar("K")
 
@@ -14,18 +16,29 @@ class FromIterable(Observable[K]):
     """Observable that uses an iterable as data source."""
 
     @staticmethod
-    async def _worker(iterator: T.Iterator, observer: Observer):
+    async def _worker(iterator: T.Iterator, observer: Observer, stop: Future):
+        pending = None
+
         try:
             for data in iterator:
                 if observer.closed:
-                    return
+                    break
 
-                await observer.asend(data)
-        except Exception as ex:
-            if observer.closed:
-                return
+                pending = None
+                (done,), (pending,) = await wait(
+                    (observer.asend(data), stop), return_when=FIRST_COMPLETED
+                )
 
-            await observer.araise(ex)
+                if observer.closed or done is stop:
+                    break
+        except CancelledError:
+            raise
+        except Exception as exc:
+            if not observer.closed:
+                await observer.araise(exc)
+
+        if pending and pending is not stop:
+            await pending
 
         if not (observer.closed or observer.keep_alive):
             await observer.aclose()
@@ -41,17 +54,27 @@ class FromIterable(Observable[K]):
         super().__init__(**kwargs)
 
         # Internal
-        self._iterator = iter(iterable)
+        self._iterator: T.Optional[T.Iterator] = iter(iterable)
 
     def __observe__(self, observer: Observer) -> Disposable:
         """Schedule iterator flush and register observer."""
-        task = None
-        if hasattr(self, "_iterator"):
-            task = observer.loop.create_task(FromIterable._worker(self._iterator, observer))
+        stop_future: T.Optional[Future] = None
+
+        def stop():
+            if stop_future:
+                stop_future.set_result(None)
+
+        if self._iterator:
+            stop_future = T.cast(Future, observer.loop.create_future())
+
+            observer.loop.create_task(FromIterable._worker(self._iterator, observer, stop_future))
+
+            # Cancel task when observer closes
+            observer.lastly(stop)
 
             # Clear reference to prevent reiterations
-            del self._iterator
+            self._iterator = None
         elif not (observer.closed or observer.keep_alive):
             observer.loop.create_task(observer.aclose())
 
-        return AnonymousDisposable(None if task is None else task.cancel)
+        return AnonymousDisposable(stop)

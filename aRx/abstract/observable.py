@@ -39,7 +39,7 @@ class Observable(T.Generic[K], metaclass=ABCMeta):
         return Concat(self, other)
 
     def __iadd__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
-        return self + other  # type: ignore
+        return self + other
 
     @abstractmethod
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:

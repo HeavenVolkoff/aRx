@@ -13,38 +13,39 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
+class _SkipSink(SingleStream[K, K]):
+    def __init__(self, count: int, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+        self._count = abs(count)
+        self._reverse_queue: T.Optional[T.Deque[K]] = (
+            deque(maxlen=self._count) if count < 0 else None
+        )
+
+    async def __aclose__(self):
+        if self._reverse_queue is not None:
+            self._reverse_queue.clear()
+
+        return await super().__aclose__()
+
+    async def __asend__(self, value: K):
+        if self._reverse_queue is not None:
+            value = self._reverse_queue[0]
+            self._reverse_queue.append(value)
+        elif self._count > 0:
+            self._count -= 1
+            return
+
+        awaitable = super().__asend__(value)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del value
+
+        await awaitable
+
+
 class Skip(Observable[K]):
     """Observable that outputs data from source skipping some."""
-
-    class _SkipSink(SingleStream[K, K]):
-        def __init__(self, count: int, **kwargs) -> None:
-            super().__init__(**kwargs)
-
-            self._count = abs(count)
-            self._reverse_queue = (
-                deque(maxlen=self._count) if count < 0 else None
-            )  # type: T.Optional[T.Deque[K]]
-
-        async def __aclose__(self):
-            if self._reverse_queue is not None:
-                self._reverse_queue.clear()
-
-            return await super().__aclose__()
-
-        async def __asend__(self, value: K):
-            if self._reverse_queue is not None:
-                value = self._reverse_queue[0]
-                self._reverse_queue.append(value)
-            elif self._count > 0:
-                self._count -= 1
-                return
-
-            awaitable = super().__asend__(value)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del value
-
-            await awaitable
 
     def __init__(self, count: int, source: Observable[K], **kwargs) -> None:
         """Skip constructor.
@@ -67,7 +68,7 @@ class Skip(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._SkipSink(self._count)  # type: Skip._SkipSink[K]
+        sink: _SkipSink[K] = _SkipSink(self._count)
 
         try:
             up = observe(self._source, sink)

@@ -23,9 +23,9 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
         super().__init__(**kwargs)
 
         # Private
-        self._queue = deque()  # type:   T.Deque[T.Tuple[bool, T.Union[K, Exception]]]
+        self._queue: T.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
         self._counter = 0
-        self._control = self.loop.create_future()  # type: Future
+        self._control: Future = self.loop.create_future()
 
     @property
     def _next_value(self) -> T.Tuple[bool, T.Union[K, Exception]]:

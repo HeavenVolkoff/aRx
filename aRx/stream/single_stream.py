@@ -32,9 +32,9 @@ class SingleStream(T.Generic[J, K], Observer[J, None], Observable[K]):
         """
         super().__init__(**kwargs)
 
-        self._lock = self._loop.create_future()  # type: Future
-        self._observer = None  # type: T.Optional[Observer[K, T.Any]]
-        self._observer_close_promise = None  # type: T.Optional[Promise]
+        self._lock: Future = self._loop.create_future()
+        self._observer: T.Optional[Observer[K, T.Any]] = None
+        self._observer_close_promise: T.Optional[Promise] = None
 
     @property
     def closed(self):

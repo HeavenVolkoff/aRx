@@ -53,7 +53,7 @@ class MultiStream(Observer[K, None], Observable[K]):
         """
         super().__init__(**kwargs)
 
-        self._observers = []  # type: T.List[Observer[K, T.Any]]
+        self._observers: T.List[Observer[K, T.Any]] = []
 
     async def __asend__(self, value: K):
         awaitable = agather(
@@ -65,7 +65,7 @@ class MultiStream(Observer[K, None], Observable[K]):
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        exceptions = await awaitable  # type: T.List[T.Optional[Exception]]
+        exceptions: T.List[T.Optional[Exception]] = await awaitable
 
         for idx, exc in enumerate(exceptions):
             if isinstance(exc, Exception):
@@ -79,7 +79,7 @@ class MultiStream(Observer[K, None], Observable[K]):
             *(obv.araise(ex) for obv in self._observers if not obv.closed),
             loop=self.loop,
             return_exceptions=True,
-        )  # type: T.List[T.Optional[Exception]]
+        )
 
         for idx, exc in enumerate(exceptions):
             if isinstance(exc, Exception):

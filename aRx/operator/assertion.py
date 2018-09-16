@@ -13,36 +13,37 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
+class _AssertSink(SingleStream[K, K]):
+    def __init__(
+        self,
+        predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
+        exc: Exception,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+
+        self._exc = exc
+        self._predicate = predicate
+
+    async def __asend__(self, value: K) -> None:
+        is_valid = self._predicate(value)
+
+        if iscoroutinefunction(self._predicate):
+            is_valid = await T.cast(T.Awaitable[bool], is_valid)
+
+        if not is_valid:
+            raise self._exc
+
+        res = super().__asend__(value)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del value
+
+        await res
+
+
 class Assert(Observable[K]):
     """Observable that raises exception if predicate is false."""
-
-    class _AssertSink(SingleStream[K, K]):
-        def __init__(
-            self,
-            predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
-            exc: Exception,
-            **kwargs,
-        ) -> None:
-            super().__init__(**kwargs)
-
-            self._exc = exc
-            self._predicate = predicate
-
-        async def __asend__(self, value: K) -> None:
-            is_valid = self._predicate(value)
-
-            if iscoroutinefunction(self._predicate):
-                is_valid = await T.cast(T.Awaitable[bool], is_valid)
-
-            if not is_valid:
-                raise self._exc
-
-            res = super().__asend__(value)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del value
-
-            await res
 
     def __init__(
         self,
@@ -66,9 +67,7 @@ class Assert(Observable[K]):
         self._predicate = predicate
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._AssertSink(
-            self._predicate, self._exc, loop=observer.loop
-        )  # type: Assert._AssertSink[K]
+        sink: _AssertSink[K] = _AssertSink(self._predicate, self._exc, loop=observer.loop)
 
         try:
             up = observe(self._source, sink)

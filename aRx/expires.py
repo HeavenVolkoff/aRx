@@ -27,16 +27,17 @@ class expires(AbstractContextManager, Loopable):
     loop - asyncio compatible event loop
     """
 
-    def __init__(self, timeout: T.Optional[float], **kwargs) -> None:
+    def __init__(self, timeout: T.Optional[float], suppress=False, **kwargs) -> None:
         """expires Constructor."""
         super().__init__(**kwargs)
 
         # Internal
-        self._task = None  # type: T.Optional[Task]
+        self._task: T.Optional[Task] = None
         self._expired = False
         self._timeout = timeout
+        self._suppress = suppress
         self._expire_at = 0.0
-        self._cancel_handler = None  # type: T.Optional[Handle]
+        self._cancel_handler: T.Optional[Handle] = None
 
     def __enter__(self) -> "expires":
         self._expired = False
@@ -70,6 +71,9 @@ class expires(AbstractContextManager, Loopable):
             self._task = None
 
         if exc_type is CancelledError and self._expired:
+            if self._suppress:
+                return True
+
             raise TimeoutError
 
         return False

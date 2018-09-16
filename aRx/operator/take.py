@@ -13,41 +13,42 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
-class Take(Observable[K]):
-    class _TakeSink(SingleStream[K, K]):
-        def __init__(self, count: int, **kwargs) -> None:
-            super().__init__(**kwargs)
+class _TakeSink(SingleStream[K, K]):
+    def __init__(self, count: int, **kwargs) -> None:
+        super().__init__(**kwargs)
 
-            self._count = abs(count)
-            self._reverse_queue = (
-                deque(maxlen=self._count) if count < 0 else None
-            )  # type: T.Optional[T.Deque[K]]
+        self._count = abs(count)
+        self._reverse_queue: T.Optional[T.Deque[K]] = (
+            deque(maxlen=self._count) if count < 0 else None
+        )
 
-        async def __aclose__(self):
-            if self._reverse_queue is not None:
-                # TODO: Don't hold values in memory more than necessary
-                for value in self._reverse_queue:
-                    await super().asend(value)
+    async def __aclose__(self):
+        if self._reverse_queue is not None:
+            # TODO: Don't hold values in memory more than necessary
+            for value in self._reverse_queue:
+                await super().asend(value)
 
-                self._reverse_queue.clear()
+            self._reverse_queue.clear()
 
-            return await super().__aclose__()
+        return await super().__aclose__()
 
-        async def __asend__(self, value: K):
-            if self._reverse_queue is None:
-                if self._count > 0:
-                    self._count -= 1
-                    awaitable = super().__asend__(value)
-                else:
-                    awaitable = self.aclose()
-
-                # Remove reference early to avoid keeping large objects in memory
-                del value
-
-                await awaitable
+    async def __asend__(self, value: K):
+        if self._reverse_queue is None:
+            if self._count > 0:
+                self._count -= 1
+                awaitable = super().__asend__(value)
             else:
-                self._reverse_queue.append(value)
+                awaitable = self.aclose()
 
+            # Remove reference early to avoid keeping large objects in memory
+            del value
+
+            await awaitable
+        else:
+            self._reverse_queue.append(value)
+
+
+class Take(Observable[K]):
     def __init__(self, count: int, source: Observable[K], **kwargs) -> None:
         """Take constructor.
 
@@ -74,7 +75,7 @@ class Take(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._TakeSink(self._count)  # type: Take._TakeSink[K]
+        sink: _TakeSink[K] = _TakeSink(self._count)
 
         try:
             up = observe(self._source, sink)

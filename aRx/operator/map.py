@@ -14,34 +14,35 @@ J = T.TypeVar("J")
 K = T.TypeVar("K")
 
 
+class _MapSink(SingleStream[J, K]):
+    def __init__(self, mapper: T.Callable[[J, int], K], **kwargs) -> None:
+        super().__init__(**kwargs)
+
+        self._index = 0
+        self._mapper = mapper
+
+    async def __asend__(self, value: J):
+        index = self._index
+        self._index += 1
+
+        result = self._mapper(value, index)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del value
+
+        if iscoroutinefunction(self._mapper):
+            result = await T.cast(T.Awaitable[K], result)
+
+        awaitable = super().__asend__(result)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del result
+
+        await awaitable
+
+
 class Map(T.Generic[J, K], Observable[K]):
     """Observable that outputs transmuted data from an observable source."""
-
-    class _MapSink(SingleStream[J, K]):
-        def __init__(self, mapper: T.Callable[[J, int], K], **kwargs) -> None:
-            super().__init__(**kwargs)
-
-            self._index = 0
-            self._mapper = mapper
-
-        async def __asend__(self, value: J):
-            index = self._index
-            self._index += 1
-
-            result = self._mapper(value, index)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del value
-
-            if iscoroutinefunction(self._mapper):
-                result = await T.cast(T.Awaitable[K], result)
-
-            awaitable = super().__asend__(result)
-
-            # Remove reference early to avoid keeping large objects in memory
-            del result
-
-            await awaitable
 
     def __init__(self, mapper: T.Callable[[J, int], K], source: Observable[J], **kwargs) -> None:
         """Map constructor.
@@ -58,7 +59,7 @@ class Map(T.Generic[J, K], Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._MapSink(self._mapper)  # type: Map._MapSink[J, K]
+        sink: _MapSink[J, K] = _MapSink(self._mapper)
 
         try:
             up = observe(self._source, sink)

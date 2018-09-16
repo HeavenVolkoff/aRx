@@ -2,7 +2,7 @@ __all__ = ("Disposable", "adispose")
 
 import typing as T
 from abc import ABCMeta, abstractmethod
-from asyncio import AbstractEventLoop, gather as agather
+from asyncio import AbstractEventLoop, gather as agather, get_event_loop
 
 
 class Disposable(object, metaclass=ABCMeta):
@@ -46,4 +46,7 @@ async def adispose(*disposables: Disposable, loop: T.Optional[AbstractEventLoop]
         loop: Event loop.
 
     """
+    if loop is None:
+        loop = get_event_loop()
+
     await agather(*(disposable.__adispose__() for disposable in disposables), loop=loop)

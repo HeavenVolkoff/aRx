@@ -30,6 +30,6 @@ def consume(observable: Observable[K]) -> Promise[K]:
         Promise to be resolved with consumer initial outputted data.
 
     """
-    consumer = Consumer()  # type: Consumer[K]
+    consumer: Consumer[K] = Consumer()
     observe(observable, consumer)
     return consumer

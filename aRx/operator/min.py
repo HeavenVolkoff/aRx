@@ -11,6 +11,32 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
+class _MinSink(SingleStream[K, K]):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    async def __asend__(self, value: K):
+        try:
+            is_greater = value < getattr(self, "_min")
+        except AttributeError:
+            is_greater = True
+
+        if is_greater:
+            setattr(self, "_min", value)
+
+    async def __aclose__(self):
+        try:
+            awaitable = super().asend(getattr(self, "_min"))
+            # Remove reference early to avoid keeping large objects in memory
+            delattr(self, "_min")
+        except AttributeError:
+            pass
+        else:
+            await awaitable
+
+        await super().__aclose__()
+
+
 class Min(Observable[K]):
     """Observable that outputs the largest data read from an observable source.
 
@@ -23,31 +49,6 @@ class Min(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    class _MinSink(SingleStream[K, K]):
-        def __init__(self, **kwargs) -> None:
-            super().__init__(**kwargs)
-
-        async def __asend__(self, value: K):
-            try:
-                is_greater = value < getattr(self, "_min")
-            except AttributeError:
-                is_greater = True
-
-            if is_greater:
-                setattr(self, "_min", value)
-
-        async def __aclose__(self):
-            try:
-                awaitable = super().asend(getattr(self, "_min"))
-                # Remove reference early to avoid keeping large objects in memory
-                delattr(self, "_min")
-            except AttributeError:
-                pass
-            else:
-                await awaitable
-
-            await super().__aclose__()
-
     def __init__(self, source: Observable[K], **kwargs) -> None:
         """Min constructor.
 
@@ -59,7 +60,7 @@ class Min(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._MinSink()  # type: Min._MinSink
+        sink: _MinSink = _MinSink()
 
         try:
             up = observe(self._source, sink)

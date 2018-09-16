@@ -1,35 +1,29 @@
-__all__ = ("Promise",)
-
 import typing as T
-from asyncio import CancelledError, InvalidStateError, shield, ensure_future
-from contextlib import ExitStack
+from asyncio import CancelledError, AbstractEventLoop, InvalidStateError, shield, ensure_future
+from contextlib import contextmanager
 
 from .abstract.promise import Promise as AbstractPromise
-from .misc.async_exit_stack import AsyncExitStack
+
+__all__ = ("Promise",)
+
 
 K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-def contains_cancelled_error(ex: T.Optional[BaseException]):
-    if isinstance(ex, Exception) and (
-        getattr(ex, "__has_cancelled_error__", False)
-        or isinstance(ex, CancelledError)
-        or contains_cancelled_error(ex.__cause__)
-        or contains_cancelled_error(ex.__context__)
-    ):
-        try:
-            setattr(ex, "__has_cancelled_error__", True)
-        except AttributeError:
-            pass
-        return True
-    return False
+async def resolve_awaitable(awaitable: T.Union[K, T.Awaitable[K]], loop: AbstractEventLoop) -> K:
+    try:
+        result_fut = ensure_future(T.cast(T.Awaitable[K], awaitable), loop=loop)
+    except TypeError:
+        return T.cast(K, awaitable)  # Not an awaitable
+    else:
+        return await result_fut
 
 
 class Promise(AbstractPromise[K]):
-    """Concrete Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`.
+    """Promise implementation that maintains the callback queue using :class:`~typing.Coroutine`.
     
-    See: :class:`~aRx.abstract.promise.Promise` for more information on the Promise abstract interface.
+    See: :class:`~.abstract.promise.Promise` for more information on the Promise abstract interface.
     """
 
     def then(self, on_fulfilled: T.Callable[[K], L]) -> "Promise[L]":
@@ -38,7 +32,7 @@ class Promise(AbstractPromise[K]):
         if no exception is raised, it will call the callback with the promise 
         result.
 
-        See: :meth:`~aRx.abstract.promise.Promise.then` for more information.
+        See: :meth:`~.abstract.promise.Promise.then` for more information.
 
         """
         return FulfillmentPromise(self, on_fulfilled, loop=self._loop)
@@ -49,7 +43,7 @@ class Promise(AbstractPromise[K]):
         if a exception is raised, it will call the callback with the promise 
         exception.
 
-        See: :meth:`~aRx.abstract.promise.Promise.catch` for more information.
+        See: :meth:`~.abstract.promise.Promise.catch` for more information.
         
         """
         return RejectionPromise(self, on_reject, loop=self._loop)
@@ -59,7 +53,7 @@ class Promise(AbstractPromise[K]):
         The :class:`~typing.Coroutine` will await the promise resolution and
         call the callback.
 
-        See: :meth:`~aRx.abstract.promise.Promise.lastly` for more information.
+        See: :meth:`~.abstract.promise.Promise.lastly` for more information.
 
         """
         return ResolutionPromise(self, on_resolved, loop=self._loop)
@@ -68,9 +62,22 @@ class Promise(AbstractPromise[K]):
 class ChainPromise(Promise[K]):
     """A special promise implementation used by the chained callback Promises."""
 
-    def _check_cancelled_exit(self, _, exc_value, __):
-        if contains_cancelled_error(exc_value) and not self._awaited:
-            return True
+    def __init__(self, wrapper_task: T.Coroutine, **kwargs) -> None:
+        super().__init__(wrapper_task, **kwargs)
+
+        # Disable the "destroy pending task" warning
+        self._fut._log_destroy_pending = False  # type: ignore
+
+    @contextmanager
+    def _cancel_parent_on_external_cancellation(self, promise):
+        try:
+            yield
+        except CancelledError:
+            # CancellationError must be propagated through stream
+            if not self._directly_cancelled:
+                promise.cancel()
+
+            raise
 
     def resolve(self, _: K):
         """See: :meth:`~aRx.abstract.promise.Promise.resolve` for more information.
@@ -95,7 +102,7 @@ class FulfillmentPromise(ChainPromise[L]):
     def __init__(
         self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L], **kwargs
     ) -> None:
-        super().__init__(awaitable=self._wrapper(promise, on_fulfilled), **kwargs)
+        super().__init__(self._wrapper(promise, on_fulfilled), **kwargs)
 
     async def _wrapper(self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L]) -> L:
         """Coroutine that wraps a promise and manages a fulfillment callback.
@@ -108,28 +115,23 @@ class FulfillmentPromise(ChainPromise[L]):
             Callback result.
 
         """
-        with ExitStack() as stack:
-            stack.push(self._check_cancelled_exit)
-
+        with self._cancel_parent_on_external_cancellation(promise):
             result = on_fulfilled(await shield(promise, loop=self.loop))
 
-            try:
-                result_fut = ensure_future(T.cast(T.Awaitable[L], result), loop=self.loop)
-            except TypeError:
-                pass
-            else:
-                result = await result_fut
-
-            return result
+        return await resolve_awaitable(result, self.loop)
 
 
 class RejectionPromise(ChainPromise[L]):
     def __init__(
         self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L], **kwargs
     ) -> None:
-        super().__init__(awaitable=self._wrapper(promise, on_reject), **kwargs)
+        super().__init__(self._wrapper(promise, on_reject), **kwargs)
 
-    async def _wrapper(self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L]) -> L:
+    async def _wrapper(
+        self,
+        promise: AbstractPromise,
+        on_reject: T.Callable[[Exception], T.Union[L, T.Awaitable[L]]],
+    ) -> L:
         """Coroutine that wraps a promise and manages a rejection callback.
 
         Arguments:
@@ -140,37 +142,20 @@ class RejectionPromise(ChainPromise[L]):
             Callback result.
 
         """
-        with ExitStack() as stack:
-            stack.push(self._check_cancelled_exit)
-
-            try:
+        try:
+            with self._cancel_parent_on_external_cancellation(promise):
                 return await shield(promise, loop=self.loop)
-            except Exception as ex:
-                if contains_cancelled_error(ex):
-                    raise ex
-
-                try:
-                    result = on_reject(ex)
-
-                    try:
-                        result_fut = ensure_future(T.cast(T.Awaitable[L], result), loop=self.loop)
-                    except TypeError:
-                        pass
-                    else:
-                        result = await result_fut
-
-                    return result
-                except Exception as _ex:
-                    # Fix error chain context
-                    _ex.__context__ = ex
-                    raise _ex
+        except CancelledError:
+            raise  # CancelledError must be propagated
+        except Exception as exc:
+            return await resolve_awaitable(on_reject(exc), self.loop)
 
 
 class ResolutionPromise(ChainPromise[K]):
     def __init__(
         self, promise: AbstractPromise, on_resolution: T.Callable[[], L], **kwargs
     ) -> None:
-        super().__init__(awaitable=self._wrapper(promise, on_resolution), **kwargs)
+        super().__init__(self._wrapper(promise, on_resolution), **kwargs)
 
     async def _wrapper(self, promise: AbstractPromise, on_resolution: T.Callable[[], L]) -> K:
         """Coroutine that wraps a promise and manages a resolution callback.
@@ -183,21 +168,10 @@ class ResolutionPromise(ChainPromise[K]):
             Callback result.
 
         """
-        async with AsyncExitStack() as stack:
-            stack.push(self._check_cancelled_exit)
-
-            @stack.push_async_callback
-            async def resolution():
-                if self._cancelled:
-                    return
-
-                result = on_resolution()
-
-                try:
-                    result = ensure_future(T.cast(T.Awaitable[L], result), loop=self.loop)
-                except TypeError:
-                    pass  # Result isn't awaitable
-                else:
-                    await result
-
-            return await shield(promise, loop=self.loop)
+        try:
+            with self._cancel_parent_on_external_cancellation(promise):
+                return await shield(promise, loop=self.loop)
+        finally:
+            # Finally executes always, but in the case itself was directly cancelled.
+            if not self._directly_cancelled:
+                await resolve_awaitable(on_resolution(), self.loop)

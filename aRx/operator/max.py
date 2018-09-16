@@ -11,6 +11,32 @@ from ..stream.single_stream import SingleStream
 K = T.TypeVar("K")
 
 
+class _MaxSink(SingleStream[K, K]):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    async def __asend__(self, value: K):
+        try:
+            is_greater = value > getattr(self, "_max")
+        except AttributeError:
+            is_greater = True
+
+        if is_greater:
+            setattr(self, "_max", value)
+
+    async def __aclose__(self):
+        try:
+            awaitable = super().asend(getattr(self, "_max"))
+            # Remove reference early to avoid keeping large objects in memory
+            delattr(self, "_max")
+        except AttributeError:
+            pass
+        else:
+            await awaitable
+
+        await super().__aclose__()
+
+
 class Max(Observable[K]):
     """Observable that outputs the largest data read from an observable source.
 
@@ -23,31 +49,6 @@ class Max(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    class _MaxSink(SingleStream[K, K]):
-        def __init__(self, **kwargs) -> None:
-            super().__init__(**kwargs)
-
-        async def __asend__(self, value: K):
-            try:
-                is_greater = value > getattr(self, "_max")
-            except AttributeError:
-                is_greater = True
-
-            if is_greater:
-                setattr(self, "_max", value)
-
-        async def __aclose__(self):
-            try:
-                awaitable = super().asend(getattr(self, "_max"))
-                # Remove reference early to avoid keeping large objects in memory
-                delattr(self, "_max")
-            except AttributeError:
-                pass
-            else:
-                await awaitable
-
-            await super().__aclose__()
-
     def __init__(self, source: Observable[K], **kwargs) -> None:
         """Max constructor.
 
@@ -59,7 +60,7 @@ class Max(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink = self._MaxSink()  # type: Max._MaxSink[K]
+        sink: _MaxSink[K] = _MaxSink()
 
         try:
             up = observe(self._source, sink)

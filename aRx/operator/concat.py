@@ -33,7 +33,7 @@ class Concat(Observable[J]):
         self._sources = observables
 
     def __observe__(self, observer: Observer[J, T.Any]) -> Disposable:
-        sink = SingleStream()  # type: SingleStream[J, J]
+        sink: SingleStream[J, J] = SingleStream()
 
         try:
             return CompositeDisposable(
