@@ -38,11 +38,10 @@ setup(
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
     ],
-    extras_require={':python_version<"3.7"': ["async-exit-stack"]},
     tests_require=["pytest", "pytest-asyncio"],
     setup_requires=["pytest-runner"],
     python_requires=">=3.6",
