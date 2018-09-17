@@ -6,12 +6,94 @@ See original license in: ../licenses/LICENSE.async_timeout.txt
 
 import typing as T
 from asyncio import Task, Handle, TimeoutError, CancelledError
+from functools import total_ordering
 from contextlib import AbstractContextManager
 
 from .abstract.loopable import Loopable
 from .misc.current_task import current_task
 
 
+# noinspection PyPep8Naming
+@total_ordering
+class auto_timeout:
+    def __init__(
+        self,
+        min: float,
+        step: float = 1.0,
+        *,
+        max: T.Optional[float] = None,
+        initial: T.Optional[float] = None,
+        threshold: T.Optional[float] = None,
+    ):
+        assert min > 0 and (max is None or (max > 0 and max > min))
+
+        self.min = float(min)
+        self.max = float("Inf") if max is None else float(max)
+        self.step = float(step)
+        self.timeout = self.min if initial is None else float(initial)
+        self.threshold = float(threshold) if threshold else self.step
+
+    def __eq__(self, other):
+        if isinstance(other, auto_timeout):
+            return (
+                self.timeout == self.timeout
+                and self.min == self.min
+                and self.max == self.max
+                and self.step == self.step
+            )
+
+        return self.timeout == other
+
+    def __lt__(self, other):
+        return self.timeout < other
+
+    def __int__(self):
+        return int(self.timeout)
+
+    def __float__(self):
+        return self.timeout
+
+    def __bool__(self):
+        return bool(self.timeout)
+
+    def __add__(self, other):
+        return self.timeout + other
+
+    def __radd__(self, other):
+        return other + self.timeout
+
+    def __sub__(self, other):
+        return self.timeout - other
+
+    def __rsub__(self, other):
+        return other - self.timeout
+
+    def __mul__(self, other):
+        return self.timeout * other
+
+    def __rmul__(self, other):
+        return other * self.timeout
+
+    def __truediv__(self, other):
+        return self.timeout / other
+
+    def __rtruediv__(self, other):
+        return other / self.timeout
+
+    def __floordiv__(self, other):
+        return self.timeout // other
+
+    def __rfloordiv__(self, other):
+        return other // self.timeout
+
+    def update(self, remaining: T.Union[int, float]):
+        if remaining == 0:
+            self.timeout = min(self.timeout + self.step, self.max)
+        elif remaining > self.threshold:
+            self.timeout = max(self.timeout - self.step, self.min)
+
+
+# noinspection PyPep8Naming
 class expires(AbstractContextManager, Loopable):
     """timeout context manager.
 
@@ -27,7 +109,9 @@ class expires(AbstractContextManager, Loopable):
     loop - asyncio compatible event loop
     """
 
-    def __init__(self, timeout: T.Optional[float], suppress=False, **kwargs) -> None:
+    def __init__(
+        self, timeout: T.Optional[T.Union[float, auto_timeout]], suppress=False, **kwargs
+    ) -> None:
         """expires Constructor."""
         super().__init__(**kwargs)
 
@@ -69,6 +153,9 @@ class expires(AbstractContextManager, Loopable):
 
         if self._task:
             self._task = None
+
+        if isinstance(self._timeout, auto_timeout):
+            self._timeout.update(self.remaining)
 
         if exc_type is CancelledError and self._expired:
             if self._suppress:
