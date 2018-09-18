@@ -24,7 +24,7 @@ class auto_timeout:
         max: T.Optional[float] = None,
         initial: T.Optional[float] = None,
         threshold: T.Optional[float] = None,
-    ):
+    ) -> None:
         assert min > 0 and (max is None or (max > 0 and max > min))
 
         self.min = float(min)
