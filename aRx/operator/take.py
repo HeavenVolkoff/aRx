@@ -75,7 +75,7 @@ class Take(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink: _TakeSink[K] = _TakeSink(self._count)
+        sink: _TakeSink[K] = _TakeSink(self._count, loop=observer.loop)
 
         try:
             up = observe(self._source, sink)

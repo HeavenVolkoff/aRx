@@ -60,7 +60,7 @@ class Max(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink: _MaxSink[K] = _MaxSink()
+        sink: _MaxSink[K] = _MaxSink(loop=observer.loop)
 
         try:
             up = observe(self._source, sink)
