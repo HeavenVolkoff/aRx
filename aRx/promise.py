@@ -1,10 +1,10 @@
+__all__ = ("Promise",)
+
 import typing as T
 from asyncio import CancelledError, AbstractEventLoop, InvalidStateError, shield, ensure_future
 from contextlib import contextmanager
 
 from .abstract.promise import Promise as AbstractPromise
-
-__all__ = ("Promise",)
 
 
 K = T.TypeVar("K")
