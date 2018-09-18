@@ -59,7 +59,7 @@ class Map(T.Generic[J, K], Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink: _MapSink[J, K] = _MapSink(self._mapper)
+        sink: _MapSink[J, K] = _MapSink(self._mapper, loop=observer.loop)
 
         try:
             up = observe(self._source, sink)

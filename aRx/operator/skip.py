@@ -68,7 +68,7 @@ class Skip(Observable[K]):
         self._source = source
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink: _SkipSink[K] = _SkipSink(self._count)
+        sink: _SkipSink[K] = _SkipSink(self._count, loop=observer.loop)
 
         try:
             up = observe(self._source, sink)

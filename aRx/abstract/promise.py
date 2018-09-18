@@ -27,10 +27,12 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         Arguments:
             awaitable: The awaitable object to be encapsulated.
             kwargs: Keyword parameters for super.
-        """
 
+        """
         # Retrieve loop from awaitable if available
-        if kwargs["loop"] is None and (isfuture(awaitable) or isinstance(awaitable, Loopable)):
+        if kwargs.get("loop", None) is None and (
+            isfuture(awaitable) or isinstance(awaitable, Loopable)
+        ):
             kwargs["loop"] = getattr(awaitable, "_loop", None)
 
         super().__init__(**kwargs)

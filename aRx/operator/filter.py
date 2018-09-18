@@ -63,7 +63,7 @@ class Filter(Observable[K]):
         self._predicate = predicate
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink: _FilterSink[K] = _FilterSink(self._predicate)
+        sink: _FilterSink[K] = _FilterSink(self._predicate, loop=observer.loop)
 
         try:
             up = observe(self._source, sink)
