@@ -2,7 +2,7 @@ __all__ = ("Promise",)
 
 import typing as T
 from abc import ABCMeta, abstractmethod
-from asyncio import Future, ensure_future
+from asyncio import Future, isfuture, ensure_future
 
 from .loopable import Loopable
 
@@ -28,13 +28,17 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
             awaitable: The awaitable object to be encapsulated.
             kwargs: Keyword parameters for super.
         """
+
+        # Retrieve loop from awaitable if available
+        if kwargs["loop"] is None and (isfuture(awaitable) or isinstance(awaitable, Loopable)):
+            kwargs["loop"] = getattr(awaitable, "_loop", None)
+
         super().__init__(**kwargs)
 
-        self._fut: Future = (
-            self.loop.create_future()
-            if awaitable is None
-            else ensure_future(awaitable, loop=self.loop)
-        )
+        # Internal
+        self._fut: Future = ensure_future(
+            awaitable, loop=self.loop
+        ) if awaitable else self.loop.create_future()
         self._directly_cancelled = False
 
     def __await__(self) -> T.Generator[T.Any, None, K]:

@@ -1,11 +1,11 @@
 __all__ = ("Promise",)
 
 import typing as T
+from abc import ABCMeta, abstractmethod
 from asyncio import CancelledError, AbstractEventLoop, InvalidStateError, shield, ensure_future
 from contextlib import contextmanager
 
 from .abstract.promise import Promise as AbstractPromise
-
 
 K = T.TypeVar("K")
 L = T.TypeVar("L")
@@ -59,14 +59,18 @@ class Promise(AbstractPromise[K]):
         return ResolutionPromise(self, on_resolved, loop=self._loop)
 
 
-class ChainPromise(Promise[K]):
+class ChainPromise(Promise[K], metaclass=ABCMeta):
     """A special promise implementation used by the chained callback Promises."""
 
-    def __init__(self, wrapper_task: T.Coroutine, **kwargs) -> None:
-        super().__init__(wrapper_task, **kwargs)
+    def __init__(self, promise: AbstractPromise, callback: T.Callable, **kwargs) -> None:
+        super().__init__(self._wrapper(promise, callback), **kwargs)
 
         # Disable the "destroy pending task" warning
         self._fut._log_destroy_pending = False  # type: ignore
+
+    @abstractmethod
+    def _wrapper(self, promise: AbstractPromise, callback: T.Callable):
+        raise NotImplementedError
 
     @contextmanager
     def _cancel_parent_on_external_cancellation(self, promise):
@@ -102,7 +106,7 @@ class FulfillmentPromise(ChainPromise[L]):
     def __init__(
         self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L], **kwargs
     ) -> None:
-        super().__init__(self._wrapper(promise, on_fulfilled), **kwargs)
+        super().__init__(promise, on_fulfilled, **kwargs)
 
     async def _wrapper(self, promise: AbstractPromise, on_fulfilled: T.Callable[[K], L]) -> L:
         """Coroutine that wraps a promise and manages a fulfillment callback.
@@ -116,16 +120,16 @@ class FulfillmentPromise(ChainPromise[L]):
 
         """
         with self._cancel_parent_on_external_cancellation(promise):
-            result = on_fulfilled(await shield(promise, loop=self.loop))
+            result = await shield(promise, loop=self.loop)
 
-        return await resolve_awaitable(result, self.loop)
+        return await resolve_awaitable(on_fulfilled(result), self.loop)
 
 
 class RejectionPromise(ChainPromise[L]):
     def __init__(
         self, promise: AbstractPromise, on_reject: T.Callable[[Exception], L], **kwargs
     ) -> None:
-        super().__init__(self._wrapper(promise, on_reject), **kwargs)
+        super().__init__(promise, on_reject, **kwargs)
 
     async def _wrapper(
         self,
@@ -155,7 +159,7 @@ class ResolutionPromise(ChainPromise[K]):
     def __init__(
         self, promise: AbstractPromise, on_resolution: T.Callable[[], L], **kwargs
     ) -> None:
-        super().__init__(self._wrapper(promise, on_resolution), **kwargs)
+        super().__init__(promise, on_resolution, **kwargs)
 
     async def _wrapper(self, promise: AbstractPromise, on_resolution: T.Callable[[], L]) -> K:
         """Coroutine that wraps a promise and manages a resolution callback.
