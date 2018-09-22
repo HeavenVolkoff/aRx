@@ -6,6 +6,7 @@ See original license in: ../licenses/LICENSE.async_timeout.txt
 
 import typing as T
 from asyncio import Task, Handle, TimeoutError, CancelledError
+from weakref import ReferenceType
 from functools import total_ordering
 from contextlib import AbstractContextManager
 
@@ -116,7 +117,7 @@ class expires(AbstractContextManager, Loopable):
         super().__init__(**kwargs)
 
         # Internal
-        self._task: T.Optional[Task] = None
+        self._task: T.Optional[ReferenceType[Task]] = None
         self._expired = False
         self._timeout = timeout
         self._suppress = suppress
@@ -133,7 +134,7 @@ class expires(AbstractContextManager, Loopable):
                 if task is None:
                     raise RuntimeError("Timeout context manager should be used inside a task")
 
-                self._task = task
+                self._task = ReferenceType(task)
 
             self._expire_at = self.loop.time()
             if self._timeout <= 0:
@@ -149,10 +150,10 @@ class expires(AbstractContextManager, Loopable):
     ) -> bool:
         if self._cancel_handler:
             self._cancel_handler.cancel()
-            self._cancel_handler = None
 
-        if self._task:
-            self._task = None
+        # Clear some references
+        self._task = None
+        self._cancel_handler = None
 
         if isinstance(self._timeout, auto_timeout):
             self._timeout.update(self.remaining)
@@ -166,9 +167,11 @@ class expires(AbstractContextManager, Loopable):
         return False
 
     def _expire_task(self):
-        if self._task is not None:
-            self._task.cancel()
-            self._expired = True
+        task = self._task() if self._task else None
+        if task:
+            task.cancel()
+
+        self._expired = True
 
     @property
     def remaining(self) -> float:
@@ -181,8 +184,10 @@ class expires(AbstractContextManager, Loopable):
         return self._expired
 
     def reset(self):
-        task = self._task
-        if task:
-            self.__exit__(None, None, None)
-            self._task = task
-            self.__enter__()
+        task = self._task() if self._task else None
+        if task is None:
+            raise ReferenceError("Task reference is not available anymore")
+
+        self.__exit__(None, None, None)
+        self._task = ReferenceType(task)
+        self.__enter__()
