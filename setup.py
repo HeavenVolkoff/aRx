@@ -1,50 +1,60 @@
 #!/usr/bin/env python3
 
-from os import path
-from codecs import open as c_open
+# Internal
+from configparser import ConfigParser
+import os
+import re
+import shlex  # python>=3.3
+import sys
+
+
+def main():
+    """Exec setup"""
+    from setuptools import setup, find_namespace_packages
+
+    setup(packages=find_namespace_packages("src"), package_dir={"": "src"})
+
 
 try:
-    from setuptools import setup, find_packages
+    import pkg_resources
 except ImportError:
-    from ez_setup import use_setuptools
+    raise RuntimeError(
+        "The setuptools package is missing or broken. To (re)install it run:\n"
+        "{} -m pip install -U setuptools",
+        sys.executable,
+    )
 
-    use_setuptools()
-    from setuptools import setup, find_packages
 
-# Get __version__ data
-here = str(path.abspath(path.dirname(__file__)))
-about = {}
-with c_open(path.join(here, "aRx", "__version__.py"), "r", "utf-8") as f:
-    exec(f.read(), about)
+def has_requirement(req):
+    try:
+        pkg_resources.require(req)
+    except pkg_resources.ResolutionError:
+        return False
+    else:
+        return True
 
-# Get README text
-with c_open(path.join(here, "README.md"), "r", "utf-8") as readme_file:
-    readme = readme_file.read()
 
-setup(
-    url=about["__url__"],
-    name=about["__title__"],
-    author=about["__authors__"],
-    version=about["__version__"],
-    license=about["__license__"],
-    keywords="aRx, reactive, async, asyncio, promise, observer, observable",
-    zip_safe=True,
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
-    maintainer=about["__maintainer__"],
-    description=about["__description__"],
-    author_email=about["__email__"],
-    classifiers=[  # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        "Topic :: Software Development :: Libraries :: Python Modules",
-        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
-        "Intended Audience :: Developers",
-        "Operating System :: OS Independent",
-        "Development Status :: 4 - Beta",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-    ],
-    tests_require=["pytest", "pytest-asyncio"],
-    setup_requires=["pytest-runner"],
-    python_requires=">=3.6",
-    maintainer_email=about["__maintainer_email__"],
-    long_description=readme,
-)
+if os.path.isfile("setup.cfg"):
+    # Read setup.cfg as a simple config file
+    setup_config = ConfigParser()
+    setup_config.read("setup.cfg", encoding="utf8")  # python>=3.2
+    # Filter out the setup-requires key
+    setup_requires = tuple(
+        filter(
+            lambda req: bool(req) and not has_requirement(req),
+            re.split(
+                r"\s*(?:\n+|;(?!;))\s*", setup_config.get("options", "setup-requires", fallback="")
+            ),
+        )
+    )
+
+    if setup_requires:
+        raise RuntimeError(
+            "Missing dependencies for installing {}. To proceed run:\n{} -m pip install {}".format(
+                setup_config.get("metadata", "name", fallback="this package"),
+                sys.executable,
+                " ".join(map(shlex.quote, setup_requires)),
+            )
+        )
+
+main()
