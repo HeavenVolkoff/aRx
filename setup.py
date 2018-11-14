@@ -13,8 +13,16 @@ SOURCE_LOCATION = "src"
 def main():
     """Exec setup"""
     from setuptools import setup, find_namespace_packages
+    from distutils.errors import DistutilsOptionError
 
-    setup(packages=find_namespace_packages(SOURCE_LOCATION), package_dir={"": SOURCE_LOCATION})
+    try:
+        setup(packages=find_namespace_packages("src"), package_dir={"": "src"})
+    except DistutilsOptionError:
+        raise RuntimeError(
+            "Maybe the setuptools package is too old. To update it run:\n"
+            "{} -m pip install -U setuptools",
+            sys.executable,
+        )
 
 
 try:
