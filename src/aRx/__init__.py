@@ -2,6 +2,7 @@
 
 __all__ = ("__version__",)
 
+# External
 import pkg_resources
 
 try:

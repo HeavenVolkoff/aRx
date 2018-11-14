@@ -17,6 +17,7 @@ black_file=./black.toml
 # isort config
 quiet=True
 atomic=True
+not_skip=__init__.py
 line_length=99
 length_sort=True
 combine_star=True
