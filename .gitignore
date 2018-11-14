@@ -218,3 +218,4 @@ fabric.properties
 
 ### Project ###
 _old
+src/**/VERSION

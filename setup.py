@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
 # Internal
-from configparser import ConfigParser
-import os
-import re
-import shlex  # python>=3.3
 import sys
+import shlex  # python>=3.3
+from os import path, scandir
+
+SETUP_CONFIG = "setup.cfg"
+VERSION_FILE = "VERSION"
+SOURCE_LOCATION = "src"
 
 
 def main():
     """Exec setup"""
     from setuptools import setup, find_namespace_packages
 
-    setup(packages=find_namespace_packages("src"), package_dir={"": "src"})
+    setup(packages=find_namespace_packages(SOURCE_LOCATION), package_dir={"": SOURCE_LOCATION})
 
 
 try:
@@ -20,8 +22,7 @@ try:
 except ImportError:
     raise RuntimeError(
         "The setuptools package is missing or broken. To (re)install it run:\n"
-        "{} -m pip install -U setuptools",
-        sys.executable,
+        "{} -m pip install -U setuptools".format(sys.executable)
     )
 
 
@@ -34,27 +35,31 @@ def has_requirement(req):
         return True
 
 
-if os.path.isfile("setup.cfg"):
-    # Read setup.cfg as a simple config file
-    setup_config = ConfigParser()
-    setup_config.read("setup.cfg", encoding="utf8")  # python>=3.2
-    # Filter out the setup-requires key
+if path.isfile(SETUP_CONFIG):
+    # Read setup configuration
+    from setuptools.config import read_configuration
+
+    config = read_configuration(SETUP_CONFIG)
+    options = config.get("options", {})
+    metadata = config.get("metadata", {})
     setup_requires = tuple(
-        filter(
-            lambda req: bool(req) and not has_requirement(req),
-            re.split(
-                r"\s*(?:\n+|;(?!;))\s*", setup_config.get("options", "setup-requires", fallback="")
-            ),
-        )
+        filter(lambda req: not has_requirement(req), options.get("setup_requires", []))
     )
 
     if setup_requires:
         raise RuntimeError(
             "Missing dependencies for installing {}. To proceed run:\n{} -m pip install {}".format(
-                setup_config.get("metadata", "name", fallback="this package"),
+                metadata.get("name", "this package"),
                 sys.executable,
                 " ".join(map(shlex.quote, setup_requires)),
             )
         )
 
+    version = metadata.get("version", None)
+    if version:
+        with scandir(SOURCE_LOCATION) as src:
+            for module in src:
+                if module.is_dir() and path.isfile(path.join(module.path, "__init__.py")):
+                    with open(path.join(module.path, VERSION_FILE), mode="w") as file:
+                        file.write(version)
 main()
