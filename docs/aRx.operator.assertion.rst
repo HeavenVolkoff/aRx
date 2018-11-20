@@ -1,5 +1,5 @@
 aRx.operator.assertion
-===================
+======================
 
 .. automodule:: aRx.operator.assertion
     :members:

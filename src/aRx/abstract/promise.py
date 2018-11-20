@@ -46,7 +46,7 @@ class Promise(T.Awaitable[K], Base, Loopable, metaclass=ABCMeta):
         super().__init__(**kwargs)
 
         # Internal
-        self._fut: Future[K] = ensure_future(
+        self._fut: "Future[K]" = ensure_future(
             awaitable, loop=self.loop
         ) if awaitable else self.loop.create_future()
 

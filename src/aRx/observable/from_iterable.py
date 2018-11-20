@@ -19,7 +19,7 @@ class FromIterable(Observable[K]):
 
     @staticmethod
     async def _worker(
-        iterator: T.Iterator[K], observer: Observer[K, T.Any], stop: Future[None]
+        iterator: T.Iterator[K], observer: Observer[K, T.Any], stop: "Future[None]"
     ) -> None:
         pending = None
 
@@ -62,7 +62,7 @@ class FromIterable(Observable[K]):
 
     def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
         """Schedule iterator flush and register observer."""
-        stop_future: Future[None] = observer.loop.create_future()
+        stop_future: "Future[None]" = observer.loop.create_future()
 
         def stop() -> None:
             stop_future.set_result(None)

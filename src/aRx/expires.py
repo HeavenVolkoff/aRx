@@ -112,7 +112,7 @@ class auto_timeout:
 
 
 # noinspection PyPep8Naming
-class expires(AbstractContextManager["expires"], Loopable):
+class expires(T.ContextManager["expires"], Loopable):
     """timeout context manager.
 
     Useful in cases when you want to apply timeout logic around block
