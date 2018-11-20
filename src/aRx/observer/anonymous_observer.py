@@ -1,7 +1,9 @@
 __all__ = ("AnonymousObserver",)
 
+
 # Internal
 import typing as T
+from uuid import UUID
 from asyncio import AbstractEventLoop, InvalidStateError, iscoroutinefunction
 from functools import partial
 from contextlib import suppress
@@ -18,13 +20,14 @@ def default_asend(_: T.Any) -> None:
     return
 
 
-def default_araise(exc: Exception, *, loop: AbstractEventLoop) -> bool:
+def default_araise(exc: Exception, namespace: UUID, *, loop: AbstractEventLoop) -> bool:
     loop.call_exception_handler(
         {
             "message": f"Unhandled error propagated through {AnonymousObserver.__qualname__}",
             "exception": exc,
         }
     )
+
     return False
 
 
@@ -43,7 +46,7 @@ class AnonymousObserver(Observer[K, J]):
     def __init__(
         self,
         asend: T.Optional[T.Callable[[K], T.Any]] = None,
-        araise: T.Optional[T.Callable[[Exception], T.Optional[bool]]] = None,
+        araise: T.Optional[T.Callable[[Exception, UUID], T.Optional[bool]]] = None,
         aclose: T.Optional[T.Callable[[], J]] = None,
         **kwargs: T.Any,
     ) -> None:
@@ -80,8 +83,8 @@ class AnonymousObserver(Observer[K, J]):
 
             await T.cast(T.Awaitable[T.Any], res)
 
-    async def __araise__(self, exc: Exception) -> bool:
-        res = self._raise(exc)
+    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
+        res = self._raise(exc, namespace)
 
         if iscoroutinefunction(self._raise):
             res = await T.cast(T.Awaitable[T.Optional[bool]], res)

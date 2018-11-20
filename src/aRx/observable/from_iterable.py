@@ -3,6 +3,7 @@ __all__ = ("FromIterable",)
 
 # Internal
 import typing as T
+from uuid import UUID, uuid4
 from asyncio import FIRST_COMPLETED, Future, CancelledError, wait
 
 # Project
@@ -19,7 +20,7 @@ class FromIterable(Observable[K]):
 
     @staticmethod
     async def _worker(
-        iterator: T.Iterator[K], observer: Observer[K, T.Any], stop: "Future[None]"
+        iterator: T.Iterator[K], observer: Observer[K, T.Any], stop: "Future[None]", namespace: UUID
     ) -> None:
         pending = None
 
@@ -39,7 +40,7 @@ class FromIterable(Observable[K]):
             raise
         except Exception as exc:
             if not observer.closed:
-                await observer.araise(exc)
+                await observer.araise(exc, namespace)
 
         if pending and pending is not stop:
             await pending
@@ -57,6 +58,8 @@ class FromIterable(Observable[K]):
        """
         super().__init__(**kwargs)
 
+        self.namespace = uuid4()
+
         # Internal
         self._iterator: T.Optional[T.Iterator[K]] = iter(iterable)
 
@@ -68,7 +71,9 @@ class FromIterable(Observable[K]):
             stop_future.set_result(None)
 
         if self._iterator:
-            observer.loop.create_task(FromIterable._worker(self._iterator, observer, stop_future))
+            observer.loop.create_task(
+                FromIterable._worker(self._iterator, observer, stop_future, self.namespace)
+            )
 
             # Cancel task when observer closes
             observer.lastly(stop)

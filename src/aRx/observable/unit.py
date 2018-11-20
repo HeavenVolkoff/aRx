@@ -3,10 +3,13 @@ __all__ = ("Unit",)
 
 # Internal
 import typing as T
+from uuid import UUID, uuid4
 from asyncio import isfuture, ensure_future
 
+# External
+from async_tools.abstract.loopable import Loopable
+
 # Project
-from ..abstract.loopable import Loopable
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
@@ -19,12 +22,14 @@ class Unit(Observable[K], Loopable):
     """Observable that outputs a single value then closes."""
 
     @staticmethod
-    async def _worker(value: T.Union[K, T.Awaitable[K]], observer: Observer[K, T.Any]) -> None:
+    async def _worker(
+        value: T.Union[K, T.Awaitable[K]], observer: Observer[K, T.Any], namespace: UUID
+    ) -> None:
         if isfuture(value):
             try:
                 value = await T.cast(T.Awaitable[K], value)
             except Exception as ex:
-                await observer.araise(ex)
+                await observer.araise(ex, namespace)
             else:
                 await observer.asend(value)
         else:
@@ -42,6 +47,8 @@ class Unit(Observable[K], Loopable):
         """
         super().__init__(**kwargs)
 
+        self.namespace = uuid4()
+
         # Internal
         try:
             self._value: T.Union[K, T.Awaitable[K]] = ensure_future(T.cast(T.Awaitable[K], value))
@@ -50,6 +57,6 @@ class Unit(Observable[K], Loopable):
 
     def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
         # Add worker execution to loop queue
-        task = observer.loop.create_task(Unit._worker(self._value, observer))
+        task = observer.loop.create_task(Unit._worker(self._value, observer, self.namespace))
 
         return AnonymousDisposable(task.cancel)

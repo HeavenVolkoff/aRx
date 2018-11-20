@@ -1,21 +1,29 @@
 __all__ = ("CompositeDisposable",)
 
+
 # Internal
 import typing as T
+from types import TracebackType
 
-# Project
-from ..abstract.disposable import Disposable, adispose
+# External
+from async_tools.adispose import adispose
+from prop.abstract.loopable import Loopable
+from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
 
 
-class CompositeDisposable(Disposable):
+class CompositeDisposable(AbstractAsyncContextManager["CompositeDisposable"]):
     """A disposable that is a composition of various disposable."""
 
     @staticmethod
-    def _validate_mapper(disposable: Disposable) -> bool:
-        return isinstance(disposable, Disposable)
+    def _validate_mapper(disposable: AbstractAsyncContextManager[T.Any]) -> bool:
+        return isinstance(disposable, AbstractAsyncContextManager)
 
     def __init__(
-        self, first: Disposable, second: Disposable, *rest: Disposable, **kwargs: T.Any
+        self,
+        first: AbstractAsyncContextManager[T.Any],
+        second: AbstractAsyncContextManager[T.Any],
+        *rest: AbstractAsyncContextManager[T.Any],
+        **kwargs: T.Any,
     ) -> None:
         """CompositeDisposable constructor.
 
@@ -38,6 +46,12 @@ class CompositeDisposable(Disposable):
 
         self._disposables = disposables
 
-    async def __adispose__(self) -> None:
+    async def __aexit__(
+        self,
+        exc_type: T.Optional[T.Type[BaseException]],
+        exc_value: T.Optional[BaseException],
+        traceback: T.Optional[TracebackType],
+    ) -> T.Optional[bool]:
         """Call all registered disposables on dispose."""
         await adispose(*self._disposables)
+        return False

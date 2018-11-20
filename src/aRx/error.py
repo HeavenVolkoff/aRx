@@ -22,7 +22,7 @@ class ObserverError(ARxError):
 class ObserverClosedError(ObserverError):
     """aRx error for when :class:`~aRx.abstract.observer.Observer` is used when closed."""
 
-    def __init__(self, instance: object):
+    def __init__(self, instance: object) -> None:
         """ObserverClosedError constructor.
 
         Arguments:

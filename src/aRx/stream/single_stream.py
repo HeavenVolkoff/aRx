@@ -1,15 +1,19 @@
 __all__ = ("SingleStream",)
 
+
 # Internal
 import typing as T
+from uuid import UUID
 from asyncio import Future, InvalidStateError
 from contextlib import suppress
 
+# External
+from prop import Promise
+from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
+
 # Project
 from ..error import SingleStreamError
-from ..promise import Promise
 from ..abstract.observer import Observer
-from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 
 # Generic Types
@@ -66,14 +70,14 @@ class SingleStream(Observer[K, None], Observable[K]):
 
         await awaitable
 
-    async def __araise__(self, exc: Exception) -> bool:
+    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
         # Wait for observer
         await self._lock
 
         # _observer must be available at this point
         assert self._observer
 
-        await self._observer.araise(exc)
+        await self._observer.araise(exc, namespace)
 
         # SingleStream doesn't close on raise
         return False
@@ -94,7 +98,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         if self._observer and not (self._observer.closed or self._observer.keep_alive):
             await self._observer.aclose()
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> AbstractAsyncContextManager[T.Any]:
         """Start streaming.
 
         Raises:

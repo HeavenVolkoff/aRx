@@ -1,7 +1,9 @@
 __all__ = ("MultiStream",)
 
+
 # Internal
 import typing as T
+from uuid import UUID
 from asyncio import ALL_COMPLETED, Event, Future, InvalidStateError, wait
 from contextlib import suppress
 
@@ -37,8 +39,9 @@ class MultiStream(Observer[K, None], Observable[K]):
 
     .. Note::
 
-        The AsyncMultiStream is hot in the sense that it will drop events if
-        there are currently no observer running.
+        The AsyncMultiStream is hot in the sense that it will drop events if there are currently no
+        observer running, and all redirection only enqueue the observer action, not waiting for it's
+        execution.
     """
 
     def __init__(self, **kwargs: T.Any) -> None:
@@ -69,8 +72,8 @@ class MultiStream(Observer[K, None], Observable[K]):
                 if exc and not isinstance(exc, ObserverClosedError):
                     raise exc
 
-    async def __araise__(self, ex: Exception) -> bool:
-        raise_event = tuple(obv.araise(ex) for obv in self._observers if not obv.closed)
+    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
+        raise_event = tuple(obv.araise(ex, namespace) for obv in self._observers if not obv.closed)
         if raise_event:
             done, pending = await wait(
                 raise_event, return_when=ALL_COMPLETED
@@ -82,6 +85,7 @@ class MultiStream(Observer[K, None], Observable[K]):
                 if exc and not isinstance(exc, ObserverClosedError):
                     raise exc
 
+	# A MultiStream never closes on araise
         return False
 
     async def __aclose__(self) -> None:

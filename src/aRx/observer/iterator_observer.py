@@ -3,6 +3,7 @@ __all__ = ("IteratorObserver",)
 
 # Internal
 import typing as T
+from uuid import UUID
 from asyncio import Future, InvalidStateError
 from contextlib import suppress
 from collections import deque
@@ -49,7 +50,7 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
         self._counter += 1
         self._next_value = (False, value)
 
-    async def __araise__(self, err: Exception) -> bool:
+    async def __araise__(self, err: Exception, namespace: UUID) -> bool:
         self._next_value = (True, err)
         return True
 

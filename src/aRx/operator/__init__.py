@@ -20,7 +20,7 @@ Example using operator to filter odd numbers from a Iterable source.
     from aRx import observable, operator as op
     from aRx.observer import AnonymousObserver
 
-    async def run():
+    async def run() -> None:
         # Observer that will print all data that passes through it
         async with AnonymousObserver(asend=lambda x: print(x)) as listener:
             # Apply filter operator to source observable

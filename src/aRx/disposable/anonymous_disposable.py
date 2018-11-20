@@ -2,17 +2,16 @@ __all__ = ("AnonymousDisposable",)
 
 # Internal
 import typing as T
+from types import TracebackType
 from asyncio import iscoroutine
 
-# Project
-from ..abstract.disposable import Disposable
-
+# External
+from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
 
 def default_dispose() -> None:
     return
 
-
-class AnonymousDisposable(Disposable):
+class AnonymousDisposable(AbstractAsyncContextManager["AnonymousDisposable"]):
     """An anonymous Disposable.
 
     Disposable where the custom close logic implementation is provided by a
@@ -23,15 +22,14 @@ class AnonymousDisposable(Disposable):
         """AnonymousDisposable constructor.
 
         Arguments:
-            dispose: Callback to be used as the custom close logic
-                implementation.
+            dispose: Callback to be used as the custom close logic implementation.
             kwargs: Keyword parameters for super.
 
         Raises:
             TypeError: When dispose parameter is not a :class:`~typing.Coroutine`.
 
         """
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
 
         if dispose is None:
             dispose = default_dispose
@@ -41,9 +39,16 @@ class AnonymousDisposable(Disposable):
 
         self._adispose = dispose
 
-    async def __adispose__(self) -> None:
+    async def __aexit__(
+        self,
+        exc_type: T.Optional[T.Type[BaseException]],
+        exc_value: T.Optional[BaseException],
+        traceback: T.Optional[TracebackType],
+    ) -> T.Optional[bool]:
         """Call anonymous function on dispose."""
         dispose = self._adispose()
 
         if iscoroutine(dispose):
             await T.cast(T.Coroutine[T.Any, T.Any, T.Any], dispose)
+
+        return False

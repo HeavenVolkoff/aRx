@@ -3,9 +3,12 @@ __all__ = ("Consumer", "consume")
 
 # Internal
 import typing as T
+from uuid import UUID
+
+# External
+from prop import Promise
 
 # Project
-from ..promise import Promise
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable, observe
 
@@ -17,7 +20,7 @@ class Consumer(Observer[K, K]):
     async def __asend__(self, value: K) -> None:
         self.resolve(value)
 
-    async def __araise__(self, exc: Exception) -> bool:
+    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
         return True
 
     async def __aclose__(self) -> None:
