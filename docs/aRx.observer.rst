@@ -15,5 +15,6 @@ Submodules
 .. toctree::
 
    aRx.observer.anonymous_observer
+   aRx.observer.consumer
    aRx.observer.iterator_observer
 

@@ -29,6 +29,6 @@ Submodules
     :maxdepth: 2
 
     aRx.error
+    aRx.expires
     aRx.promise
-    aRx.subscription
 

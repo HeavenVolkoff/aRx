@@ -1,6 +1,6 @@
 ## Copyright
 Original work:
->[The MIT License (MIT)](./LICENSE.original.md)
+>[The MIT License (MIT)](licenses/LICENSE.aioreactive.txt)
 >
 >Copyright (c) 2016 Børge Lanes, Dag Brattli.
 
