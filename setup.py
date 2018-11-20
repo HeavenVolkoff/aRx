@@ -1,50 +1,73 @@
 #!/usr/bin/env python3
 
-from os import path
-from codecs import open as c_open
+# Internal
+import sys
+import shlex  # python>=3.3
+from os import path, scandir
+
+SETUP_CONFIG = "setup.cfg"
+VERSION_FILE = "VERSION"
+SOURCE_LOCATION = "src"
+
+
+def main():
+    """Exec setup"""
+    from setuptools import setup, find_namespace_packages
+    from distutils.errors import DistutilsOptionError
+
+    try:
+        setup(packages=find_namespace_packages("src"), package_dir={"": "src"})
+    except DistutilsOptionError:
+        raise RuntimeError(
+            "Maybe the setuptools package is too old. To update it run:\n"
+            "{} -m pip install -U setuptools",
+            sys.executable,
+        )
+
 
 try:
-    from setuptools import setup, find_packages
+    import pkg_resources
 except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup, find_packages
+    raise RuntimeError(
+        "The setuptools package is missing or broken. To (re)install it run:\n"
+        "{} -m pip install -U setuptools".format(sys.executable)
+    )
 
-# Get __version__ data
-here = str(path.abspath(path.dirname(__file__)))
-about = {}
-with c_open(path.join(here, 'aRx', '__version__.py'), 'r', 'utf-8') as f:
-    exec(f.read(), about)
 
-# Get README text
-with c_open(path.join(here, 'README.md'), 'r', 'utf-8') as readme_file:
-    readme = readme_file.read()
+def has_requirement(req):
+    try:
+        pkg_resources.require(req)
+    except pkg_resources.ResolutionError:
+        return False
+    else:
+        return True
 
-setup(
-    url=about["__url__"],
-    name=about["__title__"],
-    author=about["__authors__"],
-    version=about["__version__"],
-    license=about["__license__"],
-    keywords="aRx, reactive, async, asyncio, promise, observer, observable",
-    zip_safe=True,
-    packages=find_packages(
-        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
-    ),
-    maintainer=about["__maintainer__"],
-    description=about["__description__"],
-    author_email=about["__email__"],
-    classifiers=[  # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)'
-        'Intended Audience :: Developers', 'Operating System :: OS Independent',
-        'Development Status :: 5 - Production/Stable',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-    ],
-    tests_require=['pytest', "pytest-asyncio"],
-    setup_requires=['pytest-runner'],
-    python_requires=">=3.6",
-    maintainer_email=about["__maintainer_email__"],
-    long_description=readme,
-)
+
+if path.isfile(SETUP_CONFIG):
+    # Read setup configuration
+    from setuptools.config import read_configuration
+
+    config = read_configuration(SETUP_CONFIG)
+    options = config.get("options", {})
+    metadata = config.get("metadata", {})
+    setup_requires = tuple(
+        filter(lambda req: not has_requirement(req), options.get("setup_requires", []))
+    )
+
+    if setup_requires:
+        raise RuntimeError(
+            "Missing dependencies for installing {}. To proceed run:\n{} -m pip install {}".format(
+                metadata.get("name", "this package"),
+                sys.executable,
+                " ".join(map(shlex.quote, setup_requires)),
+            )
+        )
+
+    version = metadata.get("version", None)
+    if version:
+        with scandir(SOURCE_LOCATION) as src:
+            for module in src:
+                if module.is_dir() and path.isfile(path.join(module.path, "__init__.py")):
+                    with open(path.join(module.path, VERSION_FILE), mode="w") as file:
+                        file.write(version)
+main()

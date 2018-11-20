@@ -216,3 +216,6 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+### Project ###
+_old
+src/**/VERSION

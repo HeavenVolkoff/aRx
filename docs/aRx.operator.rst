@@ -8,6 +8,7 @@ Submodules
 
 .. toctree::
 
+   aRx.operator.assertion
    aRx.operator.concat
    aRx.operator.filter
    aRx.operator.map
