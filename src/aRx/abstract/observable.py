@@ -5,14 +5,16 @@ import typing as T
 from abc import ABCMeta, abstractmethod
 
 # Project
+from .base import Base
 from .observer import Observer
 from .disposable import Disposable
 
+# Generic Types
 J = T.TypeVar("J")
 K = T.TypeVar("K")
 
 
-class Observable(T.Generic[K], metaclass=ABCMeta):
+class Observable(T.Generic[K], Base, metaclass=ABCMeta):
     """Observable abstract class.
 
     An observable is a data generator to which observers can subscribe.

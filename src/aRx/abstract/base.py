@@ -1,4 +1,6 @@
 class Base:
+    """Defines default string representation for objects"""
+
     def __str__(self) -> str:
         return f"{type(self).__qualname__}"
 

@@ -10,6 +10,7 @@ from collections import deque
 # Project
 from ..abstract.observer import Observer
 
+# Generic Types
 K = T.TypeVar("K")
 
 

@@ -9,6 +9,7 @@ from ..promise import Promise
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable, observe
 
+# Generic Types
 K = T.TypeVar("K")
 
 

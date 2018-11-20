@@ -18,8 +18,11 @@
 
 # -- Project information -----------------------------------------------------
 
-import sphinx_bootstrap_theme
+# Internal
+import re
 
+# External
+import sphinx_bootstrap_theme
 from aRx import __version__
 
 project = "aRx"
@@ -29,8 +32,24 @@ copyright = (
 )
 author = "Vítor Augusto da Silva Vasconcellos, Børge Lanes, Dag Brattli"
 
+# Version Regexp modified from:
+# https://www.python.org/dev/peps/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions)
 # The short X.Y version
-version = ""
+version = re.match(
+    r"^\s*"
+    r"v?(?:"
+    r"(?:(?P<epoch>[0-9]+)!)?"  # epoch
+    r"(?P<release>[0-9]+(?:\.[0-9]+)*)"  # release segment
+    r"(?P<pre>[-_.]?(?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))(?P<pre_n>[0-9]+)?)?"  # pre-release
+    r"(?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_.]?(?P<post_l>post|rev|r)[-_.]?(?P<post_n2>[0-9]+)?))?"  # post release
+    r"(?P<dev>[-_.]?(?P<dev_l>dev)[-_.]?(?P<dev_n>[0-9]+)?)?"  # dev release
+    r")"
+    r"(?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?"  # local version
+    r"\s*$",
+    __version__,
+    re.VERBOSE | re.IGNORECASE,
+).groupdict()["release"]
+
 # The full version, including alpha/beta/rc tags
 release = __version__
 

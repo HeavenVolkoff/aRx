@@ -8,6 +8,7 @@ Submodules
 
 .. toctree::
 
+   aRx.abstract.base
    aRx.abstract.disposable
    aRx.abstract.loopable
    aRx.abstract.observable

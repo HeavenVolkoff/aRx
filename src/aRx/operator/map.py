@@ -12,6 +12,7 @@ from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
+# Generic Types
 J = T.TypeVar("J")
 K = T.TypeVar("K")
 
