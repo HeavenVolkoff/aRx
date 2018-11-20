@@ -3,11 +3,14 @@ language: python
 python:
     - "3.6"
 
+before_install:
+    - pip --no-cache install -U pip setuptools
+
 install:
-    - pip install .;
+    - pip install .[docs]
 
 script:
-    - travis-sphinx build --nowarn --source=docs;
+    - travis-sphinx build --nowarn --source=docs
 
 after_success:
-    - travis-sphinx deploy;
+    - travis-sphinx deploy

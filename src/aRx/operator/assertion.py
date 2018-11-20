@@ -1,5 +1,6 @@
 __all__ = ("Assert", "assert_op")
 
+
 # Internal
 import typing as T
 from asyncio import iscoroutinefunction
@@ -8,19 +9,19 @@ from functools import partial
 # Project
 from ..disposable import CompositeDisposable
 from ..abstract.observer import Observer
-from ..abstract.disposable import Disposable, adispose
+from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
 
 
-class _AssertSink(SingleStream[K, K]):
+class _AssertSink(SingleStream[K]):
     def __init__(
         self,
         predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
         exc: Exception,
-        **kwargs,
+        **kwargs: T.Any,
     ) -> None:
         super().__init__(**kwargs)
 
@@ -52,7 +53,7 @@ class Assert(Observable[K]):
         predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
         exc: Exception,
         source: Observable[K],
-        **kwargs,
+        **kwargs: T.Any,
     ) -> None:
         """Filter constructor.
 
@@ -68,27 +69,21 @@ class Assert(Observable[K]):
         self._source = source
         self._predicate = predicate
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _AssertSink[K] = _AssertSink(self._predicate, self._exc, loop=observer.loop)
-
-        try:
-            up = observe(self._source, sink)
-            down = observe(sink, observer)
-
-            return CompositeDisposable(up, down, loop=observer.loop)
-        except Exception as exc:
-            # Dispose sink if there is a exception during observation set-up
-            observer.loop.create_task(adispose(sink, loop=observer.loop))
-            raise exc
+        with dispose_sink(sink):
+            return CompositeDisposable(
+                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+            )
 
 
 def assert_op(
     predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]], exc: Exception
-) -> T.Callable[[Observable[K]], Assert]:
+) -> T.Callable[[Observable[K]], Assert[K]]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return T.cast(T.Callable[[Observable[K]], Assert], partial(Assert, predicate, exc))
+    return T.cast(T.Callable[[Observable[K]], Assert[K]], partial(Assert, predicate, exc))

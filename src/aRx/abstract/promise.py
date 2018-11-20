@@ -6,13 +6,14 @@ from abc import ABCMeta, abstractmethod
 from asyncio import Future, isfuture, ensure_future
 
 # Project
+from .base import Base
 from .loopable import Loopable
 
+# Generic types
 K = T.TypeVar("K")
-L = T.TypeVar("L")
 
 
-class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
+class Promise(T.Awaitable[K], Base, Loopable, metaclass=ABCMeta):
     """A abstract Promise implementation that encapsulate an awaitable.
 
     .. Warning::
@@ -21,9 +22,13 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         maintained.
     """
 
-    __slots__ = ("_fut", "_directly_cancelled")
+    __slots__ = ("_fut",)
 
-    def __init__(self, awaitable: T.Optional[T.Awaitable[K]] = None, **kwargs) -> None:
+    def __init__(
+        self,
+        awaitable: T.Optional[T.Union[T.Awaitable[K], T.Coroutine[T.Any, T.Any, K]]] = None,
+        **kwargs: T.Any,
+    ) -> None:
         """Promise constructor.
 
         Arguments:
@@ -40,10 +45,9 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         super().__init__(**kwargs)
 
         # Internal
-        self._fut: Future = ensure_future(
+        self._fut: Future[K] = ensure_future(
             awaitable, loop=self.loop
         ) if awaitable else self.loop.create_future()
-        self._directly_cancelled = False
 
     def __await__(self) -> T.Generator[T.Any, None, K]:
         return self._fut.__await__()
@@ -64,7 +68,6 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
             Boolean indicating if the cancellation occurred or not.
 
         """
-        self._directly_cancelled = True
         return self._fut.cancel()
 
     def cancelled(self) -> bool:
@@ -76,7 +79,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         """
         return self._fut.cancelled()
 
-    def resolve(self, result: K):
+    def resolve(self, result: K) -> None:
         """Resolve Promise with given value.
 
         Arguments:
@@ -88,7 +91,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         """
         self._fut.set_result(result)
 
-    def reject(self, error: Exception):
+    def reject(self, error: Exception) -> None:
         """Reject promise with given value.
 
         Arguments:
@@ -101,7 +104,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         self._fut.set_exception(error)
 
     @abstractmethod
-    def then(self, on_fulfilled: T.Callable[[K], L]) -> "Promise":
+    def then(self, on_fulfilled: T.Callable[[K], T.Any]) -> "Promise[T.Any]":
         """Chain a callback to be executed when the Promise resolves.
 
         Arguments:
@@ -118,7 +121,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    def catch(self, on_reject: T.Callable[[Exception], L]) -> "Promise":
+    def catch(self, on_reject: T.Callable[[Exception], T.Any]) -> "Promise[T.Any]":
         """Chain a callback to be executed when the Promise fails to resolve.
 
         Arguments:
@@ -135,7 +138,7 @@ class Promise(T.Awaitable[K], Loopable, metaclass=ABCMeta):
         raise NotImplemented()
 
     @abstractmethod
-    def lastly(self, on_fulfilled: T.Callable[[], L]) -> "Promise":
+    def lastly(self, on_fulfilled: T.Callable[[], T.Any]) -> "Promise[T.Any]":
         """Chain a callback to be executed when the Promise concludes.
 
         Arguments:

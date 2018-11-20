@@ -6,18 +6,18 @@ import typing as T
 # Project
 from ..disposable import CompositeDisposable
 from ..abstract.observer import Observer
-from ..abstract.disposable import Disposable, adispose
+from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
 
 
-class _MinSink(SingleStream[K, K]):
-    def __init__(self, **kwargs) -> None:
+class _MinSink(SingleStream[K]):
+    def __init__(self, **kwargs: T.Any) -> None:
         super().__init__(**kwargs)
 
-    async def __asend__(self, value: K):
+    async def __asend__(self, value: K) -> None:
         try:
             is_greater = value < getattr(self, "_min")
         except AttributeError:
@@ -26,9 +26,9 @@ class _MinSink(SingleStream[K, K]):
         if is_greater:
             setattr(self, "_min", value)
 
-    async def __aclose__(self):
+    async def __aclose__(self) -> None:
         try:
-            awaitable = super().asend(getattr(self, "_min"))
+            awaitable = super().__asend__(getattr(self, "_min"))
             # Remove reference early to avoid keeping large objects in memory
             delattr(self, "_min")
         except AttributeError:
@@ -51,7 +51,7 @@ class Min(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    def __init__(self, source: Observable[K], **kwargs) -> None:
+    def __init__(self, source: Observable[K], **kwargs: T.Any) -> None:
         """Min constructor.
 
         Arguments:
@@ -61,21 +61,15 @@ class Min(Observable[K]):
         super().__init__(**kwargs)
         self._source = source
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
-        sink: _MinSink = _MinSink(loop=observer.loop)
-
-        try:
-            up = observe(self._source, sink)
-            down = observe(sink, observer)
-
-            return CompositeDisposable(up, down, loop=observer.loop)
-        except Exception as exc:
-            # Dispose sink if there is a exception during observation set-up
-            observer.loop.create_task(adispose(sink, loop=observer.loop))
-            raise exc
+    def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
+        sink: _MinSink[K] = _MinSink(loop=observer.loop)
+        with dispose_sink(sink):
+            return CompositeDisposable(
+                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+            )
 
 
-def min_op() -> T.Type[Min]:
+def min_op() -> T.Type[Min[K]]:
     """Implementation of :class:`~.Min` to be used with operator semantics.
 
     Returns:

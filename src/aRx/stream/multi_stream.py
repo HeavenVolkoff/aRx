@@ -2,15 +2,12 @@ __all__ = ("MultiStream",)
 
 # Internal
 import typing as T
-from asyncio import Event, InvalidStateError, gather as agather
-from warnings import warn
+from asyncio import ALL_COMPLETED, Event, Future, InvalidStateError, wait
 from contextlib import suppress
 
 # Project
-from ..error import ARxWarning, MultiStreamError, ObserverClosedError
-from ..promise import Promise
+from ..error import MultiStreamError, ObserverClosedError
 from ..abstract.observer import Observer
-from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
@@ -20,8 +17,8 @@ K = T.TypeVar("K")
 
 # Observation dispose
 async def dispose_observation(
-    observer: Observer, observers: T.List[Observer], dispose_event: Event
-):
+    dispose_event: Event, observers: T.List[Observer[K, T.Any]], observer: Observer[K, T.Any]
+) -> None:
     # Wait external signal
     await dispose_event.wait()
 
@@ -31,10 +28,7 @@ async def dispose_observation(
         pass  # Already removed ignore
 
     if not (observer.closed or observer.keep_alive):
-        try:
-            await observer.aclose()
-        except Exception as ex:
-            warn(ARxWarning("Failed to exec aclose on " f"{type(observer).__qualname__}", ex))
+        await observer.aclose()
 
 
 class MultiStream(Observer[K, None], Observable[K]):
@@ -46,8 +40,8 @@ class MultiStream(Observer[K, None], Observable[K]):
         there are currently no observer running.
     """
 
-    def __init__(self, **kwargs) -> None:
-        """MultiStream constructor
+    def __init__(self, **kwargs: T.Any) -> None:
+        """MultiStream constructor.
 
         Arguments:
             kwargs: Keyword parameters for super.
@@ -55,64 +49,60 @@ class MultiStream(Observer[K, None], Observable[K]):
         """
         super().__init__(**kwargs)
 
+        # Internal
         self._observers: T.List[Observer[K, T.Any]] = []
 
-    async def __asend__(self, value: K):
-        awaitable = agather(
-            *tuple(obv.asend(value) for obv in self._observers if not obv.closed),
-            return_exceptions=True,
-            loop=self.loop,
+    async def __asend__(self, value: K) -> None:
+        awaitable = wait(
+            tuple(obv.asend(value) for obv in self._observers if not obv.closed),
+            return_when=ALL_COMPLETED,
         )
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        exceptions: T.List[T.Optional[Exception]] = await awaitable
+        done, pending = await awaitable  # type: T.Set[Future[None]], T.Set[Future[None]]
 
-        for idx, exc in enumerate(exceptions):
-            if isinstance(exc, Exception):
-                if not isinstance(exc, ObserverClosedError) or (
-                    len(self._observers) >= len(exceptions) and not self._observers[idx].closed
-                ):
-                    raise exc
+        assert not pending
+        for fut in done:
+            exc = fut.exception()
+            if exc and not isinstance(exc, ObserverClosedError):
+                raise exc
 
     async def __araise__(self, ex: Exception) -> bool:
-        exceptions = await agather(
-            *(obv.araise(ex) for obv in self._observers if not obv.closed),
-            loop=self.loop,
-            return_exceptions=True,
-        )
+        done, pending = await wait(
+            tuple(obv.araise(ex) for obv in self._observers if not obv.closed),
+            return_when=ALL_COMPLETED,
+        )  # type: T.Set[Future[None]], T.Set[Future[None]]
 
-        for idx, exc in enumerate(exceptions):
-            if isinstance(exc, Exception):
-                if not isinstance(exc, ObserverClosedError) or (
-                    len(self._observers) >= len(exceptions) and not self._observers[idx].closed
-                ):
-                    raise exc
+        assert not pending
+        for fut in done:
+            exc = fut.exception()
+            if exc and not isinstance(exc, ObserverClosedError):
+                raise exc
 
         return False
 
-    async def __aclose__(self):
+    async def __aclose__(self) -> None:
         # MultiStream should resolve to None when no error is registered
         with suppress(InvalidStateError):
             self.resolve(None)
 
-    def __observe__(self, observer) -> Disposable:
-        # Guard against repeated observation
+    def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
+        # Guard against duplicated observers
         if observer in self._observers:
-            raise MultiStreamError("Duplicate observation")
+            raise MultiStreamError(f"{observer} is already observing this stream")
 
         # Add observer to internal observation list
         self._observers.append(observer)
 
-        dispose_event = Event()
-        dispose_stream = self.lastly(dispose_event.set)
-        dispose_observer = observer.lastly(dispose_event.set)
-
         # Set-up dispose execution
-        dispose_promise = Promise(dispose_observation(observer, self._observers, dispose_event))
-        dispose_promise.lastly(dispose_stream.cancel)
-        dispose_promise.lastly(dispose_observer.cancel)
+        dispose_event = Event()
+        self.loop.create_task(dispose_observation(dispose_event, self._observers, observer))
 
-        # Return observation disposable
+        # When either this stream or observer closes sets dispose_event
+        self.lastly(dispose_event.set)
+        observer.lastly(dispose_event.set)
+
+        # Sets dispose_event if this observation is disposed
         return AnonymousDisposable(dispose_event.set)

@@ -8,23 +8,23 @@ from functools import partial
 # Project
 from ..disposable import CompositeDisposable
 from ..abstract.observer import Observer
-from ..abstract.disposable import Disposable, adispose
+from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
 
 K = T.TypeVar("K")
 
 
-class _StopSink(SingleStream[K, K]):
+class _StopSink(SingleStream[K]):
     def __init__(
-        self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs
+        self, predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]], **kwargs: T.Any
     ) -> None:
         super().__init__(**kwargs)
 
         self._index = 0
         self._predicate = predicate
 
-    async def __asend__(self, value: K):
+    async def __asend__(self, value: K) -> None:
         index = self._index
         self._index += 1
 
@@ -32,7 +32,9 @@ class _StopSink(SingleStream[K, K]):
         if iscoroutinefunction(self._predicate):
             must_stop = await T.cast(T.Awaitable[bool], must_stop)
 
-        awaitable = self.aclose() if must_stop else super().__asend__(value)
+        awaitable = T.cast(
+            T.Awaitable[T.Any], self.aclose() if must_stop else super().__asend__(value)
+        )
 
         # Remove reference early to avoid keeping large objects in memory
         del value
@@ -47,7 +49,7 @@ class Stop(Observable[K]):
         self,
         predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]],
         source: Observable[K],
-        **kwargs,
+        **kwargs: T.Any,
     ) -> None:
         """Stop constructor.
 
@@ -62,27 +64,21 @@ class Stop(Observable[K]):
         self._source = source
         self._predicate = predicate
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
+    def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _StopSink[K] = _StopSink(self._predicate, loop=observer.loop)
-
-        try:
-            up = observe(self._source, sink)
-            down = observe(sink, observer)
-
-            return CompositeDisposable(up, down, loop=observer.loop)
-        except Exception as exc:
-            # Dispose sink if there is a exception during observation set-up
-            observer.loop.create_task(adispose(sink, loop=observer.loop))
-            raise exc
+        with dispose_sink(sink):
+            return CompositeDisposable(
+                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+            )
 
 
 def stop_op(
     predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
-) -> T.Callable[[Observable[K]], Stop]:
+) -> T.Callable[[Observable[K]], Stop[K]]:
     """Partial implementation of :class:`~.Stop` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Stop
 
     """
-    return T.cast(T.Callable[[Observable[K]], Stop], partial(Stop, predicate))
+    return T.cast(T.Callable[[Observable[K]], Stop[K]], partial(Stop, predicate))

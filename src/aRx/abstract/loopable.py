@@ -10,7 +10,7 @@ class Loopable(object):
 
     __slots__ = ("_loop",)
 
-    def __init__(self, *, loop: T.Optional[AbstractEventLoop] = None, **kwargs) -> None:
+    def __init__(self, *, loop: T.Optional[AbstractEventLoop] = None, **kwargs: T.Any) -> None:
         """Loopable constructor.
 
         Arguments:
@@ -22,6 +22,6 @@ class Loopable(object):
         self._loop = get_event_loop() if loop is None else loop
 
     @property
-    def loop(self):
+    def loop(self) -> AbstractEventLoop:
         """Public access to loop."""
         return self._loop

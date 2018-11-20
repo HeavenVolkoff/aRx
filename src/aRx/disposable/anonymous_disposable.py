@@ -8,6 +8,10 @@ from asyncio import iscoroutine
 from ..abstract.disposable import Disposable
 
 
+def default_dispose() -> None:
+    return
+
+
 class AnonymousDisposable(Disposable):
     """An anonymous Disposable.
 
@@ -15,25 +19,31 @@ class AnonymousDisposable(Disposable):
     optional and anonymous function.
     """
 
-    def __init__(self, dispose: T.Optional[T.Callable[[], T.Any]] = None, **kwargs) -> None:
+    def __init__(self, dispose: T.Optional[T.Callable[[], T.Any]] = None, **kwargs: T.Any) -> None:
         """AnonymousDisposable constructor.
-
-        Raises:
-            TypeError: When dispose parameter is not a :class:`~typing.Coroutine`.
 
         Arguments:
             dispose: Callback to be used as the custom close logic
                 implementation.
             kwargs: Keyword parameters for super.
 
+        Raises:
+            TypeError: When dispose parameter is not a :class:`~typing.Coroutine`.
+
         """
         super().__init__(**kwargs)
 
-        self._adispose = lambda: None if dispose is None else dispose
+        if dispose is None:
+            dispose = default_dispose
 
-    async def __adispose__(self):
+        if not callable(dispose):
+            raise TypeError("Argument must be Callable")
+
+        self._adispose = dispose
+
+    async def __adispose__(self) -> None:
         """Call anonymous function on dispose."""
         dispose = self._adispose()
 
         if iscoroutine(dispose):
-            await T.cast(T.Awaitable[T.Any], dispose)
+            await T.cast(T.Coroutine[T.Any, T.Any, T.Any], dispose)
