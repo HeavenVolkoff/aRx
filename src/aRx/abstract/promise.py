@@ -5,7 +5,6 @@ __all__ = ("Promise",)
 import typing as T
 from abc import ABCMeta, abstractmethod
 from asyncio import Future, isfuture, ensure_future
-from collections import Awaitable
 
 # Project
 from .base import Base
@@ -15,7 +14,7 @@ from .loopable import Loopable
 K = T.TypeVar("K")
 
 
-class Promise(Awaitable[K], Base, Loopable, metaclass=ABCMeta):
+class Promise(T.Awaitable[K], Base, Loopable, metaclass=ABCMeta):
     """A abstract Promise implementation that encapsulate an awaitable.
 
     .. Warning::
