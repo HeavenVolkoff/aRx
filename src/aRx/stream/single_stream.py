@@ -2,7 +2,7 @@ __all__ = ("SingleStream",)
 
 # Internal
 import typing as T
-from asyncio import Future, CancelledError, InvalidStateError
+from asyncio import Future, InvalidStateError
 from contextlib import suppress
 
 # Project
@@ -12,20 +12,21 @@ from ..abstract.observer import Observer
 from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 
-J = T.TypeVar("J")
+# Generic Types
 K = T.TypeVar("K")
 
 
-class SingleStream(T.Generic[J, K], Observer[J, None], Observable[K]):
+class SingleStream(Observer[K, None], Observable[K]):
     """Cold stream tightly coupled with a single observer.
 
     .. Note::
 
-        The SingleStream is cold in the sense that it will await a observer
-        before forwarding any events.
+        The SingleStream is cold in the sense that it is tightly connected to it's only observer.
+        So that it will await until it is observed before redirecting any event, and all redirection
+        wait for the observer action to execute.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: T.Any) -> None:
         """SingleStream constructor.
 
         Arguments:
@@ -34,54 +35,50 @@ class SingleStream(T.Generic[J, K], Observer[J, None], Observable[K]):
         """
         super().__init__(**kwargs)
 
-        self._lock: Future = self._loop.create_future()
+        # Internal
+        self._lock: Future[None] = self._loop.create_future()
         self._observer: T.Optional[Observer[K, T.Any]] = None
-        self._observer_close_promise: T.Optional[Promise] = None
+        self._observer_close_promise: T.Optional[Promise[bool]] = None
 
     @property
-    def closed(self):
+    def closed(self) -> bool:
         """Property that indicates if this stream is closed or not."""
-        return super().closed or (
-            # Also report closed when observer is closed
-            self._observer
-            and self._observer.closed
+        return bool(
+            super().closed
+            or (
+                # Also report closed when observer is closed
+                self._observer
+                and self._observer.closed
+            )
         )
 
-    async def __asend__(self, value: K):
+    async def __asend__(self, value: K) -> None:
         # Wait for observer
-        try:
-            await self._lock
-        except CancelledError:
-            pass
-        else:
-            if self._observer is None:
-                raise RuntimeError("Observer is None")
+        await self._lock
 
-            awaitable = self._observer.asend(value)
+        # _observer must be available at this point
+        assert self._observer
 
-            # Remove reference early to avoid keeping large objects in memory
-            del value
+        awaitable = self._observer.asend(value)
 
-            await awaitable
+        # Remove reference early to avoid keeping large objects in memory
+        del value
 
-    async def __araise__(self, ex: Exception) -> bool:
-        try:
-            await self._lock
-        except CancelledError:
-            pass
-        else:
-            if self._observer is None:
-                raise RuntimeError("Observer is None")
+        await awaitable
 
-            await self._observer.araise(ex)
+    async def __araise__(self, exc: Exception) -> bool:
+        # Wait for observer
+        await self._lock
+
+        # _observer must be available at this point
+        assert self._observer
+
+        await self._observer.araise(exc)
 
         # SingleStream doesn't close on raise
         return False
 
-    async def __aclose__(self):
-        observer = self._observer
-        self._observer = None
-
+    async def __aclose__(self) -> None:
         # Cancel all awaiting event in the case we weren't subscribed
         self._lock.cancel()
 
@@ -94,8 +91,8 @@ class SingleStream(T.Generic[J, K], Observer[J, None], Observable[K]):
             self.resolve(None)
 
         # Close observer if necessary
-        if not (observer is None or observer.closed or observer.keep_alive):
-            await observer.aclose()
+        if self._observer and not (self._observer.closed or self._observer.keep_alive):
+            await self._observer.aclose()
 
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:
         """Start streaming.

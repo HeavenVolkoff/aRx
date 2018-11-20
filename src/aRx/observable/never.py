@@ -1,15 +1,17 @@
 __all__ = ("Never",)
 
+# Internal
+import typing as T
+
 # Project
 from ..disposable import AnonymousDisposable
 from ..abstract.observer import Observer
-from ..abstract.disposable import Disposable
 from ..abstract.observable import Observable
 
 
 class Never(Observable[None]):
     """Observable that never outputs data, but stays open."""
 
-    def __observe__(self, _: Observer) -> Disposable:
+    def __observe__(self, _: Observer[T.Any, T.Any]) -> AnonymousDisposable:
         """Do nothing."""
         return AnonymousDisposable()

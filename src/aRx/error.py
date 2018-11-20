@@ -4,11 +4,7 @@ __all__ = (
     "ObserverClosedError",
     "SingleStreamError",
     "MultiStreamError",
-    "ARxWarning",
 )
-
-# Internal
-import typing as T
 
 
 class ARxError(Exception):
@@ -26,14 +22,14 @@ class ObserverError(ARxError):
 class ObserverClosedError(ObserverError):
     """aRx error for when :class:`~aRx.abstract.observer.Observer` is used when closed."""
 
-    def __init__(self, instance):
+    def __init__(self, instance: object):
         """ObserverClosedError constructor.
 
         Arguments:
             instance: :class:`~aRx.abstract.observer.Observer` instance.
 
         """
-        super().__init__(f"{type(instance).__qualname__} is closed")
+        super().__init__(f"{repr(instance)} is closed")
 
     pass
 
@@ -48,22 +44,3 @@ class MultiStreamError(ARxError):
     """aRx error exclusive to :class:`~aRx.stream.multi_stream.MultiStream`."""
 
     pass
-
-
-class ARxWarning(Warning):
-    """aRx base warning class."""
-
-    def __init__(self, msg: str, exception: T.Optional[Exception] = None) -> None:
-        """ARxWarning constructor.
-        
-        Arguments:
-            msg: Warning message.
-            exception: Optional exception to be added to the warning message.
-
-        """
-        if exception:
-            from traceback import TracebackException
-
-            msg += "\n" + "".join(TracebackException.from_exception(exception).format())
-
-        super().__init__(msg)

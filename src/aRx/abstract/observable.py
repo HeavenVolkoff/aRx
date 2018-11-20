@@ -8,8 +8,8 @@ from abc import ABCMeta, abstractmethod
 from .observer import Observer
 from .disposable import Disposable
 
-K = T.TypeVar("K")
 J = T.TypeVar("J")
+K = T.TypeVar("K")
 
 
 class Observable(T.Generic[K], metaclass=ABCMeta):
@@ -18,7 +18,9 @@ class Observable(T.Generic[K], metaclass=ABCMeta):
     An observable is a data generator to which observers can subscribe.
     """
 
-    def __init__(self, **kwargs):
+    __slots__ = ()
+
+    def __init__(self, **kwargs: T.Any) -> None:
         """Observable constructor.
 
         Arguments:
@@ -27,21 +29,19 @@ class Observable(T.Generic[K], metaclass=ABCMeta):
         """
         super().__init__(**kwargs)  # type: ignore
 
-    __slots__ = ()
-
     def __or__(self, other: T.Callable[["Observable[K]"], "Observable[J]"]) -> "Observable[J]":
         return other(self)
 
     def __gt__(self, observer: Observer[K, T.Any]) -> Disposable:
         return observe(self, observer)
 
-    def __add__(self, other: "Observable[J]") -> "Observable":
+    def __add__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
         from ..operator import Concat
 
         return Concat(self, other)
 
     def __iadd__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
-        return self + other
+        return self.__add__(other)
 
     @abstractmethod
     def __observe__(self, observer: Observer[K, T.Any]) -> Disposable:

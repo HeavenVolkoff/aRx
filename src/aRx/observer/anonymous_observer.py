@@ -1,22 +1,35 @@
-__all__ = ("AnonymousObserver",)
-
 # Internal
 import typing as T
-from asyncio import InvalidStateError, iscoroutinefunction
-from warnings import warn
+from asyncio import AbstractEventLoop, InvalidStateError, iscoroutinefunction
+from functools import partial
 from contextlib import suppress
 
 # Project
-from ..error import ARxWarning
 from ..abstract.observer import Observer
+
+__all__ = ("AnonymousObserver",)
+
 
 K = T.TypeVar("K")
 J = T.TypeVar("J")
 
 
-def default_araise(ex):
-    warn(ARxWarning("Unhandled error propagated through AnonymousObserver", ex))
+def default_asend(_: K) -> None:
+    return
+
+
+def default_araise(exc: Exception, *, loop: AbstractEventLoop) -> bool:
+    loop.call_exception_handler(
+        {
+            "message": f"Unhandled error propagated through {AnonymousObserver.__qualname__}",
+            "exception": exc,
+        }
+    )
     return False
+
+
+def default_aclose() -> None:
+    return
 
 
 class AnonymousObserver(Observer[K, J]):
@@ -29,10 +42,10 @@ class AnonymousObserver(Observer[K, J]):
 
     def __init__(
         self,
-        asend: T.Callable[[K], T.Any] = lambda x: x,
-        araise: T.Callable[[Exception], T.Any] = default_araise,
-        aclose: T.Callable[[], T.Any] = lambda: None,
-        **kwargs,
+        asend: T.Optional[T.Callable[[K], T.Any]] = None,
+        araise: T.Optional[T.Callable[[Exception], T.Optional[bool]]] = None,
+        aclose: T.Optional[T.Callable[[], J]] = None,
+        **kwargs: T.Any,
     ) -> None:
         """AnonymousObserver Constructor.
 
@@ -45,11 +58,22 @@ class AnonymousObserver(Observer[K, J]):
         """
         super().__init__(**kwargs)
 
+        if asend is None:
+            asend = T.cast(T.Callable[[K], T.Any], default_asend)
+
+        if araise is None:
+            araise = T.cast(
+                T.Callable[[Exception], T.Optional[bool]], partial(default_araise, loop=self.loop)
+            )
+
+        if aclose is None:
+            aclose = T.cast(T.Callable[[], J], default_aclose)
+
         self._send = asend
         self._raise = araise
         self._close = aclose
 
-    async def __asend__(self, value: K):
+    async def __asend__(self, value: K) -> None:
         res = self._send(value)
 
         if iscoroutinefunction(self._send):
@@ -58,19 +82,19 @@ class AnonymousObserver(Observer[K, J]):
 
             await res
 
-    async def __araise__(self, ex: Exception) -> bool:
-        res = self._raise(ex)
+    async def __araise__(self, exc: Exception) -> bool:
+        res = self._raise(exc)
 
         if iscoroutinefunction(self._raise):
-            res = await res
+            res = await T.cast(T.Awaitable[T.Optional[bool]], res)
 
         return bool(res)
 
-    async def __aclose__(self):
+    async def __aclose__(self) -> None:
         res = self._close()
 
         if iscoroutinefunction(self._close):
-            res = await res
+            res = await T.cast(T.Awaitable[J], res)
 
         with suppress(InvalidStateError):
             self.resolve(res)

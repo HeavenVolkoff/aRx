@@ -1,5 +1,6 @@
 __all__ = ("Consumer", "consume")
 
+
 # Internal
 import typing as T
 
@@ -15,10 +16,10 @@ class Consumer(Observer[K, K]):
     async def __asend__(self, value: K) -> None:
         self.resolve(value)
 
-    async def __araise__(self, ex: Exception) -> bool:
+    async def __araise__(self, exc: Exception) -> bool:
         return True
 
-    async def __aclose__(self):
+    async def __aclose__(self) -> None:
         pass
 
 

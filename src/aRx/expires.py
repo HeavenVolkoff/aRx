@@ -1,23 +1,29 @@
-"""Work derived from async-timeout.
+"""Work derived from async-timeout written by Andrew Svetlov.
 
-Reference: https://github.com/aio-libs/async-timeout
-See original license in: ../licenses/LICENSE.async_timeout.txt
+Reference:
+    https://github.com/aio-libs/async-timeout
+See original license in:
+    https://raw.githubusercontent.com/aio-libs/async-timeout/3b295845d830357fbcf99b0acd55708e44a0e3ac/LICENSE
 """
+
+__all__ = ("auto_timeout", "expires")
 
 # Internal
 import typing as T
+from types import TracebackType
 from asyncio import Task, Handle, TimeoutError, CancelledError
 from weakref import ReferenceType
-from functools import total_ordering
 from contextlib import AbstractContextManager
 
 # Project
 from .abstract.loopable import Loopable
 from .misc.current_task import current_task
 
+# Typing helper
+Number = T.Union[int, float]
+
 
 # noinspection PyPep8Naming
-@total_ordering
 class auto_timeout:
     def __init__(
         self,
@@ -36,7 +42,7 @@ class auto_timeout:
         self.timeout = self.min if initial is None else float(initial)
         self.threshold = float(threshold) if threshold else self.step
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, auto_timeout):
             return (
                 self.timeout == self.timeout
@@ -47,49 +53,58 @@ class auto_timeout:
 
         return self.timeout == other
 
-    def __lt__(self, other):
+    def __lt__(self, other: Number) -> bool:
         return self.timeout < other
 
-    def __int__(self):
+    def __le__(self, other: Number) -> bool:
+        return self.timeout <= other
+
+    def __gt__(self, other: Number) -> bool:
+        return self.timeout > other
+
+    def __ge__(self, other: Number) -> bool:
+        return self.timeout >= other
+
+    def __int__(self) -> int:
         return int(self.timeout)
 
-    def __float__(self):
+    def __float__(self) -> float:
         return self.timeout
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.timeout)
 
-    def __add__(self, other):
+    def __add__(self, other: Number) -> float:
         return self.timeout + other
 
-    def __radd__(self, other):
+    def __radd__(self, other: Number) -> float:
         return other + self.timeout
 
-    def __sub__(self, other):
+    def __sub__(self, other: Number) -> float:
         return self.timeout - other
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: Number) -> float:
         return other - self.timeout
 
-    def __mul__(self, other):
+    def __mul__(self, other: Number) -> float:
         return self.timeout * other
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: Number) -> float:
         return other * self.timeout
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: Number) -> float:
         return self.timeout / other
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: Number) -> float:
         return other / self.timeout
 
-    def __floordiv__(self, other):
-        return self.timeout // other
+    def __floordiv__(self, other: int) -> int:
+        return int(self) // other
 
-    def __rfloordiv__(self, other):
-        return other // self.timeout
+    def __rfloordiv__(self, other: int) -> int:
+        return other // int(self)
 
-    def update(self, remaining: T.Union[int, float]):
+    def update(self, remaining: T.Union[int, float]) -> None:
         if remaining == 0:
             self.timeout = min(self.timeout + self.step, self.max)
         elif remaining > self.threshold:
@@ -97,7 +112,7 @@ class auto_timeout:
 
 
 # noinspection PyPep8Naming
-class expires(AbstractContextManager, Loopable):
+class expires(AbstractContextManager["expires"], Loopable):
     """timeout context manager.
 
     Useful in cases when you want to apply timeout logic around block
@@ -106,20 +121,19 @@ class expires(AbstractContextManager, Loopable):
     >>> with expires(0.001):
     ...     async with aiohttp.get('https://github.com') as r:
     ...         await r.text()
-
-
-    timeout - value in seconds or None to disable timeout logic
-    loop - asyncio compatible event loop
     """
 
     def __init__(
-        self, timeout: T.Optional[T.Union[float, auto_timeout]], suppress=False, **kwargs
+        self,
+        timeout: T.Optional[T.Union[float, auto_timeout]],
+        suppress: bool = False,
+        **kwargs: T.Any,
     ) -> None:
         """expires Constructor."""
         super().__init__(**kwargs)
 
         # Internal
-        self._task: T.Optional[ReferenceType[Task]] = None
+        self._task: T.Optional[ReferenceType[Task[T.Any]]] = None
         self._expired = False
         self._timeout = timeout
         self._suppress = suppress
@@ -148,7 +162,10 @@ class expires(AbstractContextManager, Loopable):
         return self
 
     def __exit__(
-        self, exc_type: T.Optional[T.Type[BaseException]], exc: T.Optional[BaseException], _
+        self,
+        exc_type: T.Optional[T.Type[BaseException]],
+        exc_value: T.Optional[BaseException],
+        traceback: T.Optional[TracebackType],
     ) -> bool:
         if self._cancel_handler:
             self._cancel_handler.cancel()
@@ -168,7 +185,7 @@ class expires(AbstractContextManager, Loopable):
 
         return False
 
-    def _expire_task(self):
+    def _expire_task(self) -> None:
         task = self._task() if self._task else None
         if task:
             task.cancel()
@@ -185,7 +202,7 @@ class expires(AbstractContextManager, Loopable):
         """Whether task was cancelled or not."""
         return self._expired
 
-    def reset(self):
+    def reset(self) -> None:
         task = self._task() if self._task else None
         if task is None:
             raise ReferenceError("Task reference is not available anymore")
