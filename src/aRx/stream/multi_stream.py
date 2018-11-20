@@ -11,6 +11,7 @@ from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
 
+# Generic Types
 J = T.TypeVar("J")
 K = T.TypeVar("K")
 

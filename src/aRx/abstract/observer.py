@@ -1,11 +1,12 @@
+__all__ = ("Observer",)
+
+
 # Internal
 import typing as T
 from abc import ABCMeta, abstractmethod
 from asyncio import ALL_COMPLETED, Task, CancelledError, InvalidStateError, wait
+from weakref import ReferenceType
 from contextlib import suppress, contextmanager
-
-# External
-from _weakref import ReferenceType
 
 # Project
 from ..error import ObserverClosedError
@@ -13,9 +14,7 @@ from ..promise import Promise
 from ..disposable import Disposable
 from ..misc.current_task import current_task
 
-__all__ = ("Observer",)
-
-
+# Generic Types
 K = T.TypeVar("K")
 J = T.TypeVar("J")
 

@@ -1,3 +1,5 @@
+__all__ = ("AnonymousObserver",)
+
 # Internal
 import typing as T
 from asyncio import AbstractEventLoop, InvalidStateError, iscoroutinefunction
@@ -7,14 +9,12 @@ from contextlib import suppress
 # Project
 from ..abstract.observer import Observer
 
-__all__ = ("AnonymousObserver",)
-
-
+# Generic Types
 K = T.TypeVar("K")
 J = T.TypeVar("J")
 
 
-def default_asend(_: K) -> None:
+def default_asend(_: T.Any) -> None:
     return
 
 
@@ -59,15 +59,13 @@ class AnonymousObserver(Observer[K, J]):
         super().__init__(**kwargs)
 
         if asend is None:
-            asend = T.cast(T.Callable[[K], T.Any], default_asend)
+            asend = default_asend
 
         if araise is None:
-            araise = T.cast(
-                T.Callable[[Exception], T.Optional[bool]], partial(default_araise, loop=self.loop)
-            )
+            araise = partial(default_araise, loop=self.loop)
 
         if aclose is None:
-            aclose = T.cast(T.Callable[[], J], default_aclose)
+            aclose = default_aclose
 
         self._send = asend
         self._raise = araise
@@ -80,7 +78,7 @@ class AnonymousObserver(Observer[K, J]):
             # Remove reference early to avoid keeping large objects in memory
             del value
 
-            await res
+            await T.cast(T.Awaitable[T.Any], res)
 
     async def __araise__(self, exc: Exception) -> bool:
         res = self._raise(exc)
