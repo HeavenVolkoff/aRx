@@ -36,7 +36,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         super().__init__(**kwargs)
 
         # Internal
-        self._lock: Future[None] = self._loop.create_future()
+        self._lock: "Future[None]" = self._loop.create_future()
         self._observer: T.Optional[Observer[K, T.Any]] = None
         self._observer_close_promise: T.Optional[Promise[bool]] = None
 

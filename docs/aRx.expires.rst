@@ -1,5 +1,5 @@
 aRx.expires
-=========
+===========
 
 .. automodule:: aRx.expires
     :members:
