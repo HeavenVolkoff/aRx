@@ -39,8 +39,7 @@ class Concat(Observable[J]):
         sink: SingleStream[J] = SingleStream(loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                *(observe(source, sink) for source in self._sources),
-                observe(sink, observer),
+                *(observe(source, sink) for source in self._sources), observe(sink, observer)
             )
 
 

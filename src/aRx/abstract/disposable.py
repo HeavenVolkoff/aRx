@@ -52,6 +52,9 @@ async def adispose(*disposables: Disposable) -> None:
         disposables: Objects to be disposed.
 
     """
+    if not disposables:
+        return
+
     done, pending = await wait(
         tuple(
             T.cast(T.Awaitable[bool], disposable.__aexit__(None, None, None))

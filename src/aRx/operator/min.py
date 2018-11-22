@@ -65,9 +65,7 @@ class Min(Observable[K]):
     def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _MinSink[K] = _MinSink(loop=observer.loop)
         with dispose_sink(sink):
-            return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer)
-            )
+            return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
 def min_op() -> T.Type[Min[K]]:

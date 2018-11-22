@@ -65,9 +65,7 @@ class Max(Observable[K]):
     def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _MaxSink[K] = _MaxSink(loop=observer.loop)
         with dispose_sink(sink):
-            return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer)
-            )
+            return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
 def max_op() -> T.Type[Max[K]]:

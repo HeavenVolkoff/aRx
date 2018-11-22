@@ -30,6 +30,7 @@ Example using operator to filter odd numbers from a Iterable source.
 """
 
 
+# Project
 from .map import Map, map_op
 from .max import Max, max_op
 from .min import Min, min_op
