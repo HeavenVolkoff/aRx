@@ -74,7 +74,7 @@ class Assert(Observable[K]):
         sink: _AssertSink[K] = _AssertSink(self._predicate, self._exc, loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+                observe(self._source, sink), observe(sink, observer)
             )
 
 

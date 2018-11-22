@@ -66,7 +66,7 @@ class Max(Observable[K]):
         sink: _MaxSink[K] = _MaxSink(loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+                observe(self._source, sink), observe(sink, observer)
             )
 
 

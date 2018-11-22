@@ -69,7 +69,7 @@ class Stop(Observable[K]):
         sink: _StopSink[K] = _StopSink(self._predicate, loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+                observe(self._source, sink), observe(sink, observer)
             )
 
 

@@ -70,7 +70,7 @@ class Filter(Observable[K]):
         sink: _FilterSink[K] = _FilterSink(self._predicate, loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+                observe(self._source, sink), observe(sink, observer)
             )
 
 
