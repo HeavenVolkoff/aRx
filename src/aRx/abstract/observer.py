@@ -185,11 +185,10 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         # Cancel close promise
         self._close_promise.cancel()
 
-        # Wait pending propagation before closing stream
-        await wait(
-            tuple(filter(bool, (propagation() for propagation in self._propagation))),
-            return_when=ALL_COMPLETED,
-        )
+        propagations = tuple(filter(bool, (propagation() for propagation in self._propagation)))
+        if propagations:
+            # Wait pending propagation before closing stream
+            await wait(propagations, return_when=ALL_COMPLETED)
 
         # Internal close
         try:

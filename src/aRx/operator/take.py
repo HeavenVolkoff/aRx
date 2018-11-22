@@ -76,9 +76,7 @@ class Take(Observable[K]):
     def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _TakeSink[K] = _TakeSink(self._count, loop=observer.loop)
         with dispose_sink(sink):
-            return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer)
-            )
+            return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
 def take_op(count: int) -> T.Callable[[Observable[K]], Take[K]]:

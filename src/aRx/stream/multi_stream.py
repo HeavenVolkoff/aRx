@@ -54,33 +54,33 @@ class MultiStream(Observer[K, None], Observable[K]):
         self._observers: T.List[Observer[K, T.Any]] = []
 
     async def __asend__(self, value: K) -> None:
-        awaitable = wait(
-            tuple(obv.asend(value) for obv in self._observers if not obv.closed),
-            return_when=ALL_COMPLETED,
-        )
+        send_event = tuple(obv.asend(value) for obv in self._observers if not obv.closed)
+        if send_event:
+            awaitable = wait(send_event, return_when=ALL_COMPLETED)
 
-        # Remove reference early to avoid keeping large objects in memory
-        del value
+            # Remove reference early to avoid keeping large objects in memory
+            del value
 
-        done, pending = await awaitable  # type: T.Set[Future[None]], T.Set[Future[None]]
+            done, pending = await awaitable  # type: T.Set[Future[None]], T.Set[Future[None]]
 
-        assert not pending
-        for fut in done:
-            exc = fut.exception()
-            if exc and not isinstance(exc, ObserverClosedError):
-                raise exc
+            assert not pending
+            for fut in done:
+                exc = fut.exception()
+                if exc and not isinstance(exc, ObserverClosedError):
+                    raise exc
 
     async def __araise__(self, ex: Exception) -> bool:
-        done, pending = await wait(
-            tuple(obv.araise(ex) for obv in self._observers if not obv.closed),
-            return_when=ALL_COMPLETED,
-        )  # type: T.Set[Future[None]], T.Set[Future[None]]
+        raise_event = tuple(obv.araise(ex) for obv in self._observers if not obv.closed)
+        if raise_event:
+            done, pending = await wait(
+                raise_event, return_when=ALL_COMPLETED
+            )  # type: T.Set[Future[None]], T.Set[Future[None]]
 
-        assert not pending
-        for fut in done:
-            exc = fut.exception()
-            if exc and not isinstance(exc, ObserverClosedError):
-                raise exc
+            assert not pending
+            for fut in done:
+                exc = fut.exception()
+                if exc and not isinstance(exc, ObserverClosedError):
+                    raise exc
 
         return False
 

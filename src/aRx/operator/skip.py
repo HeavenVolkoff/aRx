@@ -75,9 +75,7 @@ class Skip(Observable[K]):
     def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _SkipSink[K] = _SkipSink(self._count, loop=observer.loop)
         with dispose_sink(sink):
-            return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer)
-            )
+            return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
 def skip_op(count: int) -> T.Callable[[Observable[K]], Skip[K]]:
