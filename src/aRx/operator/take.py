@@ -77,7 +77,7 @@ class Take(Observable[K]):
         sink: _TakeSink[K] = _TakeSink(self._count, loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+                observe(self._source, sink), observe(sink, observer)
             )
 
 

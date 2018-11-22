@@ -66,9 +66,7 @@ class Map(T.Generic[J, K], Observable[K]):
     def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _MapSink[J, K] = _MapSink(self._mapper, loop=observer.loop)
         with dispose_sink(sink):
-            return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
-            )
+            return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
 def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[J]], Map[J, K]]:

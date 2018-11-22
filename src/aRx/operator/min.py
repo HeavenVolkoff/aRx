@@ -66,7 +66,7 @@ class Min(Observable[K]):
         sink: _MinSink[K] = _MinSink(loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                observe(self._source, sink), observe(sink, observer), loop=observer.loop
+                observe(self._source, sink), observe(sink, observer)
             )
 
 

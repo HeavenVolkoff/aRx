@@ -41,7 +41,6 @@ class Concat(Observable[J]):
             return CompositeDisposable(
                 *(observe(source, sink) for source in self._sources),
                 observe(sink, observer),
-                loop=observer.loop,
             )
 
 
