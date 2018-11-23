@@ -5,7 +5,6 @@ __all__ = ("Observer",)
 import typing as T
 from abc import ABCMeta, abstractmethod
 from asyncio import ALL_COMPLETED, Task, CancelledError, InvalidStateError, wait
-from weakref import ReferenceType
 from contextlib import suppress, contextmanager
 
 # Project
@@ -45,7 +44,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
 
         # Internal
         self._close_guard = False
-        self._propagation: T.Set[ReferenceType[Task[T.Any]]] = set()
+        self._propagation: T.Set[Task[T.Any]] = set()
         self._close_promise = self.lastly(self.aclose)
 
     @abstractmethod
@@ -90,7 +89,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
 
     @contextmanager
     def _propagating(self) -> T.Generator[None, None, None]:
-        task = ReferenceType(current_task(loop=self.loop))
+        task = current_task(loop=self.loop)
         self._propagation.add(task)
         try:
             yield
@@ -185,7 +184,7 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         # Cancel close promise
         self._close_promise.cancel()
 
-        propagations = tuple(filter(bool, (propagation() for propagation in self._propagation)))
+        propagations = tuple((propagation for propagation in self._propagation))
         if propagations:
             # Wait pending propagation before closing stream
             await wait(propagations, return_when=ALL_COMPLETED)

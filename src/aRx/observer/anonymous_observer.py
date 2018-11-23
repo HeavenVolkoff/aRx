@@ -65,7 +65,7 @@ class AnonymousObserver(Observer[K, J]):
             araise = partial(default_araise, loop=self.loop)
 
         if aclose is None:
-            aclose = default_aclose
+            aclose = T.cast(T.Callable[[], J], default_aclose)
 
         self._send = asend
         self._raise = araise
