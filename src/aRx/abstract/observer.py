@@ -4,7 +4,7 @@ __all__ = ("Observer",)
 # Internal
 import typing as T
 from abc import ABCMeta, abstractmethod
-from asyncio import ALL_COMPLETED, Task, CancelledError, InvalidStateError, wait
+from asyncio import ALL_COMPLETED, Future, CancelledError, InvalidStateError, wait
 from contextlib import suppress, contextmanager
 
 # Project
@@ -44,8 +44,9 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
 
         # Internal
         self._close_guard = False
-        self._propagation: T.Set[Task[T.Any]] = set()
         self._close_promise = self.lastly(self.aclose)
+        self._propagation_count = 0
+        self._propagation_guard: T.Optional[Future[None]] = None
 
     @abstractmethod
     async def __asend__(self, value: K) -> None:
@@ -89,12 +90,14 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
 
     @contextmanager
     def _propagating(self) -> T.Generator[None, None, None]:
-        task = current_task(loop=self.loop)
-        self._propagation.add(task)
+        self._propagation_count += 1
+
         try:
             yield
         finally:
-            self._propagation.remove(task)
+            self._propagation_count -= 1
+            if self._propagation_guard and self._propagation_count == 0:
+                self._propagation_guard.set_result(None)
 
     @property
     def closed(self) -> bool:
@@ -184,10 +187,10 @@ class Observer(T.Generic[K, J], Promise[J], Disposable, metaclass=ABCMeta):
         # Cancel close promise
         self._close_promise.cancel()
 
-        propagations = tuple((propagation for propagation in self._propagation))
-        if propagations:
-            # Wait pending propagation before closing stream
-            await wait(propagations, return_when=ALL_COMPLETED)
+        # Wait remaining propagations
+        if self._propagation_count > 0:
+            self._propagation_guard = self.loop.create_future()
+            await self._propagation_guard
 
         # Internal close
         try:
