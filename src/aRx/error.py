@@ -29,7 +29,7 @@ class ObserverClosedError(ObserverError):
             instance: :class:`~aRx.abstract.observer.Observer` instance.
 
         """
-        super().__init__(f"{repr(instance)} is closed")
+        super().__init__(f"{type(instance).__qualname__} is closed")
 
     pass
 
