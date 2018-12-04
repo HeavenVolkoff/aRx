@@ -3,12 +3,12 @@ __all__ = ("Consumer", "consume")
 
 # Internal
 import typing as T
-from uuid import UUID
 
 # External
 from prop import Promise
 
 # Project
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable, observe
 
@@ -17,17 +17,17 @@ K = T.TypeVar("K")
 
 
 class Consumer(Observer[K, K]):
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
         self.resolve(value)
 
-    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
+    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
         return True
 
     async def __aclose__(self) -> None:
         pass
 
 
-def consume(observable: Observable[K]) -> Promise[K]:
+async def consume(observable: Observable[K]) -> K:
     """Consume an :class:`~.Observable` as a Promise.
 
     Arguments:
@@ -38,5 +38,5 @@ def consume(observable: Observable[K]) -> Promise[K]:
 
     """
     consumer: Consumer[K] = Consumer()
-    observe(observable, consumer)
-    return consumer
+    async with observe(observable, consumer):
+        return await consumer

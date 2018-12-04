@@ -3,16 +3,16 @@ __all__ = ("SingleStream",)
 
 # Internal
 import typing as T
-from uuid import UUID
 from asyncio import Future, InvalidStateError
 from contextlib import suppress
 
 # External
-from prop import Promise
-from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
+from prop import AbstractPromise
+from async_tools.context_manager.async_context_manager import AsyncContextManager
 
 # Project
 from ..error import SingleStreamError
+from ..misc.namespace import Namespace, get_namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 
@@ -42,7 +42,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         # Internal
         self._lock: "Future[None]" = self._loop.create_future()
         self._observer: T.Optional[Observer[K, T.Any]] = None
-        self._observer_close_promise: T.Optional[Promise[bool]] = None
+        self._observer_close_promise: T.Optional[AbstractPromise[bool]] = None
 
     @property
     def closed(self) -> bool:
@@ -56,28 +56,28 @@ class SingleStream(Observer[K, None], Observable[K]):
             )
         )
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
         # Wait for observer
         await self._lock
 
         # _observer must be available at this point
         assert self._observer
 
-        awaitable = self._observer.asend(value)
+        awaitable = self._observer.asend(value, get_namespace(self, namespace))
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
         await awaitable
 
-    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
+    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
         # Wait for observer
         await self._lock
 
         # _observer must be available at this point
         assert self._observer
 
-        await self._observer.araise(exc, namespace)
+        await self._observer.araise(exc, get_namespace(self, namespace))
 
         # SingleStream doesn't close on raise
         return False
@@ -86,19 +86,26 @@ class SingleStream(Observer[K, None], Observable[K]):
         # Cancel all awaiting event in the case we weren't subscribed
         self._lock.cancel()
 
+        observer_close_promise = self._observer_close_promise
+        self._observer_close_promise = None
+
         # Cancel observer close guard
-        if self._observer_close_promise:
-            self._observer_close_promise.cancel()
+        if observer_close_promise:
+            observer_close_promise.cancel()
 
-        # Resolve internal future
-        with suppress(InvalidStateError):
-            self.resolve(None)
+        observer = self._observer
+        self._observer = None
 
-        # Close observer if necessary
-        if self._observer and not (self._observer.closed or self._observer.keep_alive):
-            await self._observer.aclose()
+        try:
+            # Close observer if necessary
+            if observer and not (observer.closed or observer.keep_alive):
+                await observer.aclose()
+        finally:
+            # Resolve internal future
+            with suppress(InvalidStateError):
+                self.resolve(None)
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> AbstractAsyncContextManager[T.Any]:
+    def __observe__(self, observer: Observer[K, T.Any]) -> AsyncContextManager[T.Any]:
         """Start streaming.
 
         Raises:

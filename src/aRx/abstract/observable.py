@@ -5,10 +5,10 @@ import typing as T
 from abc import ABCMeta, abstractmethod
 
 # External
-from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
+from async_tools.context_manager import AsyncContextManager
+from async_tools.abstract.basic_repr import BasicRepr
 
 # Project
-from .base import Base
 from .observer import Observer
 
 # Generic Types
@@ -16,7 +16,7 @@ J = T.TypeVar("J")
 K = T.TypeVar("K")
 
 
-class Observable(T.Generic[K], Base, metaclass=ABCMeta):
+class Observable(BasicRepr, T.Generic[K], metaclass=ABCMeta):
     """Observable abstract class.
 
     An observable is a data generator to which observers can subscribe.
@@ -36,9 +36,7 @@ class Observable(T.Generic[K], Base, metaclass=ABCMeta):
     def __or__(self, other: T.Callable[["Observable[K]"], "Observable[J]"]) -> "Observable[J]":
         return other(self)
 
-    def __gt__(
-        self, observer: Observer[K, T.Any]
-    ) -> AbstractAsyncContextManager[Observer[K, T.Any]]:
+    def __gt__(self, observer: Observer[K, T.Any]) -> AsyncContextManager[Observer[K, T.Any]]:
         return observe(self, observer)
 
     def __add__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
@@ -50,7 +48,7 @@ class Observable(T.Generic[K], Base, metaclass=ABCMeta):
         return self.__add__(other)
 
     @abstractmethod
-    def __observe__(self, observer: Observer[K, T.Any]) -> AbstractAsyncContextManager[T.Any]:
+    def __observe__(self, observer: Observer[K, T.Any]) -> AsyncContextManager[T.Any]:
         """Interface through which observers are subscribed.
 
         Define how each observers is subscribed into this observable and the
@@ -70,7 +68,7 @@ class Observable(T.Generic[K], Base, metaclass=ABCMeta):
 
 def observe(
     observable: Observable[K], observer: Observer[K, T.Any]
-) -> AbstractAsyncContextManager[Observer[K, T.Any]]:
+) -> AsyncContextManager[Observer[K, T.Any]]:
     """External access to observable magic method.
 
     See also: :meth:`~.Observable.__observe__`

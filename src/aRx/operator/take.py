@@ -7,6 +7,7 @@ from collections import deque
 
 # Project
 from ..disposable import CompositeDisposable
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
@@ -21,15 +22,15 @@ class _TakeSink(SingleStream[K]):
         super().__init__(**kwargs)
 
         self._count = abs(count)
-        self._reverse_queue: T.Optional[T.Deque[K]] = (
+        self._reverse_queue: T.Optional[T.Deque[T.Tuple[K, Namespace]]] = (
             deque(maxlen=self._count) if count < 0 else None
         )
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
         if self._reverse_queue is None:
             if self._count > 0:
                 self._count -= 1
-                awaitable: T.Awaitable[T.Any] = super().__asend__(value)
+                awaitable: T.Awaitable[T.Any] = super().__asend__(value, namespace)
             else:
                 awaitable = self.aclose()
 
@@ -38,11 +39,11 @@ class _TakeSink(SingleStream[K]):
 
             await awaitable
         else:
-            self._reverse_queue.append(value)
+            self._reverse_queue.append((value, namespace))
 
     async def __aclose__(self) -> None:
         while self._reverse_queue:
-            await super().__asend__(self._reverse_queue.popleft())
+            await super().__asend__(*self._reverse_queue.popleft())
 
         return await super().__aclose__()
 

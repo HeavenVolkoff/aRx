@@ -7,6 +7,7 @@ from collections import deque
 
 # Project
 from ..disposable import CompositeDisposable
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
@@ -25,7 +26,7 @@ class _SkipSink(SingleStream[K]):
             deque(maxlen=self._count) if count < 0 else None
         )
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
         if self._reverse_queue is not None:
             # Skip values from end
             value = self._reverse_queue[0]
@@ -35,7 +36,7 @@ class _SkipSink(SingleStream[K]):
             self._count -= 1
             return
 
-        awaitable = super().__asend__(value)
+        awaitable = super().__asend__(value, namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del value

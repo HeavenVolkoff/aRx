@@ -3,12 +3,11 @@ __all__ = ("AnonymousObserver",)
 
 # Internal
 import typing as T
-from uuid import UUID
 from asyncio import AbstractEventLoop, InvalidStateError, iscoroutinefunction
-from functools import partial
 from contextlib import suppress
 
 # Project
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 
 # Generic Types
@@ -16,17 +15,22 @@ K = T.TypeVar("K")
 J = T.TypeVar("J")
 
 
-def default_asend(_: T.Any) -> None:
+def default_asend(_: T.Any, __: T.Any) -> None:
     return
 
 
-def default_araise(exc: Exception, namespace: UUID, *, loop: AbstractEventLoop) -> bool:
-    loop.call_exception_handler(
-        {
-            "message": f"Unhandled error propagated through {AnonymousObserver.__qualname__}",
-            "exception": exc,
-        }
-    )
+def setup_default_araise(loop: AbstractEventLoop) -> T.Callable[[Exception, Namespace], bool]:
+    def default_araise(exc: Exception, namespace: Namespace) -> bool:
+        class_type, uid = namespace
+        loop.call_exception_handler(
+            {
+                "message": (
+                    f"Unhandled error propagated through {AnonymousObserver.__qualname__}"
+                    f" from {classmethod}<{uid}>"
+                ),
+                "exception": exc,
+            }
+        )
 
     return False
 
@@ -35,7 +39,7 @@ def default_aclose() -> None:
     return
 
 
-class AnonymousObserver(Observer[K, J]):
+class AnonymousObserver(Observer[K, T.Optional[J]]):
     """An anonymous Observer.
 
     Creates as sink where the implementation is provided by three
@@ -45,8 +49,8 @@ class AnonymousObserver(Observer[K, J]):
 
     def __init__(
         self,
-        asend: T.Optional[T.Callable[[K], T.Any]] = None,
-        araise: T.Optional[T.Callable[[Exception, UUID], T.Optional[bool]]] = None,
+        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
+        araise: T.Optional[T.Callable[[Exception, Namespace], T.Optional[bool]]] = None,
         aclose: T.Optional[T.Callable[[], J]] = None,
         **kwargs: T.Any,
     ) -> None:
@@ -61,21 +65,12 @@ class AnonymousObserver(Observer[K, J]):
         """
         super().__init__(**kwargs)
 
-        if asend is None:
-            asend = default_asend
+        self._send = default_asend if asend is None else asend
+        self._raise = setup_default_araise(self.loop) if araise is None else araise
+        self._close = default_aclose if aclose is None else aclose
 
-        if araise is None:
-            araise = partial(default_araise, loop=self.loop)
-
-        if aclose is None:
-            aclose = T.cast(T.Callable[[], J], default_aclose)
-
-        self._send = asend
-        self._raise = araise
-        self._close = aclose
-
-    async def __asend__(self, value: K) -> None:
-        res = self._send(value)
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
+        res = self._send(value, namespace)
 
         if iscoroutinefunction(self._send):
             # Remove reference early to avoid keeping large objects in memory
@@ -83,7 +78,7 @@ class AnonymousObserver(Observer[K, J]):
 
             await T.cast(T.Awaitable[T.Any], res)
 
-    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
+    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
         res = self._raise(exc, namespace)
 
         if iscoroutinefunction(self._raise):

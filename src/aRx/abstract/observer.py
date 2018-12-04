@@ -4,18 +4,16 @@ __all__ = ("Observer",)
 # Internal
 import typing as T
 from abc import ABCMeta, abstractmethod
-from uuid import UUID, uuid4
-from types import TracebackType
-from asyncio import ALL_COMPLETED, Future, CancelledError, InvalidStateError, wait
+from asyncio import Future, CancelledError, InvalidStateError
 from contextlib import suppress, contextmanager
 
 # External
-from prop import Promise
-from async_tools.current_task import current_task
-from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
+from prop import ChainPromise
+from async_tools.context_manager import AsyncContextManager
 
 # Project
 from ..error import ObserverClosedError
+from ..misc.namespace import Namespace, get_namespace
 
 # Generic Types
 K = T.TypeVar("K")
@@ -23,7 +21,7 @@ J = T.TypeVar("J")
 
 
 class Observer(
-    T.Generic[K, J], Promise[J], AbstractAsyncContextManager["Observer[K, J]"], metaclass=ABCMeta
+    T.Generic[K, J], ChainPromise[J], AsyncContextManager["Observer[K, J]"], metaclass=ABCMeta
 ):
     """Observer abstract class.
 
@@ -35,13 +33,11 @@ class Observer(
             externally.
     """
 
-    # Observers are managed internally
-    _warn_no_management = False
-
-    __slots__ = ("keep_alive", "namespace", "_close_guard", "_close_promise")
+    __slots__ = ("keep_alive", "_close_guard", "_close_promise")
 
     def __init__(self, *, keep_alive: bool = False, **kwargs: T.Any) -> None:
         """Observer constructor.
+
         Arguments:
             keep_alive: :attr:`Observer.keep_alive`
             kwargs: keyword parameters for super.
@@ -49,7 +45,6 @@ class Observer(
         """
         super().__init__(**kwargs)
 
-        self.namespace = uuid4()
         self.keep_alive = keep_alive
 
         # Internal
@@ -59,11 +54,12 @@ class Observer(
         self._propagation_guard: T.Optional["Future[None]"] = None
 
     @abstractmethod
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
         """Processing of input data.
 
         Arguments:
             value: Received data.
+            namespace: Namespace to identify propagation origin.
 
         Raises:
             NotImplemented
@@ -72,12 +68,12 @@ class Observer(
         raise NotImplemented()
 
     @abstractmethod
-    async def __araise__(self, exc: Exception, namespace: UUID) -> bool:
+    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
         """Processing of input exceptions.
 
         Arguments:
             exc: Received exception.
-            namespace: Namespace for exception.
+            namespace: Namespace to identify propagation origin.
 
         Raises:
             NotImplemented
@@ -95,12 +91,7 @@ class Observer(
         """
         raise NotImplemented()
 
-    async def __aexit__(
-        self,
-        exc_type: T.Optional[T.Type[BaseException]],
-        exc_value: T.Optional[BaseException],
-        traceback: T.Optional[TracebackType],
-    ) -> T.Optional[bool]:
+    async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> T.Optional[bool]:
         """Close stream when disposed"""
         await self.aclose()
         return False
@@ -121,11 +112,12 @@ class Observer(
         """Property that indicates if this observer is closed or not."""
         return self.done() or self._close_promise.done() or self._close_guard
 
-    async def asend(self, data: K) -> None:
+    async def asend(self, data: K, namespace: T.Optional[Namespace] = None) -> None:
         """Interface through which data is inputted.
 
         Arguments:
             data: Data to be inputted.
+            namespace: Namespace to identify propagation origin.
 
         Raises:
             ObserverClosedError: If observer is closed.
@@ -135,7 +127,7 @@ class Observer(
             raise ObserverClosedError(self)
 
         with self._propagating():
-            awaitable = self.__asend__(data)
+            awaitable = self.__asend__(data, namespace)
 
             # Remove reference early to avoid keeping large objects in memory
             del data
@@ -146,16 +138,16 @@ class Observer(
                 raise  # Cancelled errors are not redirected
             except Exception as ex:
                 if not self.closed:
-                    await self.araise(ex, self.namespace)
+                    await self.araise(ex, get_namespace(self, namespace))
                 else:
                     raise RuntimeError(f"{self} closed with a pending Exception") from ex
 
-    async def araise(self, main_exc: Exception, namespace: UUID) -> None:
+    async def araise(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
         """Interface through which exceptions are inputted.
 
         Arguments:
             main_exc: Exception to be inputted.
-            namespace: Namespace for exception.
+            namespace: Namespace to identify propagation origin.
 
         Raises:
             ObserverClosedError: If observer is closed.
@@ -203,7 +195,7 @@ class Observer(
         self._close_guard = True
 
         # Cancel close promise
-        self._close_promise.cancel()
+        self._close_promise.cancel(task=False)
 
         # Wait remaining propagations
         if self._propagation_count > 0:

@@ -7,6 +7,7 @@ from functools import partial
 
 # Project
 from ..disposable import CompositeDisposable
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
@@ -24,7 +25,7 @@ class _MapSink(T.Generic[J, K], SingleStream[K]):
         self._index = 0
         self._mapper = mapper
 
-    async def __asend__(self, value: J) -> None:
+    async def __asend__(self, value: J, namespace: Namespace) -> None:
         index = self._index
         self._index += 1
 
@@ -36,7 +37,7 @@ class _MapSink(T.Generic[J, K], SingleStream[K]):
         if iscoroutinefunction(self._mapper):
             result = await T.cast(T.Awaitable[K], result)
 
-        awaitable = super().__asend__(result)
+        awaitable = super().__asend__(result, namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del result

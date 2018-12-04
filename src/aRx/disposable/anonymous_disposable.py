@@ -52,3 +52,6 @@ class AnonymousDisposable(AbstractAsyncContextManager["AnonymousDisposable"]):
             await T.cast(T.Coroutine[T.Any, T.Any, T.Any], dispose)
 
         return False
+
+    def clear(self):
+        self._adispose = default_dispose

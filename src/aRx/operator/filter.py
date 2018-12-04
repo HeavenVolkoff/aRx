@@ -7,6 +7,7 @@ from functools import partial
 
 # Project
 from ..disposable import CompositeDisposable
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
@@ -25,7 +26,7 @@ class _FilterSink(SingleStream[K]):
         self._index = 0
         self._predicate = predicate
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
         index = self._index
         self._index += 1
 
@@ -35,7 +36,7 @@ class _FilterSink(SingleStream[K]):
             is_accepted = await T.cast(T.Awaitable[bool], is_accepted)
 
         if is_accepted:
-            res = super().__asend__(value)
+            res = super().__asend__(value, namespace)
 
             # Remove reference early to avoid keeping large objects in memory
             del value
