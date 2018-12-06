@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>aRx.abstract.observer &#8212; aRx 0.7.5.post4 documentation</title>
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          aRx</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.7.5</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="https://github.com/HeavenVolkoff/aRx">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">aRx Docs <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../aRx.html">aRx</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.abstract.html">aRx.abstract</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.disposable.html">aRx.disposable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.observable.html">aRx.observable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.observer.html">aRx.observer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.operator.html">aRx.operator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.stream.html">aRx.stream</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.error.html">aRx.error</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.expires.html">aRx.expires</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../aRx.promise.html">aRx.promise</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+              
+                
+              
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <h1>Source code for aRx.abstract.observer</h1><div class="highlight"><pre>
+<span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Observer&quot;</span><span class="p">,)</span>
+
+
+<span class="c1"># Internal</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">T</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">asyncio</span> <span class="k">import</span> <span class="n">ALL_COMPLETED</span><span class="p">,</span> <span class="n">Future</span><span class="p">,</span> <span class="n">CancelledError</span><span class="p">,</span> <span class="n">InvalidStateError</span><span class="p">,</span> <span class="n">wait</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">suppress</span><span class="p">,</span> <span class="n">contextmanager</span>
+
+<span class="c1"># Project</span>
+<span class="kn">from</span> <span class="nn">..error</span> <span class="k">import</span> <span class="n">ObserverClosedError</span>
+<span class="kn">from</span> <span class="nn">..promise</span> <span class="k">import</span> <span class="n">Promise</span>
+<span class="kn">from</span> <span class="nn">..disposable</span> <span class="k">import</span> <span class="n">Disposable</span>
+<span class="kn">from</span> <span class="nn">..misc.current_task</span> <span class="k">import</span> <span class="n">current_task</span>
+
+<span class="c1"># Generic Types</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
+<span class="n">J</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;J&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Observer"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer">[docs]</a><span class="k">class</span> <span class="nc">Observer</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">Generic</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">J</span><span class="p">],</span> <span class="n">Promise</span><span class="p">[</span><span class="n">J</span><span class="p">],</span> <span class="n">Disposable</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Observer abstract class.</span>
+
+<span class="sd">    An observer represents a data sink, where data can be sent to and</span>
+<span class="sd">    transformed by it.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        keep_alive: Flag that indicates this observer should not be closed</span>
+<span class="sd">            externally.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;keep_alive&quot;</span><span class="p">,</span> <span class="s2">&quot;_close_guard&quot;</span><span class="p">,</span> <span class="s2">&quot;_close_promise&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Observer.__init__"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keep_alive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Observer constructor.</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            keep_alive: :attr:`Observer.keep_alive`</span>
+<span class="sd">            kwargs: keyword parameters for super.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">keep_alive</span> <span class="o">=</span> <span class="n">keep_alive</span>
+
+        <span class="c1"># Internal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_guard</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_promise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastly</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aclose</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_guard</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Future</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Observer.__asend__"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.__asend__">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">__asend__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Processing of input data.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            value: Received data.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplemented</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="bp">NotImplemented</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Observer.__araise__"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.__araise__">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">__araise__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Processing of input exceptions.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            ex: Received exception.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplemented</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="bp">NotImplemented</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Observer.__aclose__"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.__aclose__">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">__aclose__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Actions to be taken during close.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplemented</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="bp">NotImplemented</span><span class="p">()</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">__adispose__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Close stream when disposed&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+
+    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">_propagating</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_count</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_guard</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_guard</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">closed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Property that indicates if this observer is closed or not.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_promise</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_guard</span>
+
+<div class="viewcode-block" id="Observer.asend"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.asend">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">asend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Interface thought which data is inputted.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            data: Data to be inputted.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ObserverClosedError: If observer is closed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ObserverClosedError</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagating</span><span class="p">():</span>
+            <span class="n">awaitable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__asend__</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+            <span class="c1"># Remove reference early to avoid keeping large objects in memory</span>
+            <span class="k">del</span> <span class="n">data</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">awaitable</span>
+            <span class="k">except</span> <span class="n">CancelledError</span><span class="p">:</span>
+                <span class="k">raise</span>  <span class="c1"># Cancelled errors are not redirected</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">araise</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{self}</span><span class="s2"> closed with a pending Exception&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span></div>
+
+<div class="viewcode-block" id="Observer.araise"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.araise">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">araise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">main_exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Interface thought which exceptions are inputted.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            main_exc: Exception to be inputted.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ObserverClosedError: If observer is closed.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Boolean indicating if observer will close due to the exception.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ObserverClosedError</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagating</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">should_close</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">__araise__</span><span class="p">(</span><span class="n">main_exc</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">should_close</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="c1"># Added received exceptions to chain</span>
+                <span class="n">exc</span><span class="o">.</span><span class="n">__cause__</span> <span class="o">=</span> <span class="n">main_exc</span>
+                <span class="n">main_exc</span> <span class="o">=</span> <span class="n">exc</span>
+
+            <span class="c1"># Closes stream on irrecoverable exceptions</span>
+            <span class="k">if</span> <span class="n">should_close</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">reject</span><span class="p">(</span><span class="n">main_exc</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">InvalidStateError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{self}</span><span class="s2"> closed with a pending Exception&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Wait till aclose starts executing</span>
+                    <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="n">CancelledError</span><span class="p">):</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_promise</span></div>
+
+<div class="viewcode-block" id="Observer.aclose"><a class="viewcode-back" href="../../../aRx.abstract.observer.html#aRx.abstract.observer.Observer.aclose">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">aclose</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Close observer.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Boolean indicating if close executed or if it wasn&#39;t necessary.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Guard against repeated calls</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_close_guard</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># This is necessary due to the uncertain timing of promise cancellation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_guard</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Cancel close promise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_promise</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+
+        <span class="c1"># Wait remaining propagations</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_guard</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagation_guard</span>
+
+        <span class="c1"># Internal close</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">__aclose__</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Cancel in case we didn&#39;t get resolved</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancel</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">call_exception_handler</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self}</span><span class="s2">: Failed to finalized correctly and had to be cancelled&quot;</span><span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright - Original work: 2016 Børge Lanes, Dag Brattli - Modified work: 2018 Vítor Augusto da Silva Vasconcellos..<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.2.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
