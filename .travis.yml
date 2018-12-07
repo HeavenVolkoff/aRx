@@ -10,7 +10,7 @@ install:
     - pip install ".[docs, tests]"
 
 script:
-    - PYTHONPATH="./src" python -m unittest discover -s tests
+    - python -m unittest discover -s tests
     - travis-sphinx build --nowarn --source=docs
 
 after_success:
