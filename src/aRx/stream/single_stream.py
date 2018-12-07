@@ -63,7 +63,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         # _observer must be available at this point
         assert self._observer
 
-        awaitable = self._observer.asend(value, get_namespace(self, namespace))
+        awaitable = self._observer.asend(value, namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
@@ -77,7 +77,7 @@ class SingleStream(Observer[K, None], Observable[K]):
         # _observer must be available at this point
         assert self._observer
 
-        await self._observer.araise(exc, get_namespace(self, namespace))
+        await self._observer.araise(exc, namespace)
 
         # SingleStream doesn't close on raise
         return False

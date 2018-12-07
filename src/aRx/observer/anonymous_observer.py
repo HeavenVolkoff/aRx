@@ -21,18 +21,20 @@ def default_asend(_: T.Any, __: T.Any) -> None:
 
 def setup_default_araise(loop: AbstractEventLoop) -> T.Callable[[Exception, Namespace], bool]:
     def default_araise(exc: Exception, namespace: Namespace) -> bool:
-        class_type, uid = namespace
+        ref = namespace.ref
         loop.call_exception_handler(
             {
                 "message": (
                     f"Unhandled error propagated through {AnonymousObserver.__qualname__}"
-                    f" from {classmethod}<{uid}>"
+                    f" from {ref if ref else namespace.type} at {namespace.action}"
                 ),
                 "exception": exc,
             }
         )
 
-    return False
+        return False
+
+    return default_araise
 
 
 def default_aclose() -> None:

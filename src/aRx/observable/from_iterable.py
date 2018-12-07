@@ -35,6 +35,7 @@ class FromIterable(Observable[K]):
 
         # Internal
         self._iterator: T.Optional[T.Iterator[K]] = iter(iterable)
+        self._namespace = get_namespace(self, "next")
 
     def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
         """Schedule iterator flush and register observer."""
@@ -71,13 +72,13 @@ class FromIterable(Observable[K]):
                     if observer.closed:
                         break
 
-                    await observer.asend(data, get_namespace(self))
+                    await observer.asend(data, self._namespace)
 
             except CancelledError:
                 raise
             except Exception as exc:
                 if not observer.closed:
-                    await observer.araise(exc, get_namespace(self))
+                    await observer.araise(exc, self._namespace)
 
             if not (observer.closed or observer.keep_alive):
                 await observer.aclose()

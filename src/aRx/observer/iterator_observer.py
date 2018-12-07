@@ -9,6 +9,7 @@ from contextlib import suppress
 from collections import deque
 
 # Project
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 
 # Generic Types
@@ -46,11 +47,11 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
     def __aiter__(self) -> T.AsyncIterator[K]:
         return self
 
-    async def __asend__(self, value: K) -> None:
+    async def __asend__(self, value: K, _: Namespace) -> None:
         self._counter += 1
         self._next_value = (False, value)
 
-    async def __araise__(self, err: Exception, namespace: UUID) -> bool:
+    async def __araise__(self, err: Exception, _: Namespace) -> bool:
         self._next_value = (True, err)
         return True
 

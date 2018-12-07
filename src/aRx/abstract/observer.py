@@ -127,6 +127,7 @@ class Observer(
             raise ObserverClosedError(self)
 
         with self._propagating():
+            namespace = get_namespace(self, "asend", namespace)
             awaitable = self.__asend__(data, namespace)
 
             # Remove reference early to avoid keeping large objects in memory
@@ -138,7 +139,7 @@ class Observer(
                 raise  # Cancelled errors are not redirected
             except Exception as ex:
                 if not self.closed:
-                    await self.araise(ex, get_namespace(self, namespace))
+                    await self.araise(ex, namespace)
                 else:
                     raise RuntimeError(f"{self} closed with a pending Exception") from ex
 
@@ -160,8 +161,12 @@ class Observer(
             raise ObserverClosedError(self)
 
         with self._propagating():
+            awaitable = self.__araise__(main_exc, get_namespace(self, "araise", namespace))
+
             try:
-                should_close = await self.__araise__(main_exc, namespace)
+                should_close = await awaitable
+            except CancelledError:
+                raise  # Cancelled errors are not redirected
             except Exception as exc:
                 should_close = True
 

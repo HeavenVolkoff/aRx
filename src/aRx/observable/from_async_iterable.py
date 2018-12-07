@@ -35,6 +35,7 @@ class FromAsyncIterable(Observable[K]):
         super().__init__(**kwargs)
 
         # Internal
+        self._namespace = get_namespace(self, "anext")
         self._async_iterator: T.Optional[T.AsyncIterator[K]] = async_iterable.__aiter__()
 
     def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
@@ -75,12 +76,12 @@ class FromAsyncIterable(Observable[K]):
                     if observer.closed:
                         break
 
-                    await observer.asend(data, get_namespace(self))
+                    await observer.asend(data, self._namespace)
             except CancelledError:
                 raise
             except Exception as exc:
                 if not observer.closed:
-                    await observer.araise(exc, get_namespace(self))
+                    await observer.araise(exc, self._namespace)
 
             if isinstance(async_iterator, AsyncGenerator):
                 # Ensure async_generator gets closed

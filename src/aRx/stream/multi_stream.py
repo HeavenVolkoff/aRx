@@ -41,9 +41,7 @@ class MultiStream(Observer[K, None], Observable[K]):
 
     async def __asend__(self, value: K, namespace: Namespace) -> None:
         send_event = tuple(
-            obv.asend(value, get_namespace(self, namespace))
-            for obv in self._observers
-            if not obv.closed
+            obv.asend(value, namespace) for obv in self._observers if not obv.closed
         )
         if send_event:
             awaitable = wait(send_event, return_when=ALL_COMPLETED)
@@ -71,9 +69,7 @@ class MultiStream(Observer[K, None], Observable[K]):
 
     async def __araise__(self, main_exc: Exception, namespace: Namespace) -> bool:
         raise_event = tuple(
-            obv.araise(main_exc, get_namespace(self, namespace))
-            for obv in self._observers
-            if not obv.closed
+            obv.araise(main_exc, namespace) for obv in self._observers if not obv.closed
         )
         if raise_event:
             awaitable = wait(raise_event, return_when=ALL_COMPLETED)

@@ -6,12 +6,14 @@ from types import TracebackType
 from asyncio import iscoroutine
 
 # External
-from async_tools.abstract.abstract_async_context_manager import AbstractAsyncContextManager
+from async_tools.context_manager import AsyncContextManager
+
 
 def default_dispose() -> None:
     return
 
-class AnonymousDisposable(AbstractAsyncContextManager["AnonymousDisposable"]):
+
+class AnonymousDisposable(AsyncContextManager["AnonymousDisposable"]):
     """An anonymous Disposable.
 
     Disposable where the custom close logic implementation is provided by a
@@ -53,5 +55,5 @@ class AnonymousDisposable(AbstractAsyncContextManager["AnonymousDisposable"]):
 
         return False
 
-    def clear(self):
+    def clear(self) -> None:
         self._adispose = default_dispose

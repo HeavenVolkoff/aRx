@@ -1,15 +1,14 @@
 __all__ = ("Unit",)
 
-
 # Internal
 import typing as T
-from uuid import UUID, uuid4
 from asyncio import isfuture, ensure_future
 
 # External
 from async_tools.abstract.loopable import Loopable
 
 # Project
+from ..misc.namespace import Namespace, get_namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
@@ -23,7 +22,7 @@ class Unit(Observable[K], Loopable):
 
     @staticmethod
     async def _worker(
-        value: T.Union[K, T.Awaitable[K]], observer: Observer[K, T.Any], namespace: UUID
+        value: T.Union[K, T.Awaitable[K]], observer: Observer[K, T.Any], namespace: Namespace
     ) -> None:
         if isfuture(value):
             try:
@@ -47,16 +46,16 @@ class Unit(Observable[K], Loopable):
         """
         super().__init__(**kwargs)
 
-        self.namespace = uuid4()
-
         # Internal
         try:
             self._value: T.Union[K, T.Awaitable[K]] = ensure_future(T.cast(T.Awaitable[K], value))
         except TypeError:
             self._value = value
 
+        self._namespace = get_namespace(self, "fixed")
+
     def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
         # Add worker execution to loop queue
-        task = observer.loop.create_task(Unit._worker(self._value, observer, self.namespace))
+        task = observer.loop.create_task(Unit._worker(self._value, observer, self._namespace))
 
         return AnonymousDisposable(task.cancel)
