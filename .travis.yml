@@ -7,7 +7,7 @@ before_install:
     - pip --no-cache install -U pip setuptools
 
 install:
-    - pip install .[docs, tests]
+    - pip install ".[docs, tests]"
 
 script:
     - PYTHONPATH="./src" python -m unittest discover -s tests
