@@ -52,8 +52,13 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
     def __init__(
         self,
         asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
-        araise: T.Optional[T.Callable[[Exception, Namespace], T.Optional[bool]]] = None,
-        aclose: T.Optional[T.Callable[[], J]] = None,
+        araise: T.Optional[
+            T.Callable[
+                [Exception, Namespace],
+                T.Union[T.Optional[bool], T.Coroutine[T.Any, T.Any, T.Optional[bool]]],
+            ]
+        ] = None,
+        aclose: T.Optional[T.Callable[[], T.Union[J, T.Coroutine[T.Any, T.Any, J]]]] = None,
         **kwargs: T.Any,
     ) -> None:
         """AnonymousObserver Constructor.
@@ -78,13 +83,18 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
             # Remove reference early to avoid keeping large objects in memory
             del value
 
-            await T.cast(T.Awaitable[T.Any], res)
+            assert isinstance(res, T.Coroutine)
+
+            await res
 
     async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
         res = self._raise(exc, namespace)
 
         if iscoroutinefunction(self._raise):
-            res = await T.cast(T.Awaitable[T.Optional[bool]], res)
+            assert isinstance(res, T.Coroutine)
+            res = await res
+
+        assert not isinstance(res, T.Coroutine)
 
         return bool(res)
 
@@ -92,7 +102,10 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
         res = self._close()
 
         if iscoroutinefunction(self._close):
-            res = await T.cast(T.Awaitable[J], res)
+            assert isinstance(res, T.Coroutine)
+            res = await res
+
+        assert not isinstance(res, T.Coroutine)
 
         with suppress(InvalidStateError):
             self.resolve(res)
