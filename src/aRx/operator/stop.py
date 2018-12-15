@@ -12,6 +12,7 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
@@ -44,13 +45,13 @@ class _StopSink(SingleStream[K]):
         await awaitable
 
 
-class Stop(Observable[K]):
+class Stop(Observable[K, CompositeDisposable]):
     """Observable that stops according to a predicate."""
 
     def __init__(
         self,
         predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]],
-        source: Observable[K],
+        source: Observable[K, AsyncContextManager],
         **kwargs: T.Any,
     ) -> None:
         """Stop constructor.
@@ -74,11 +75,13 @@ class Stop(Observable[K]):
 
 def stop_op(
     predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
-) -> T.Callable[[Observable[K]], Stop[K]]:
+) -> T.Callable[[Observable[K, AsyncContextManager]], Stop[K]]:
     """Partial implementation of :class:`~.Stop` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Stop
 
     """
-    return T.cast(T.Callable[[Observable[K]], Stop[K]], partial(Stop, predicate))
+    return T.cast(
+        T.Callable[[Observable[K, AsyncContextManager]], Stop[K]], partial(Stop, predicate)
+    )

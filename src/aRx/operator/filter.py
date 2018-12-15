@@ -12,6 +12,7 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
@@ -44,13 +45,13 @@ class _FilterSink(SingleStream[K]):
             await res
 
 
-class Filter(Observable[K]):
+class Filter(Observable[K, CompositeDisposable]):
     """Observable that output filtered data from another observable source."""
 
     def __init__(
         self,
         predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]],
-        source: Observable[K],
+        source: Observable[K, AsyncContextManager],
         **kwargs: T.Any,
     ) -> None:
         """Filter constructor.
@@ -75,11 +76,11 @@ class Filter(Observable[K]):
 
 def filter_op(
     predicate: T.Callable[[K, int], T.Union[T.Awaitable[bool], bool]]
-) -> T.Callable[[Observable[K]], Filter[K]]:
+) -> T.Callable[[Observable[K, AsyncContextManager]], Filter[K]]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return T.cast(T.Callable[[Observable[K]], Filter[K]], partial(Filter, predicate))
+    return T.cast(T.Callable[[Observable[K, AsyncContextManager]], Filter[K]], partial(Filter, predicate))

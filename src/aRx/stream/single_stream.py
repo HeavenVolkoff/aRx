@@ -8,11 +8,10 @@ from contextlib import suppress
 
 # External
 from prop import AbstractPromise
-from async_tools.context_manager.async_context_manager import AsyncContextManager
 
 # Project
 from ..error import SingleStreamError
-from ..misc.namespace import Namespace, get_namespace
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 
@@ -20,7 +19,7 @@ from ..abstract.observable import Observable
 K = T.TypeVar("K")
 
 
-class SingleStream(Observer[K, None], Observable[K]):
+class SingleStream(Observer[K, None], Observable[K, "SingleStream[K]"]):
     """Cold stream tightly coupled with a single observer.
 
     .. Note::
@@ -105,7 +104,7 @@ class SingleStream(Observer[K, None], Observable[K]):
             with suppress(InvalidStateError):
                 self.resolve(None)
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> AsyncContextManager[T.Any]:
+    def __observe__(self, observer: Observer[K, T.Any]) -> "SingleStream[K]":
         """Start streaming.
 
         Raises:

@@ -11,6 +11,7 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 
 class Comparable(metaclass=ABCMeta):
@@ -50,7 +51,7 @@ class _MinSink(SingleStream[K]):
         await super().__aclose__()
 
 
-class Min(Observable[K]):
+class Min(Observable[K, CompositeDisposable]):
     """Observable that outputs the largest data read from an observable source.
 
     .. Note::
@@ -62,7 +63,7 @@ class Min(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    def __init__(self, source: Observable[K], **kwargs: T.Any) -> None:
+    def __init__(self, source: Observable[K, AsyncContextManager], **kwargs: T.Any) -> None:
         """Min constructor.
 
         Arguments:
@@ -72,7 +73,7 @@ class Min(Observable[K]):
         super().__init__(**kwargs)
         self._source = source
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
+    def __observe__(self, observer: Observer[K, AsyncContextManager]) -> CompositeDisposable:
         sink: _MinSink[K] = _MinSink(loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(observe(self._source, sink), observe(sink, observer))

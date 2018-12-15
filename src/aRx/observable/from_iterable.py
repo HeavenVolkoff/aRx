@@ -20,7 +20,7 @@ from ..abstract.observable import Observable
 K = T.TypeVar("K")
 
 
-class FromIterable(Observable[K]):
+class FromIterable(Observable[K, AnonymousDisposable]):
     """Observable that uses an iterable as data source."""
 
     def __init__(self, iterable: T.Iterable[K], **kwargs: T.Any) -> None:

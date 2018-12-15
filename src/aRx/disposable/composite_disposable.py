@@ -3,25 +3,26 @@ __all__ = ("CompositeDisposable",)
 
 # Internal
 import typing as T
-from types import TracebackType
 
 # External
 from async_tools.operator import aexit
-from async_tools.context_manager import AsyncContextManager
+
+# Project
+from ..misc.async_context_manager import AsyncContextManager
 
 
-class CompositeDisposable(AsyncContextManager["CompositeDisposable"]):
+class CompositeDisposable(AsyncContextManager):
     """A disposable that is a composition of various disposable."""
 
     @staticmethod
-    def _validate_mapper(disposable: AsyncContextManager[T.Any]) -> bool:
+    def _validate_mapper(disposable: AsyncContextManager) -> bool:
         return isinstance(disposable, AsyncContextManager)
 
     def __init__(
         self,
-        first: AsyncContextManager[T.Any],
-        second: AsyncContextManager[T.Any],
-        *rest: AsyncContextManager[T.Any],
+        first: AsyncContextManager,
+        second: AsyncContextManager,
+        *rest: AsyncContextManager,
         **kwargs: T.Any,
     ) -> None:
         """CompositeDisposable constructor.
@@ -45,12 +46,7 @@ class CompositeDisposable(AsyncContextManager["CompositeDisposable"]):
 
         self._disposables = disposables
 
-    async def __aexit__(
-        self,
-        exc_type: T.Optional[T.Type[BaseException]],
-        exc_value: T.Optional[BaseException],
-        traceback: T.Optional[TracebackType],
-    ) -> T.Optional[bool]:
+    async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> bool:
         """Call all registered disposables on dispose."""
         await aexit(*self._disposables)
         return False

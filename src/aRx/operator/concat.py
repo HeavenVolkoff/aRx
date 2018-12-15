@@ -10,17 +10,22 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
-J = T.TypeVar("J")
 K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class Concat(Observable[J]):
+class Concat(T.Generic[K, L], Observable[T.Union[K, L], CompositeDisposable]):
     """Observable that is the concatenation of multiple observables sources"""
 
-    def __init__(self, *observables: Observable[T.Any], **kwargs: T.Any) -> None:
+    def __init__(
+        self,
+        a: Observable[K, AsyncContextManager],
+        b: Observable[L, AsyncContextManager],
+        **kwargs: T.Any,
+    ) -> None:
         """Concat constructor.
 
         Arguments:
@@ -30,24 +35,26 @@ class Concat(Observable[J]):
         """
         super().__init__(**kwargs)
 
-        # Must have at least two observables
-        assert len(observables) > 1
+        self._a = a
+        self._b = b
 
-        self._sources = observables
-
-    def __observe__(self, observer: Observer[J, T.Any]) -> CompositeDisposable:
-        sink: SingleStream[J] = SingleStream(loop=observer.loop)
+    def __observe__(self, observer: Observer[T.Union[K, L], T.Any]) -> CompositeDisposable:
+        sink: SingleStream[T.Union[K, L]] = SingleStream(loop=observer.loop)
         with dispose_sink(sink):
             return CompositeDisposable(
-                *(observe(source, sink) for source in self._sources), observe(sink, observer)
+                observe(self._a, sink), observe(self._b, sink), observe(sink, observer)
             )
 
 
-def concat_op(first: Observable[K]) -> T.Callable[[Observable[L]], Concat[T.Union[K, L]]]:
+def concat_op(
+    first: Observable[K, AsyncContextManager]
+) -> T.Callable[[Observable[L, AsyncContextManager]], Concat[K, L]]:
     """Partial implementation of :class:`~.Concat` to be used with operator semantics.
 
     Returns:
         Partial implementation of Concat
 
     """
-    return T.cast(T.Callable[[Observable[L]], Concat[T.Union[K, L]]], partial(Concat, first))
+    return T.cast(
+        T.Callable[[Observable[L, AsyncContextManager]], Concat[K, L]], partial(Concat, first)
+    )

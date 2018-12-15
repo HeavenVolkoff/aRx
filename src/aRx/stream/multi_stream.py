@@ -8,7 +8,7 @@ from contextlib import suppress
 
 # Project
 from ..error import MultiStreamError
-from ..misc.namespace import Namespace, get_namespace
+from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
@@ -17,7 +17,7 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 K = T.TypeVar("K")
 
 
-class MultiStream(Observer[K, None], Observable[K]):
+class MultiStream(Observer[K, None], Observable[K, AnonymousDisposable]):
     """Hot stream that can be observed by multiple observers.
 
     .. Note::

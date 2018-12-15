@@ -13,6 +13,7 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
@@ -47,14 +48,14 @@ class _AssertSink(SingleStream[K]):
         await res
 
 
-class Assert(Observable[K]):
+class Assert(Observable[K, CompositeDisposable]):
     """Observable that raises exception if predicate is false."""
 
     def __init__(
         self,
         predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
         exc: Exception,
-        source: Observable[K],
+        source: Observable[K, AsyncContextManager],
         **kwargs: T.Any,
     ) -> None:
         """Filter constructor.
@@ -79,11 +80,14 @@ class Assert(Observable[K]):
 
 def assert_op(
     predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]], exc: Exception
-) -> T.Callable[[Observable[K]], Assert[K]]:
+) -> T.Callable[[Observable[K, AsyncContextManager]], Assert[K]]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return T.cast(T.Callable[[Observable[K]], Assert[K]], partial(Assert, predicate, exc))
+    return T.cast(
+        T.Callable[[Observable[K, AsyncContextManager]], Assert[K]],
+        partial(Assert, predicate, exc),
+    )

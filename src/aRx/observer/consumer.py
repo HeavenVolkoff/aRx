@@ -1,33 +1,30 @@
 __all__ = ("Consumer", "consume")
 
-
 # Internal
 import typing as T
-
-# External
-from prop import Promise
 
 # Project
 from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable, observe
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
 
 
 class Consumer(Observer[K, K]):
-    async def __asend__(self, value: K, namespace: Namespace) -> None:
+    async def __asend__(self, value: K, _: Namespace) -> None:
         self.resolve(value)
 
-    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
+    async def __araise__(self, _: Exception, __: Namespace) -> bool:
         return True
 
     async def __aclose__(self) -> None:
         pass
 
 
-async def consume(observable: Observable[K]) -> K:
+async def consume(observable: Observable[K, AsyncContextManager]) -> K:
     """Consume an :class:`~.Observable` as a Promise.
 
     Arguments:

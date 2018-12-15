@@ -12,6 +12,7 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
@@ -50,10 +51,12 @@ class _SkipSink(SingleStream[K]):
         await super().__aclose__()
 
 
-class Skip(Observable[K]):
+class Skip(Observable[K, CompositeDisposable]):
     """Observable that outputs data from source skipping some."""
 
-    def __init__(self, count: int, source: Observable[K], **kwargs: T.Any) -> None:
+    def __init__(
+        self, count: int, source: Observable[K, AsyncContextManager], **kwargs: T.Any
+    ) -> None:
         """Skip constructor.
 
         .. Note::
@@ -79,11 +82,11 @@ class Skip(Observable[K]):
             return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
-def skip_op(count: int) -> T.Callable[[Observable[K]], Skip[K]]:
+def skip_op(count: int) -> T.Callable[[Observable[K, AsyncContextManager]], Skip[K]]:
     """Partial implementation of :class:`~.Skip` to be used with operator semantics.
 
     Returns:
         Partial implementation of Skip.
 
     """
-    return T.cast(T.Callable[[Observable[K]], Skip[K]], partial(Skip, count))
+    return T.cast(T.Callable[[Observable[K, AsyncContextManager]], Skip[K]], partial(Skip, count))

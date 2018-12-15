@@ -11,6 +11,7 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
 
 
 class Comparable(metaclass=ABCMeta):
@@ -50,7 +51,7 @@ class _MaxSink(SingleStream[K]):
         await super().__aclose__()
 
 
-class Max(Observable[K]):
+class Max(Observable[K, CompositeDisposable]):
     """Observable that outputs the largest data read from an observable source.
 
     .. Note::
@@ -62,7 +63,7 @@ class Max(Observable[K]):
         This observable only outputs data after source observable has closed.
     """
 
-    def __init__(self, source: Observable[K], **kwargs: T.Any) -> None:
+    def __init__(self, source: Observable[K, AsyncContextManager], **kwargs: T.Any) -> None:
         """Max constructor.
 
         Arguments:

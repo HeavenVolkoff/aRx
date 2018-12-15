@@ -1,5 +1,3 @@
-__all__ = ("Take", "take_op")
-
 # Internal
 import typing as T
 from functools import partial
@@ -12,6 +10,10 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
+from ..misc.async_context_manager import AsyncContextManager
+
+__all__ = ("Take", "take_op")
+
 
 # Generic Types
 K = T.TypeVar("K")
@@ -48,8 +50,10 @@ class _TakeSink(SingleStream[K]):
         return await super().__aclose__()
 
 
-class Take(Observable[K]):
-    def __init__(self, count: int, source: Observable[K], **kwargs: T.Any) -> None:
+class Take(Observable[K, CompositeDisposable]):
+    def __init__(
+        self, count: int, source: Observable[K, AsyncContextManager], **kwargs: T.Any
+    ) -> None:
         """Take constructor.
 
         .. Note::
@@ -80,11 +84,11 @@ class Take(Observable[K]):
             return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
-def take_op(count: int) -> T.Callable[[Observable[K]], Take[K]]:
+def take_op(count: int) -> T.Callable[[Observable[K, AsyncContextManager]], Take[K]]:
     """Partial implementation of :class:`~.Take` to be used with operator semantics.
 
     Returns:
         Partial implementation of Take.
 
     """
-    return T.cast(T.Callable[[Observable[K]], Take[K]], partial(Take, count))
+    return T.cast(T.Callable[[Observable[K, AsyncContextManager]], Take[K]], partial(Take, count))

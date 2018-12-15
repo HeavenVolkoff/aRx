@@ -1,22 +1,27 @@
-__all__ = ("Observable", "observe")
-
 # Internal
 import typing as T
 from abc import ABCMeta, abstractmethod
 
 # External
-from async_tools.context_manager import AsyncContextManager
 from async_tools.abstract.basic_repr import BasicRepr
 
 # Project
 from .observer import Observer
+from ..disposable import CompositeDisposable
+from ..misc.async_context_manager import AsyncContextManager
+
+__all__ = ("Observable", "observe")
+
 
 # Generic Types
-J = T.TypeVar("J")
+J = T.TypeVar("J", bound=AsyncContextManager)
 K = T.TypeVar("K")
+L = T.TypeVar("L", covariant=True)
+M = T.TypeVar("M")
+N = T.TypeVar("N", bound=AsyncContextManager)
 
 
-class Observable(BasicRepr, T.Generic[K], metaclass=ABCMeta):
+class Observable(BasicRepr, T.Generic[K, L], metaclass=ABCMeta):
     """Observable abstract class.
 
     An observable is a data generator to which observers can subscribe.
@@ -33,22 +38,30 @@ class Observable(BasicRepr, T.Generic[K], metaclass=ABCMeta):
         """
         super().__init__(**kwargs)  # type: ignore
 
-    def __or__(self, other: T.Callable[["Observable[K]"], "Observable[J]"]) -> "Observable[J]":
+    def __or__(
+        self, other: T.Callable[["Observable[K, J]"], "Observable[M, N]"]
+    ) -> "Observable[M, N]":
         return other(self)
 
-    def __gt__(self, observer: Observer[K, T.Any]) -> AsyncContextManager[Observer[K, T.Any]]:
+    def __gt__(self, observer: Observer[K, T.Any]) -> L:
         return observe(self, observer)
 
-    def __add__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
+    def __add__(
+        self, other: "Observable[M, N]"
+    ) -> "Observable[T.Union[K, M], CompositeDisposable]":
         from ..operator import Concat
 
         return Concat(self, other)
 
-    def __iadd__(self, other: "Observable[J]") -> "Observable[T.Union[K, J]]":
-        return self.__add__(other)
+    def __iadd__(
+        self, other: "Observable[M, N]"
+    ) -> "Observable[T.Union[K, M], CompositeDisposable]":
+        from ..operator import Concat
+
+        return Concat(self, other)
 
     @abstractmethod
-    def __observe__(self, observer: Observer[K, T.Any]) -> AsyncContextManager[T.Any]:
+    def __observe__(self, observer: Observer[K, T.Any]) -> L:
         """Interface through which observers are subscribed.
 
         Define how each observers is subscribed into this observable and the
@@ -66,9 +79,7 @@ class Observable(BasicRepr, T.Generic[K], metaclass=ABCMeta):
         raise NotImplemented()
 
 
-def observe(
-    observable: Observable[K], observer: Observer[K, T.Any]
-) -> AsyncContextManager[Observer[K, T.Any]]:
+def observe(observable: Observable[K, J], observer: Observer[K, T.Any]) -> J:
     """External access to observable magic method.
 
     See also: :meth:`~.Observable.__observe__`

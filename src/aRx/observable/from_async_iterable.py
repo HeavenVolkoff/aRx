@@ -21,7 +21,7 @@ from ..abstract.observable import Observable
 K = T.TypeVar("K")
 
 
-class FromAsyncIterable(Observable[K]):
+class FromAsyncIterable(Observable[K, AnonymousDisposable]):
     """Observable that uses an async iterable as data source."""
 
     def __init__(self, async_iterable: T.AsyncIterable[K], **kwargs: T.Any) -> None:

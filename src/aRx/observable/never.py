@@ -9,7 +9,7 @@ from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 
 
-class Never(Observable[None]):
+class Never(Observable[None, AnonymousDisposable]):
     """Observable that never outputs data, but stays open."""
 
     def __observe__(self, _: Observer[T.Any, T.Any]) -> AnonymousDisposable:

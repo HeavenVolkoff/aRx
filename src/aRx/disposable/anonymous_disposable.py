@@ -2,18 +2,17 @@ __all__ = ("AnonymousDisposable",)
 
 # Internal
 import typing as T
-from types import TracebackType
 from asyncio import iscoroutine
 
-# External
-from async_tools.context_manager import AsyncContextManager
+# Project
+from ..misc.async_context_manager import AsyncContextManager
 
 
 def default_dispose() -> None:
     return
 
 
-class AnonymousDisposable(AsyncContextManager["AnonymousDisposable"]):
+class AnonymousDisposable(AsyncContextManager):
     """An anonymous Disposable.
 
     Disposable where the custom close logic implementation is provided by a
@@ -41,12 +40,7 @@ class AnonymousDisposable(AsyncContextManager["AnonymousDisposable"]):
 
         self._adispose = dispose
 
-    async def __aexit__(
-        self,
-        exc_type: T.Optional[T.Type[BaseException]],
-        exc_value: T.Optional[BaseException],
-        traceback: T.Optional[TracebackType],
-    ) -> T.Optional[bool]:
+    async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> T.Optional[bool]:
         """Call anonymous function on dispose."""
         dispose = self._adispose()
 

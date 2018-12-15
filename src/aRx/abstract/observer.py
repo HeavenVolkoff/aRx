@@ -9,20 +9,20 @@ from contextlib import suppress, contextmanager
 
 # External
 from prop import ChainPromise
-from async_tools.context_manager import AsyncContextManager
 
 # Project
 from ..error import ObserverClosedError
 from ..misc.namespace import Namespace, get_namespace
+from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
 J = T.TypeVar("J")
 
+Observer_t = T.TypeVar("Observer_t", bound="Observer[T.Any, T.Any]")
 
-class Observer(
-    T.Generic[K, J], ChainPromise[J], AsyncContextManager["Observer[K, J]"], metaclass=ABCMeta
-):
+
+class Observer(T.Generic[K, J], ChainPromise[J], AsyncContextManager, metaclass=ABCMeta):
     """Observer abstract class.
 
     An observer represents a data sink, where data can be sent to and
@@ -91,7 +91,7 @@ class Observer(
         """
         raise NotImplemented()
 
-    async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> T.Optional[bool]:
+    async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> bool:
         """Close stream when disposed"""
         await self.aclose()
         return False

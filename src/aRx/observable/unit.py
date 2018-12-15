@@ -17,7 +17,7 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 K = T.TypeVar("K")
 
 
-class Unit(Observable[K], Loopable):
+class Unit(Observable[K, AnonymousDisposable], Loopable):
     """Observable that outputs a single value then closes."""
 
     @staticmethod
