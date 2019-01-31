@@ -47,11 +47,18 @@ for file in "$@"; do
         formatted="$(echo "$import_sorted" | black --config "$(read_config "**.py" black_file)" -)"
     elif [[ "$file_ext" == "sh" ]]; then
         if ! hash shfmt; then
-            echo >&2 "Bash: shfmt are not installed"
+            echo >&2 "Bash: shfmt is not installed"
             exit -1
         fi
 
         formatted="$(shfmt -i "$(read_config "**.sh" indent_size)" -ci -kp "$file")"
+    elif [[ "$file_ext" == "qml" ]]; then
+        if ! hash qmlfmt; then
+            echo >&2 "Bash: qmlfmt is not installed"
+            exit -1
+        fi
+
+        formatted="$(qmlfmt "$file")"
     else
         echo >&2 "$file: Don't have a recognizable extension"
         continue

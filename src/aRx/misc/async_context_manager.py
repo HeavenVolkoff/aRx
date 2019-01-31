@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from types import TracebackType
 
 # External
-from async_tools.context_manager import AbstractAsyncContextManager
+from async_tools.abstract import AsyncContextManager as AbstractAsyncContextManager
 
 AsyncContextManager_t = T.TypeVar("AsyncContextManager_t", bound="AsyncContextManager")
 

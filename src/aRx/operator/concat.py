@@ -4,13 +4,15 @@ __all__ = ("Concat", "concat_op")
 import typing as T
 from functools import partial
 
+# External
+from async_tools.abstract import AsyncContextManager
+
 # Project
 from ..disposable import CompositeDisposable
 from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
-from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")

@@ -5,7 +5,7 @@ __all__ = ("Observer",)
 import typing as T
 from abc import ABCMeta, abstractmethod
 from asyncio import Future, CancelledError, InvalidStateError
-from contextlib import suppress, contextmanager
+from contextlib import contextmanager
 
 # External
 from prop import ChainPromise
@@ -180,10 +180,6 @@ class Observer(T.Generic[K, J], ChainPromise[J], AsyncContextManager, metaclass=
                     self.reject(main_exc)
                 except InvalidStateError as exc:
                     raise RuntimeError(f"{self} closed with a pending Exception") from exc
-                else:
-                    # Wait till aclose starts executing
-                    with suppress(CancelledError):
-                        await self._close_promise
 
     async def aclose(self) -> bool:
         """Close observer.

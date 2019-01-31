@@ -7,7 +7,7 @@ from asyncio import Future, InvalidStateError
 from contextlib import suppress
 
 # External
-from prop import AbstractPromise
+from prop.abstract import Promise
 
 # Project
 from ..error import SingleStreamError
@@ -41,7 +41,7 @@ class SingleStream(Observer[K, None], Observable[K, "SingleStream[K]"]):
         # Internal
         self._lock: "Future[None]" = self._loop.create_future()
         self._observer: T.Optional[Observer[K, T.Any]] = None
-        self._observer_close_promise: T.Optional[AbstractPromise[bool]] = None
+        self._observer_close_promise: T.Optional[Promise[bool]] = None
 
     @property
     def closed(self) -> bool:

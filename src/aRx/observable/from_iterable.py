@@ -8,7 +8,7 @@ from weakref import ReferenceType
 from contextlib import suppress
 
 # External
-from prop import AbstractPromise
+from prop.abstract import Promise
 
 # Project
 from ..disposable import AnonymousDisposable
@@ -41,7 +41,7 @@ class FromIterable(Observable[K, AnonymousDisposable]):
         """Schedule iterator flush and register observer."""
 
         task_ref: T.Optional["ReferenceType[Task[None]]"] = None
-        observer_lastly: T.Optional[AbstractPromise[None]] = None
+        observer_lastly: T.Optional[Promise[None]] = None
 
         def stop() -> None:
             task: T.Optional[Task[None]] = None if task_ref is None else task_ref()
