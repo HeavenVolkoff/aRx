@@ -4,9 +4,6 @@ __all__ = ("Unit",)
 import typing as T
 from asyncio import isfuture, ensure_future
 
-# External
-from async_tools.abstract.loopable import Loopable
-
 # Project
 from ..misc.namespace import Namespace, get_namespace
 from ..abstract.observer import Observer
@@ -17,7 +14,7 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 K = T.TypeVar("K")
 
 
-class Unit(Observable[K, AnonymousDisposable], Loopable):
+class Unit(Observable[K, AnonymousDisposable]):
     """Observable that outputs a single value then closes."""
 
     @staticmethod

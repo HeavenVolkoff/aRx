@@ -3,20 +3,18 @@ import typing as T
 from abc import ABCMeta, abstractmethod
 
 # External
-from async_tools.abstract.basic_repr import BasicRepr
+from async_tools.abstract import BasicRepr, AsyncContextManager
 
 # Project
 from .observer import Observer
 from ..disposable import CompositeDisposable
-from ..misc.async_context_manager import AsyncContextManager
 
 __all__ = ("Observable", "observe")
 
 
 # Generic Types
-J = T.TypeVar("J", bound=AsyncContextManager)
 K = T.TypeVar("K")
-L = T.TypeVar("L", covariant=True)
+L = T.TypeVar("L", bound=AsyncContextManager)
 M = T.TypeVar("M")
 N = T.TypeVar("N", bound=AsyncContextManager)
 
@@ -39,7 +37,7 @@ class Observable(BasicRepr, T.Generic[K, L], metaclass=ABCMeta):
         super().__init__(**kwargs)  # type: ignore
 
     def __or__(
-        self, other: T.Callable[["Observable[K, J]"], "Observable[M, N]"]
+        self, other: T.Callable[["Observable[K, L]"], "Observable[M, N]"]
     ) -> "Observable[M, N]":
         return other(self)
 
@@ -79,7 +77,7 @@ class Observable(BasicRepr, T.Generic[K, L], metaclass=ABCMeta):
         raise NotImplemented()
 
 
-def observe(observable: Observable[K, J], observer: Observer[K, T.Any]) -> J:
+def observe(observable: Observable[K, L], observer: Observer[K, T.Any]) -> L:
     """External access to observable magic method.
 
     See also: :meth:`~.Observable.__observe__`

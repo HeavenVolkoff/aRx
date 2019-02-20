@@ -9,7 +9,7 @@ from contextlib import suppress
 from collections.abc import AsyncGenerator
 
 # External
-from prop import AbstractPromise
+from prop.abstract import Promise
 
 # Project
 from ..disposable import AnonymousDisposable
@@ -42,7 +42,7 @@ class FromAsyncIterable(Observable[K, AnonymousDisposable]):
         """Schedule async iterator flush and register observer."""
 
         task_ref: T.Optional["ReferenceType[Task[None]]"] = None
-        observer_lastly: T.Optional[AbstractPromise[None]] = None
+        observer_lastly: T.Optional[Promise[None]] = None
 
         def stop() -> None:
             task: T.Optional[Task[None]] = None if task_ref is None else task_ref()

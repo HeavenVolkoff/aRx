@@ -3,8 +3,11 @@ __all__ = ("AnonymousObserver",)
 
 # Internal
 import typing as T
-from asyncio import AbstractEventLoop, InvalidStateError, iscoroutinefunction
+from asyncio import AbstractEventLoop, InvalidStateError
 from contextlib import suppress
+
+# External
+from async_tools import attempt_await
 
 # Project
 from ..misc.namespace import Namespace
@@ -54,11 +57,10 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
         asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
         araise: T.Optional[
             T.Callable[
-                [Exception, Namespace],
-                T.Union[T.Optional[bool], T.Coroutine[T.Any, T.Any, T.Optional[bool]]],
+                [Exception, Namespace], T.Union[T.Optional[bool], T.Awaitable[T.Optional[bool]]]
             ]
         ] = None,
-        aclose: T.Optional[T.Callable[[], T.Union[J, T.Coroutine[T.Any, T.Any, J]]]] = None,
+        aclose: T.Optional[T.Callable[[], T.Union[J, T.Awaitable[J]]]] = None,
         **kwargs: T.Any,
     ) -> None:
         """AnonymousObserver Constructor.
@@ -79,33 +81,16 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
     async def __asend__(self, value: K, namespace: Namespace) -> None:
         res = self._send(value, namespace)
 
-        if iscoroutinefunction(self._send):
-            # Remove reference early to avoid keeping large objects in memory
-            del value
+        # Remove reference early to avoid keeping large objects in memory
+        del value
 
-            assert isinstance(res, T.Coroutine)
-
-            await res
+        await attempt_await(res, loop=self.loop)
 
     async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
-        res = self._raise(exc, namespace)
-
-        if iscoroutinefunction(self._raise):
-            assert isinstance(res, T.Coroutine)
-            res = await res
-
-        assert not isinstance(res, T.Coroutine)
-
-        return bool(res)
+        return bool(await attempt_await(self._raise(exc, namespace), loop=self.loop))
 
     async def __aclose__(self) -> None:
-        res = self._close()
-
-        if iscoroutinefunction(self._close):
-            assert isinstance(res, T.Coroutine)
-            res = await res
-
-        assert not isinstance(res, T.Coroutine)
+        res = await attempt_await(self._close(), loop=self.loop)
 
         with suppress(InvalidStateError):
             self.resolve(res)
