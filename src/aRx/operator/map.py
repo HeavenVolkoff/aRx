@@ -1,9 +1,9 @@
-__all__ = ("Map", "map_op")
-
 # Internal
 import typing as T
-from asyncio import iscoroutinefunction
 from functools import partial
+
+# External
+from async_tools import attempt_await
 
 # Project
 from ..disposable import CompositeDisposable
@@ -12,11 +12,14 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
-from ..misc.async_context_manager import AsyncContextManager
+
+__all__ = ("Map", "map_op")
+
 
 # Generic Types
 J = T.TypeVar("J")
 K = T.TypeVar("K")
+L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 
 
 class _MapSink(T.Generic[J, K], SingleStream[K]):
@@ -30,17 +33,13 @@ class _MapSink(T.Generic[J, K], SingleStream[K]):
         index = self._index
         self._index += 1
 
-        result = self._mapper(value, index)
+        result = attempt_await(self._mapper(value, index), self.loop)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        if iscoroutinefunction(self._mapper):
-            result = await T.cast(T.Awaitable[K], result)
+        awaitable = super().__asend__(await result, namespace)
 
-        awaitable = super().__asend__(result, namespace)
-
-        # Remove reference early to avoid keeping large objects in memory
         del result
 
         await awaitable
@@ -50,10 +49,7 @@ class Map(T.Generic[J, K], Observable[K, CompositeDisposable]):
     """Observable that outputs transmuted data from an observable source."""
 
     def __init__(
-        self,
-        mapper: T.Callable[[J, int], K],
-        source: Observable[J, AsyncContextManager],
-        **kwargs: T.Any,
+        self, mapper: T.Callable[[J, int], K], source: Observable[J, L], **kwargs: T.Any
     ) -> None:
         """Map constructor.
 
@@ -71,18 +67,16 @@ class Map(T.Generic[J, K], Observable[K, CompositeDisposable]):
     def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
         sink: _MapSink[J, K] = _MapSink(self._mapper, loop=observer.loop)
         with dispose_sink(sink):
-            return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
+            return CompositeDisposable(
+                observe(self._source, T.cast(SingleStream[J], sink)), observe(sink, observer)
+            )
 
 
-def map_op(
-    mapper: T.Callable[[J, int], K]
-) -> T.Callable[[Observable[J, AsyncContextManager]], Map[J, K]]:
+def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[J, L]], Map[J, K]]:
     """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:
         Partial implementation of Map
 
     """
-    return T.cast(
-        T.Callable[[Observable[J, AsyncContextManager]], Map[J, K]], partial(Map, mapper)
-    )
+    return T.cast(T.Callable[[Observable[J, L]], Map[J, K]], partial(Map, mapper))

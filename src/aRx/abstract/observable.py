@@ -2,24 +2,18 @@
 import typing as T
 from abc import ABCMeta, abstractmethod
 
-# External
-from async_tools.abstract import BasicRepr, AsyncContextManager
-
 # Project
 from .observer import Observer
-from ..disposable import CompositeDisposable
-
-__all__ = ("Observable", "observe")
-
 
 # Generic Types
 K = T.TypeVar("K")
-L = T.TypeVar("L", bound=AsyncContextManager)
+L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 M = T.TypeVar("M")
-N = T.TypeVar("N", bound=AsyncContextManager)
+N = T.TypeVar("N", bound=T.AsyncContextManager[T.Any])
+O = T.TypeVar("O", bound=T.AsyncContextManager[T.Any])
 
 
-class Observable(BasicRepr, T.Generic[K, L], metaclass=ABCMeta):
+class Observable(T.Generic[K, L], metaclass=ABCMeta):
     """Observable abstract class.
 
     An observable is a data generator to which observers can subscribe.
@@ -44,16 +38,12 @@ class Observable(BasicRepr, T.Generic[K, L], metaclass=ABCMeta):
     def __gt__(self, observer: Observer[K, T.Any]) -> L:
         return observe(self, observer)
 
-    def __add__(
-        self, other: "Observable[M, N]"
-    ) -> "Observable[T.Union[K, M], CompositeDisposable]":
+    def __add__(self, other: "Observable[M, N]") -> "Observable[T.Union[K, M], O]":
         from ..operator import Concat
 
         return Concat(self, other)
 
-    def __iadd__(
-        self, other: "Observable[M, N]"
-    ) -> "Observable[T.Union[K, M], CompositeDisposable]":
+    def __iadd__(self, other: "Observable[M, N]") -> "Observable[T.Union[K, M], O]":
         from ..operator import Concat
 
         return Concat(self, other)
@@ -95,3 +85,6 @@ def observe(observable: Observable[K, L], observer: Observer[K, T.Any]) -> L:
         raise ObserverClosedError(observer)
 
     return observable.__observe__(observer)
+
+
+__all__ = ("Observable", "observe")

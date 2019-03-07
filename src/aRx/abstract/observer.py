@@ -3,26 +3,29 @@ __all__ = ("Observer",)
 
 # Internal
 import typing as T
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from asyncio import Future, CancelledError, InvalidStateError
 from contextlib import contextmanager
 
 # External
 from prop import ChainPromise
+from async_tools.abstract import AsyncABCMeta
 
 # Project
 from ..error import ObserverClosedError
 from ..misc.namespace import Namespace, get_namespace
-from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
 J = T.TypeVar("J")
 
-Observer_t = T.TypeVar("Observer_t", bound="Observer[T.Any, T.Any]")
 
-
-class Observer(T.Generic[K, J], ChainPromise[J], AsyncContextManager, metaclass=ABCMeta):
+class Observer(
+    T.Generic[K, J],
+    ChainPromise[J],
+    T.AsyncContextManager["Observer[K, J]"],
+    metaclass=AsyncABCMeta,
+):
     """Observer abstract class.
 
     An observer represents a data sink, where data can be sent to and
