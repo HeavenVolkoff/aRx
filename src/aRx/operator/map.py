@@ -23,7 +23,15 @@ L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 
 
 class _MapSink(T.Generic[J, K], SingleStream[K]):
+    @T.overload
+    def __init__(self, mapper: T.Callable[[J, int], T.Awaitable[K]], **kwargs: T.Any) -> None:
+        ...
+
+    @T.overload
     def __init__(self, mapper: T.Callable[[J, int], K], **kwargs: T.Any) -> None:
+        ...
+
+    def __init__(self, mapper: T.Callable[[J, int], T.Any], **kwargs: T.Any) -> None:
         super().__init__(**kwargs)
 
         self._index = 0
@@ -48,8 +56,23 @@ class _MapSink(T.Generic[J, K], SingleStream[K]):
 class Map(T.Generic[J, K], Observable[K, CompositeDisposable]):
     """Observable that outputs transmuted data from an observable source."""
 
+    @T.overload
+    def __init__(
+        self,
+        mapper: T.Callable[[J, int], T.Awaitable[K]],
+        source: Observable[J, L],
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    @T.overload
     def __init__(
         self, mapper: T.Callable[[J, int], K], source: Observable[J, L], **kwargs: T.Any
+    ) -> None:
+        ...
+
+    def __init__(
+        self, mapper: T.Callable[[J, int], T.Any], source: Observable[J, L], **kwargs: T.Any
     ) -> None:
         """Map constructor.
 
@@ -72,7 +95,19 @@ class Map(T.Generic[J, K], Observable[K, CompositeDisposable]):
             )
 
 
+@T.overload
+def map_op(
+    mapper: T.Callable[[J, int], T.Awaitable[K]]
+) -> T.Callable[[Observable[J, L]], Map[J, K]]:
+    ...
+
+
+@T.overload
 def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[J, L]], Map[J, K]]:
+    ...
+
+
+def map_op(mapper: T.Callable[[J, int], T.Any]) -> T.Callable[[Observable[J, L]], Map[J, T.Any]]:
     """Partial implementation of :class:`~.Map` to be used with operator semantics.
 
     Returns:
