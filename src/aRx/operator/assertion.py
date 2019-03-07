@@ -13,10 +13,10 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
-from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
+L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 
 
 class _AssertSink(SingleStream[K]):
@@ -55,7 +55,7 @@ class Assert(Observable[K, CompositeDisposable]):
         self,
         predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]],
         exc: Exception,
-        source: Observable[K, AsyncContextManager],
+        source: Observable[K, L],
         **kwargs: T.Any,
     ) -> None:
         """Filter constructor.
@@ -78,16 +78,27 @@ class Assert(Observable[K, CompositeDisposable]):
             return CompositeDisposable(observe(self._source, sink), observe(sink, observer))
 
 
+@T.overload
 def assert_op(
-    predicate: T.Callable[[K], T.Union[T.Awaitable[bool], bool]], exc: Exception
-) -> T.Callable[[Observable[K, AsyncContextManager]], Assert[K]]:
+    predicate: T.Callable[[K], T.Awaitable[bool]], exc: Exception
+) -> T.Callable[[Observable[K, L]], Assert[K]]:
+    ...
+
+
+@T.overload
+def assert_op(
+    predicate: T.Callable[[K], bool], exc: Exception
+) -> T.Callable[[Observable[K, L]], Assert[K]]:
+    ...
+
+
+def assert_op(
+    predicate: T.Callable[[K], T.Any], exc: Exception
+) -> T.Callable[[Observable[K, L]], Assert[K]]:
     """Partial implementation of :class:`~.Filter` to be used with operator semantics.
 
     Returns:
         Return partial implementation of Filter
 
     """
-    return T.cast(
-        T.Callable[[Observable[K, AsyncContextManager]], Assert[K]],
-        partial(Assert, predicate, exc),
-    )
+    return T.cast(T.Callable[[Observable[K, L]], Assert[K]], partial(Assert, predicate, exc))

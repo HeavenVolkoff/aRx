@@ -1,5 +1,3 @@
-__all__ = ("Max", "max_op")
-
 # Internal
 import typing as T
 from abc import ABCMeta, abstractmethod
@@ -11,7 +9,6 @@ from ..abstract.observer import Observer
 from ..misc.dispose_sink import dispose_sink
 from ..abstract.observable import Observable, observe
 from ..stream.single_stream import SingleStream
-from ..misc.async_context_manager import AsyncContextManager
 
 
 class Comparable(metaclass=ABCMeta):
@@ -22,28 +19,29 @@ class Comparable(metaclass=ABCMeta):
 
 # Generic Types
 K = T.TypeVar("K", bound=Comparable)
-
-_NOT_PROVIDED = object()
+L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 
 
 class _MaxSink(SingleStream[K]):
+    _NOT_PROVIDED = object()
+
     def __init__(self, **kwargs: T.Any) -> None:
         super().__init__(**kwargs)
-        self._max: K = T.cast(K, _NOT_PROVIDED)
+        self._max: K = T.cast(K, self._NOT_PROVIDED)
         self._namespace: T.Optional[Namespace] = None
 
     async def __asend__(self, value: K, namespace: Namespace) -> None:
-        if self._max == _NOT_PROVIDED or value > self._max:
+        if self._max == self._NOT_PROVIDED or value > self._max:
             self._max = value
             self._namespace = namespace
 
     async def __aclose__(self) -> None:
-        if self._max != _NOT_PROVIDED:
+        if self._max != self._NOT_PROVIDED:
             assert self._namespace is not None
 
             awaitable = super().__asend__(self._max, self._namespace)
 
-            self._max = T.cast(K, _NOT_PROVIDED)
+            self._max = T.cast(K, self._NOT_PROVIDED)
             self._namespace = None
 
             await awaitable
@@ -63,7 +61,7 @@ class Max(Observable[K, CompositeDisposable]):
         This observable only outputs data after source observable has closed.
     """
 
-    def __init__(self, source: Observable[K, AsyncContextManager], **kwargs: T.Any) -> None:
+    def __init__(self, source: Observable[K, L], **kwargs: T.Any) -> None:
         """Max constructor.
 
         Arguments:
@@ -87,3 +85,6 @@ def max_op() -> T.Type[Max[K]]:
 
     """
     return Max
+
+
+__all__ = ("Max", "max_op")
