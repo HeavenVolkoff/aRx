@@ -7,10 +7,10 @@ import typing as T
 from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable, observe
-from ..misc.async_context_manager import AsyncContextManager
 
 # Generic Types
 K = T.TypeVar("K")
+L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 
 
 class Consumer(Observer[K, K]):
@@ -24,7 +24,7 @@ class Consumer(Observer[K, K]):
         pass
 
 
-async def consume(observable: Observable[K, AsyncContextManager]) -> K:
+async def consume(observable: Observable[K, L]) -> K:
     """Consume an :class:`~.Observable` as a Promise.
 
     Arguments:

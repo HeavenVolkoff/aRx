@@ -52,15 +52,55 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
     listening to a source.
     """
 
+    @T.overload
     def __init__(
         self,
         asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
         araise: T.Optional[
-            T.Callable[
-                [Exception, Namespace], T.Union[T.Optional[bool], T.Awaitable[T.Optional[bool]]]
-            ]
+            T.Callable[[Exception, Namespace], T.Awaitable[T.Optional[bool]]]
         ] = None,
-        aclose: T.Optional[T.Callable[[], T.Union[J, T.Awaitable[J]]]] = None,
+        aclose: T.Optional[T.Callable[[], T.Awaitable[J]]] = None,
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    @T.overload
+    def __init__(
+        self,
+        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
+        araise: T.Optional[
+            T.Callable[[Exception, Namespace], T.Awaitable[T.Optional[bool]]]
+        ] = None,
+        aclose: T.Optional[T.Callable[[], J]] = None,
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    @T.overload
+    def __init__(
+        self,
+        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
+        araise: T.Optional[T.Callable[[Exception, Namespace], T.Optional[bool]]] = None,
+        aclose: T.Optional[T.Callable[[], T.Awaitable[J]]] = None,
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    @T.overload
+    def __init__(
+        self,
+        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
+        araise: T.Optional[T.Callable[[Exception, Namespace], T.Optional[bool]]] = None,
+        aclose: T.Optional[T.Callable[[], J]] = None,
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    def __init__(
+        self,
+        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
+        araise: T.Optional[T.Callable[[Exception, Namespace], T.Any]] = None,
+        aclose: T.Optional[T.Callable[[], T.Any]] = None,
         **kwargs: T.Any,
     ) -> None:
         """AnonymousObserver Constructor.

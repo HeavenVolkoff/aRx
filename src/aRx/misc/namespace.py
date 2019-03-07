@@ -4,6 +4,8 @@ __all__ = ("Namespace", "get_namespace")
 import typing as T
 from weakref import WeakValueDictionary
 
+ref_map = WeakValueDictionary()  # type: WeakValueDictionary[int, object]
+
 
 class Namespace(T.NamedTuple):
     type: str
@@ -16,6 +18,7 @@ class Namespace(T.NamedTuple):
 
         Returns:
             Unique identifier for namespace
+
         """
         return id(self)
 
@@ -25,6 +28,7 @@ class Namespace(T.NamedTuple):
 
         Returns:
             Reference to the object.
+
         """
         return ref_map.get(self.id, None)
 
@@ -34,6 +38,7 @@ class Namespace(T.NamedTuple):
 
         Returns:
             Whether this namespace is this chain root.
+
         """
         return self.previous is None
 
@@ -42,6 +47,7 @@ class Namespace(T.NamedTuple):
 
         Returns:
             First namespace match
+
         """
         namespace: T.Optional[Namespace] = self
 
@@ -71,9 +77,6 @@ class Namespace(T.NamedTuple):
         return self.search(item) is not None
 
 
-ref_map: "WeakValueDictionary[int, object]" = WeakValueDictionary()
-
-
 def get_namespace(obj: object, action: str, previous: T.Optional[Namespace] = None) -> Namespace:
     """Generate namespace for given namespace.
 
@@ -84,6 +87,7 @@ def get_namespace(obj: object, action: str, previous: T.Optional[Namespace] = No
 
     Returns:
         Namespace.
+
     """
     namespace = Namespace(type=type(obj).__qualname__, action=action, previous=previous)
 

@@ -4,15 +4,12 @@ __all__ = ("AnonymousDisposable",)
 import typing as T
 from asyncio import iscoroutine
 
-# Project
-from ..misc.async_context_manager import AsyncContextManager
-
 
 def default_dispose() -> None:
     return
 
 
-class AnonymousDisposable(AsyncContextManager):
+class AnonymousDisposable(T.AsyncContextManager["AnonymousDisposable"]):
     """An anonymous Disposable.
 
     Disposable where the custom close logic implementation is provided by a

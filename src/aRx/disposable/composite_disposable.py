@@ -5,26 +5,18 @@ __all__ = ("CompositeDisposable",)
 import typing as T
 
 # External
+from async_tools import iscoroutinefunction
 from async_tools.operator import aexit
 
-# Project
-from ..misc.async_context_manager import AsyncContextManager
 
-
-class CompositeDisposable(AsyncContextManager):
+class CompositeDisposable(T.AsyncContextManager["CompositeDisposable"]):
     """A disposable that is a composition of various disposable."""
 
     @staticmethod
-    def _validate_mapper(disposable: AsyncContextManager) -> bool:
-        return isinstance(disposable, AsyncContextManager)
+    def _validate_mapper(disposable: object) -> bool:
+        return iscoroutinefunction(getattr(disposable, "__aexit__", None))
 
-    def __init__(
-        self,
-        first: AsyncContextManager,
-        second: AsyncContextManager,
-        *rest: AsyncContextManager,
-        **kwargs: T.Any,
-    ) -> None:
+    def __init__(self, first: object, second: object, *rest: object, **kwargs: T.Any) -> None:
         """CompositeDisposable constructor.
 
         Arguments:
