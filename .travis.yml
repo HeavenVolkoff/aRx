@@ -1,8 +1,13 @@
+sudo: false
+dist: xenial
 language: python
+notifications:
+  email: false
 
 python:
     - "3.6"
     - "3.7"
+    - "3.8-dev"
 
 before_install:
     - pip --no-cache install -U pip setuptools
