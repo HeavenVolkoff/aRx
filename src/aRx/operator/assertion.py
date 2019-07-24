@@ -3,7 +3,7 @@ __all__ = ("Assert", "assert_op")
 
 # Internal
 import typing as T
-from asyncio import iscoroutinefunction
+from async_tools import is_coroutine_function
 from functools import partial
 
 # Project
@@ -34,7 +34,7 @@ class _AssertSink(SingleStream[K]):
     async def __asend__(self, value: K, namespace: Namespace) -> None:
         is_valid = self._predicate(value)
 
-        if iscoroutinefunction(self._predicate):
+        if is_coroutine_function(self._predicate):
             is_valid = await T.cast(T.Awaitable[bool], is_valid)
 
         if not is_valid:
