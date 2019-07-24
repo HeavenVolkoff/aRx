@@ -5,7 +5,7 @@ __all__ = ("CompositeDisposable",)
 import typing as T
 
 # External
-from async_tools import iscoroutinefunction
+from async_tools import is_coroutine_function
 from async_tools.operator import aexit
 
 
@@ -14,7 +14,7 @@ class CompositeDisposable(T.AsyncContextManager["CompositeDisposable"]):
 
     @staticmethod
     def _validate_mapper(disposable: object) -> bool:
-        return iscoroutinefunction(getattr(disposable, "__aexit__", None))
+        return is_coroutine_function(getattr(disposable, "__aexit__", None))
 
     def __init__(self, first: object, second: object, *rest: object, **kwargs: T.Any) -> None:
         """CompositeDisposable constructor.
