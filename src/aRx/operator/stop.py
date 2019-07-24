@@ -2,7 +2,7 @@ __all__ = ("Stop", "stop_op")
 
 # Internal
 import typing as T
-from asyncio import iscoroutinefunction
+from async_tools import is_coroutine_function
 from functools import partial
 
 # Project
@@ -32,7 +32,7 @@ class _StopSink(SingleStream[K]):
         self._index += 1
 
         must_stop = self._predicate(value, index)
-        if iscoroutinefunction(self._predicate):
+        if is_coroutine_function(self._predicate):
             must_stop = await T.cast(T.Awaitable[bool], must_stop)
 
         awaitable = T.cast(
