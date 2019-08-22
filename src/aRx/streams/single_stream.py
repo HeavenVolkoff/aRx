@@ -1,0 +1,112 @@
+# Internal
+import typing as T
+from abc import abstractmethod
+from asyncio import Future
+
+# External
+from async_tools.abstract import AsyncABCMeta
+
+# Project
+from ..error import SingleStreamError, ObserverClosedError
+from ..namespace import Namespace
+from ..observers import Observer
+from ..protocols import ObserverProtocol, TransformerProtocol
+from ..observables import Observable
+
+# Generic Types
+K = T.TypeVar("K")
+L = T.TypeVar("L")
+
+
+class SingleStreamBase(
+    TransformerProtocol[K, L], Observer[K], Observable[L], metaclass=AsyncABCMeta
+):
+    """Cold streams tightly coupled with a single observers.
+
+    .. Note::
+
+        The SingleStream is cold in the sense that it is tightly connected to it's only observers.
+        So that it will await until it is observed before redirecting any event, and all redirection
+        wait for the observers action to execute.
+    """
+
+    def __init__(self, **kwargs: T.Any) -> None:
+        """SingleStream constructor.
+
+        Arguments:
+            kwargs: Super classes named parameters.
+
+        """
+        super().__init__(**kwargs)
+
+        # Internal
+        self._lock: "Future[None]" = self._loop.create_future()
+        self._observer: T.Optional[ObserverProtocol[L]] = None
+
+    async def _asend_impl(self, value: L, namespace: Namespace) -> None:
+        # Wait for observers
+        await self._lock
+
+        # _observer must be available at this point
+        assert self._observer
+
+        try:
+            awaitable: T.Awaitable[T.Any] = self._observer.asend(value, namespace)
+        except ObserverClosedError:
+            awaitable = self.aclose()
+
+        # Remove reference early to avoid keeping large objects in memory
+        del value
+
+        await awaitable
+
+    async def _athrow_impl(self, exc: Exception, namespace: Namespace) -> bool:
+
+        # Wait for observers
+        await self._lock
+
+        # _observer must be available at this point
+        assert self._observer
+
+        try:
+            await self._observer.athrow(exc, namespace)
+        except ObserverClosedError:
+            await self.aclose()
+
+        # SingleStream doesn't close on raise
+        return False
+
+    async def _aclose(self) -> None:
+        # Cancel all awaiting event in the case we weren't subscribed
+        self._lock.cancel()
+        self._observer = None
+
+    async def __observe__(self, observer: ObserverProtocol[L]) -> None:
+        """Start streaming.
+
+        Raises:
+            SingleStreamMultipleError
+
+        """
+        if self._observer:
+            raise SingleStreamError("Can't assign multiple observers to a SingleStream")
+
+        # Set streams observers
+        self._observer = observer
+
+        # Release any awaiting event
+        self._lock.set_result(None)
+
+    async def __dispose__(self, observer: ObserverProtocol[L]) -> None:
+        await self.aclose()
+
+
+class SingleStream(SingleStreamBase[K, K]):
+    async def _asend(self, value: K, namespace: Namespace) -> None:
+        return await self._asend_impl(value, namespace)
+
+    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
+        return await self._athrow_impl(exc, namespace)
+
+
+__all__ = ("SingleStreamBase", "SingleStream")

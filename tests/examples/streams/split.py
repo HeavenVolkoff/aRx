@@ -1,4 +1,4 @@
-"""Example to show how to split a stream into two substreams."""
+"""Example to show how to split a streams into two substreams."""
 # Internal
 import asyncio
 

@@ -4,11 +4,11 @@ import unittest
 # External
 import asynctest
 from aRx.stream import MultiStream
-from aRx.observer import AnonymousObserver
-from aRx.operator import map_op, assert_op, filter_op
-from aRx.observable import observe
+from aRx.observers import AnonymousObserver
+from aRx.operators import map_op, assert_op, filter_op
+from aRx.observables import observe
 from async_tools.operator import aexit
-from aRx.abstract.namespace import Namespace
+from aRx.namespace import Namespace
 
 
 # noinspection PyAttributeOutsideInit
@@ -121,7 +121,7 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
         exc = Exception("Test")
 
         async def send_data():
-            await stream.araise(exc)
+            await stream.athrow(exc)
             await aexit(observation)
 
         async with MultiStream(loop=self.loop) as stream, AnonymousObserver(
@@ -140,7 +140,7 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
         async def send_data():
             await stream.asend("test")
             await stream.asend(10)
-            await stream.araise(Exception("Test"))
+            await stream.athrow(Exception("Test"))
             await stream.asend(1.000)
             await aexit(observation)
 

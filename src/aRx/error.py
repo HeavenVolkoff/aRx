@@ -15,19 +15,19 @@ class ARxWarning(UserWarning):
 
 
 class ObserverError(ARxError):
-    """aRx error exclusive to :class:`~aRx.abstract.observer.Observer`."""
+    """aRx error exclusive to :class:`~aRx.abstract.observers.Observer`."""
 
     pass
 
 
 class ObserverClosedError(ObserverError):
-    """aRx error for when :class:`~aRx.abstract.observer.Observer` is used when closed."""
+    """aRx error for when :class:`~aRx.abstract.observers.Observer` is used when closed."""
 
     def __init__(self, instance: object) -> None:
         """ObserverClosedError constructor.
 
         Arguments:
-            instance: :class:`~aRx.abstract.observer.Observer` instance.
+            instance: :class:`~aRx.abstract.observers.Observer` instance.
 
         """
         super().__init__(f"{type(instance).__qualname__} is closed")
@@ -49,13 +49,13 @@ class ObserverClosedWarning(ARxWarning):
 
 
 class SingleStreamError(ARxError):
-    """aRx error exclusive to :class:`~aRx.stream.single_stream.SingleStream`."""
+    """aRx error exclusive to :class:`~aRx.streams.single_stream.SingleStream`."""
 
     pass
 
 
 class MultiStreamError(ARxError):
-    """aRx error exclusive to :class:`~aRx.stream.multi_stream.MultiStream`."""
+    """aRx error exclusive to :class:`~aRx.streams.multi_stream.MultiStream`."""
 
     pass
 
