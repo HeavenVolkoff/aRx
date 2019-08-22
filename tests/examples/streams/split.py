@@ -1,6 +1,8 @@
 """Example to show how to split a stream into two substreams."""
+# Internal
 import asyncio
 
+# External
 from aioreactive.core import Operators as op, AsyncObservable, AsyncAnonymousObserver, subscribe
 
 

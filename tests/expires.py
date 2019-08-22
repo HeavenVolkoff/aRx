@@ -1,6 +1,8 @@
+# Internal
 from asyncio import TimeoutError, sleep, gather, get_event_loop
 from contextlib import suppress
 
+# External
 from aRx.expires import expires
 
 

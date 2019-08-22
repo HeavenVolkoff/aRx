@@ -1,2 +1,4 @@
 --strict
---package=foundation
+--implicit-reexport
+--python-executable=./.venv/bin/python
+--package=aRx

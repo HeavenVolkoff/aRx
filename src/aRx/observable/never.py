@@ -9,9 +9,9 @@ from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 
 
-class Never(Observable[None, AnonymousDisposable]):
+class Never(Observable[None]):
     """Observable that never outputs data, but stays open."""
 
-    def __observe__(self, _: Observer[T.Any, T.Any]) -> AnonymousDisposable:
+    def __observe__(self, _: Observer[T.Any], keep_alive: bool) -> AnonymousDisposable:
         """Do nothing."""
         return AnonymousDisposable()

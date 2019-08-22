@@ -3,12 +3,14 @@ __all__ = ("Namespace", "get_namespace")
 # Internal
 import typing as T
 from weakref import WeakValueDictionary
+from dataclasses import dataclass
 
-ref_map = WeakValueDictionary()  # type: WeakValueDictionary[int, object]
+ref_map: T.MutableMapping[int, object] = WeakValueDictionary()
 
 
-class Namespace(T.NamedTuple):
-    type: str
+@dataclass
+class Namespace:
+    type: T.Type[T.Any]
     action: str
     previous: T.Optional["Namespace"]
 
@@ -89,7 +91,7 @@ def get_namespace(obj: object, action: str, previous: T.Optional[Namespace] = No
         Namespace.
 
     """
-    namespace = Namespace(type=type(obj).__qualname__, action=action, previous=previous)
+    namespace = Namespace(type=type(obj), action=action, previous=previous)
 
     ref_map[namespace.id] = obj
 

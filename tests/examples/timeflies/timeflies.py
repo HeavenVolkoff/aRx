@@ -1,6 +1,8 @@
+# Internal
 import asyncio
 from tkinter import *
 
+# External
 from aioreactive.core import AsyncStream, AsyncAnonymousObserver, subscribe
 from aioreactive.operator.pipe import delay
 

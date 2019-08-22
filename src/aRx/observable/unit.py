@@ -4,8 +4,10 @@ __all__ = ("Unit",)
 import typing as T
 from asyncio import isfuture, ensure_future
 
+# External
+from aRx.abstract.namespace import Namespace, get_namespace
+
 # Project
-from ..misc.namespace import Namespace, get_namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 from ..disposable.anonymous_disposable import AnonymousDisposable
@@ -14,12 +16,12 @@ from ..disposable.anonymous_disposable import AnonymousDisposable
 K = T.TypeVar("K")
 
 
-class Unit(Observable[K, AnonymousDisposable]):
+class Unit(Observable[K]):
     """Observable that outputs a single value then closes."""
 
     @staticmethod
     async def _worker(
-        value: T.Union[K, T.Awaitable[K]], observer: Observer[K, T.Any], namespace: Namespace
+        value: T.Union[K, T.Awaitable[K]], observer: Observer[K], namespace: Namespace
     ) -> None:
         if isfuture(value):
             try:
@@ -51,8 +53,14 @@ class Unit(Observable[K, AnonymousDisposable]):
 
         self._namespace = get_namespace(self, "fixed")
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
+    def __observe__(self, observer: Observer[K], keep_alive: bool) -> AnonymousDisposable:
         # Add worker execution to loop queue
         task = observer.loop.create_task(Unit._worker(self._value, observer, self._namespace))
 
-        return AnonymousDisposable(task.cancel)
+        async def dispose() -> None:
+            task.cancel()
+
+            if not (observer.closed or keep_alive):
+                await observer.aclose()
+
+        return AnonymousDisposable(dispose)

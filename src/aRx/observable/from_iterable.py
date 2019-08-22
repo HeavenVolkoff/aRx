@@ -8,11 +8,10 @@ from weakref import ReferenceType
 from contextlib import suppress
 
 # External
-from prop.abstract import Promise
+from aRx.abstract.namespace import get_namespace
 
 # Project
 from ..disposable import AnonymousDisposable
-from ..misc.namespace import get_namespace
 from ..abstract.observer import Observer
 from ..abstract.observable import Observable
 
@@ -20,7 +19,7 @@ from ..abstract.observable import Observable
 K = T.TypeVar("K")
 
 
-class FromIterable(Observable[K, AnonymousDisposable]):
+class FromIterable(Observable[K]):
     """Observable that uses an iterable as data source."""
 
     def __init__(self, iterable: T.Iterable[K], **kwargs: T.Any) -> None:
@@ -37,35 +36,28 @@ class FromIterable(Observable[K, AnonymousDisposable]):
         self._iterator: T.Optional[T.Iterator[K]] = iter(iterable)
         self._namespace = get_namespace(self, "next")
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> AnonymousDisposable:
-        """Schedule iterator flush and register observer."""
+    # TODO: Make a base class to avoid code repetition
+    def __observe__(self, observer: Observer[K], keep_alive: bool) -> AnonymousDisposable:
+        """Schedule async iterator flush and register observer."""
 
-        task_ref: T.Optional["ReferenceType[Task[None]]"] = None
-        observer_lastly: T.Optional[Promise[None]] = None
+        if not self._iterator:
+            raise RuntimeError("Iterator is already closed")
 
-        def stop() -> None:
-            task: T.Optional[Task[None]] = None if task_ref is None else task_ref()
-            if task:
-                task.cancel()
-            if observer_lastly:
-                observer_lastly.cancel()
+        async def stop() -> None:
+            task.cancel()
 
-        if self._iterator:
-            task_ref = ReferenceType(
-                observer.loop.create_task(self._worker(self._iterator, observer))
-            )
+            # Close observer if necessary
+            if observer and not (observer.closed or keep_alive):
+                await observer.aclose()
 
-            # Cancel task when observer closes
-            observer_lastly = observer.lastly(stop)
+        task = observer.loop.create_task(self._worker(self._iterator, observer))
 
-            # Clear reference to prevent reiterations
-            self._iterator = None
-        elif not (observer.closed or observer.keep_alive):
-            observer.loop.create_task(observer.aclose())
+        # Clear reference to prevent reiterations
+        self._iterator = None
 
         return AnonymousDisposable(stop)
 
-    async def _worker(self, iterator: T.Iterator[K], observer: Observer[K, T.Any]) -> None:
+    async def _worker(self, iterator: T.Iterator[K], observer: Observer[K]) -> None:
         with suppress(CancelledError):
             try:
                 for data in iterator:

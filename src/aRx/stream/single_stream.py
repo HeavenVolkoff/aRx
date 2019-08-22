@@ -1,25 +1,18 @@
-__all__ = ("SingleStream",)
-
-
 # Internal
 import typing as T
-from asyncio import Future, InvalidStateError
-from contextlib import suppress
-
-# External
-from prop.abstract import Promise
+from abc import abstractmethod
+from asyncio import Future
 
 # Project
-from ..error import SingleStreamError
-from ..misc.namespace import Namespace
-from ..abstract.observer import Observer
-from ..abstract.observable import Observable
+from ..error import SingleStreamError, ObserverClosedError
+from ..abstract import Observer, Namespace, Transformer
 
 # Generic Types
 K = T.TypeVar("K")
+L = T.TypeVar("L")
 
 
-class SingleStream(Observer[K, None], Observable[K, "SingleStream[K]"]):
+class SingleStreamBase(Transformer[K, L]):
     """Cold stream tightly coupled with a single observer.
 
     .. Note::
@@ -40,43 +33,46 @@ class SingleStream(Observer[K, None], Observable[K, "SingleStream[K]"]):
 
         # Internal
         self._lock: "Future[None]" = self._loop.create_future()
-        self._observer: T.Optional[Observer[K, T.Any]] = None
-        self._observer_close_promise: T.Optional[Promise[bool]] = None
+        self._observer: T.Optional[Observer[L]] = None
+        self._observer_keep_alive = False
 
-    @property
-    def closed(self) -> bool:
-        """Property that indicates if this stream is closed or not."""
-        return bool(
-            super().closed
-            or (
-                # Also report closed when observer is closed
-                self._observer
-                and self._observer.closed
-            )
-        )
-
+    @abstractmethod
     async def __asend__(self, value: K, namespace: Namespace) -> None:
+        raise NotImplemented()
+
+    async def __asend_impl__(self, value: L, namespace: Namespace) -> None:
         # Wait for observer
         await self._lock
 
         # _observer must be available at this point
         assert self._observer
 
-        awaitable = self._observer.asend(value, namespace)
+        try:
+            awaitable: T.Awaitable[T.Any] = self._observer.asend(value, namespace)
+        except ObserverClosedError:
+            awaitable = self.aclose()
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
         await awaitable
 
+    @abstractmethod
     async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
+        raise NotImplemented()
+
+    async def __araise_impl__(self, exc: Exception, namespace: Namespace) -> bool:
+
         # Wait for observer
         await self._lock
 
         # _observer must be available at this point
         assert self._observer
 
-        await self._observer.araise(exc, namespace)
+        try:
+            await self._observer.araise(exc, namespace)
+        except ObserverClosedError:
+            await self.aclose()
 
         # SingleStream doesn't close on raise
         return False
@@ -85,26 +81,16 @@ class SingleStream(Observer[K, None], Observable[K, "SingleStream[K]"]):
         # Cancel all awaiting event in the case we weren't subscribed
         self._lock.cancel()
 
-        observer_close_promise = self._observer_close_promise
-        self._observer_close_promise = None
-
-        # Cancel observer close guard
-        if observer_close_promise:
-            observer_close_promise.cancel()
-
         observer = self._observer
         self._observer = None
 
-        try:
-            # Close observer if necessary
-            if observer and not (observer.closed or observer.keep_alive):
-                await observer.aclose()
-        finally:
-            # Resolve internal future
-            with suppress(InvalidStateError):
-                self.resolve(None)
+        # Close observer if necessary
+        if observer and not (observer.closed or self._observer_keep_alive):
+            await observer.aclose()
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> "SingleStream[K]":
+    def __observe__(
+        self, observer: Observer[L], *, keep_alive: bool = False
+    ) -> "SingleStreamBase[K, L]":
         """Start streaming.
 
         Raises:
@@ -116,11 +102,20 @@ class SingleStream(Observer[K, None], Observable[K, "SingleStream[K]"]):
 
         # Set stream observer
         self._observer = observer
-
-        # Close Stream when observer closes
-        self._observer_close_promise = observer.lastly(self.aclose)
+        self._observer_keep_alive = keep_alive
 
         # Release any awaiting event
         self._lock.set_result(None)
 
         return self
+
+
+class SingleStream(SingleStreamBase[K, K]):
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
+        return await self.__asend_impl__(value, namespace)
+
+    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
+        return await self.__araise_impl__(exc, namespace)
+
+
+__all__ = ("SingleStreamBase", "SingleStream")

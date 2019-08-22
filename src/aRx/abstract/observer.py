@@ -1,48 +1,42 @@
-__all__ = ("Observer",)
-
-
 # Internal
 import typing as T
 from abc import abstractmethod
-from asyncio import Future, CancelledError, InvalidStateError
+from asyncio import Future, CancelledError
+from warnings import warn
 from contextlib import contextmanager
 
 # External
-from prop import ChainPromise
-from async_tools.abstract import AsyncABCMeta
+from async_tools import Loopable
+from async_tools.abstract import BasicRepr, AsyncABCMeta
 
 # Project
-from ..error import ObserverClosedError
-from ..misc.namespace import Namespace, get_namespace
+from ..error import ObserverClosedError, ObserverClosedWarning
+from .namespace import Namespace, get_namespace
+
+__all__ = ("Observer",)
+
 
 # Generic Types
 K = T.TypeVar("K")
-J = T.TypeVar("J")
 
 
-class Observer(
-    T.Generic[K, J],
-    ChainPromise[J],
-    T.AsyncContextManager["Observer[K, J]"],
-    metaclass=AsyncABCMeta,
-):
+class Observer(T.Generic[K], BasicRepr, Loopable, metaclass=AsyncABCMeta):
     """Observer abstract class.
 
-    An observer represents a data sink, where data can be sent to and
+    An observer represents a data sink, where data can flow into and be
     transformed by it.
 
     Attributes:
-        keep_alive: Flag that indicates this observer should not be closed
-            externally.
+        keep_alive: Flag that indicates the default behaviour on whether or not the observer should
+                    be closed on observation disposition.
     """
 
-    __slots__ = ("keep_alive", "_close_guard", "_close_promise")
+    __slots__ = ("keep_alive", "_closed", "_propagation_count", "_propagation_guard")
 
     def __init__(self, *, keep_alive: bool = False, **kwargs: T.Any) -> None:
         """Observer constructor.
 
         Arguments:
-            keep_alive: :attr:`Observer.keep_alive`
             kwargs: keyword parameters for super.
 
         """
@@ -51,56 +45,62 @@ class Observer(
         self.keep_alive = keep_alive
 
         # Internal
+        self._closed = False
         self._close_guard = False
-        self._close_promise = self.lastly(self.aclose)
         self._propagation_count = 0
         self._propagation_guard: T.Optional["Future[None]"] = None
 
     @abstractmethod
     async def __asend__(self, value: K, namespace: Namespace) -> None:
-        """Processing of input data.
+        """Method responsible for handling the input data.
 
         Arguments:
-            value: Received data.
+            value: Input data.
             namespace: Namespace to identify propagation origin.
-
-        Raises:
-            NotImplemented
 
         """
         raise NotImplemented()
 
     @abstractmethod
     async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
-        """Processing of input exceptions.
+        """Method responsible for handling any exceptions.
 
         Arguments:
-            exc: Received exception.
+            exc: Exception.
             namespace: Namespace to identify propagation origin.
-
-        Raises:
-            NotImplemented
 
         """
         raise NotImplemented()
 
     @abstractmethod
     async def __aclose__(self) -> None:
-        """Actions to be taken during close.
-
-        Raises:
-            NotImplemented
-
-        """
+        """Method responsible for handling the logic necessary to close the observer."""
         raise NotImplemented()
 
+    async def __aenter__(self) -> "Observer[K]":
+        """Async context manager entrypoint.
+
+        Returns:
+            The observer object.
+
+        """
+        return self
+
     async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> bool:
-        """Close stream when disposed"""
+        """Async context manager exit.
+
+        Close observer when the context is disposed.
+
+        Returns:
+            False because there is no reason to capture any exception raise inside the context.
+
+        """
         await self.aclose()
         return False
 
     @contextmanager
     def _propagating(self) -> T.Generator[None, None, None]:
+        """Context manager to keep track of any ongoing asend or araise operation."""
         self._propagation_count += 1
 
         try:
@@ -113,7 +113,7 @@ class Observer(
     @property
     def closed(self) -> bool:
         """Property that indicates if this observer is closed or not."""
-        return self.done() or self._close_promise.done() or self._close_guard
+        return self._closed
 
     async def asend(self, data: K, namespace: T.Optional[Namespace] = None) -> None:
         """Interface through which data is inputted.
@@ -126,7 +126,7 @@ class Observer(
             ObserverClosedError: If observer is closed.
 
         """
-        if self.closed:
+        if self.closed or self._close_guard:
             raise ObserverClosedError(self)
 
         with self._propagating():
@@ -141,10 +141,9 @@ class Observer(
             except CancelledError:
                 raise  # Cancelled errors are not redirected
             except Exception as ex:
-                if not self.closed:
-                    await self.araise(ex, namespace)
-                else:
-                    raise RuntimeError(f"{self} closed with a pending Exception") from ex
+                # Any exception raised during the handling of the input data will be inputted to
+                # the observer for it to handle.
+                await self.araise(ex, namespace)
 
     async def araise(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
         """Interface through which exceptions are inputted.
@@ -160,8 +159,18 @@ class Observer(
             Boolean indicating if observer will close due to the exception.
 
         """
-        if self.closed:
-            raise ObserverClosedError(self)
+        if self.closed or self._close_guard:
+            if namespace and namespace.ref is self:
+                # Allow calls to araise event when observer is closed if it's originated from the
+                # observer's own asend.
+                warn(
+                    ObserverClosedWarning(
+                        f"{self}: Observer is closed but an exception was propagated from asend",
+                        main_exc,
+                    )
+                )
+            else:
+                raise ObserverClosedError(self)
 
         with self._propagating():
             awaitable = self.__araise__(main_exc, get_namespace(self, "araise", namespace))
@@ -169,20 +178,16 @@ class Observer(
             try:
                 should_close = await awaitable
             except CancelledError:
-                raise  # Cancelled errors are not redirected
-            except Exception as exc:
+                raise  # Cancelled errors are irreversible
+            except Exception:
+                # Closes stream on irrecoverable exceptions
                 should_close = True
-
-                # Added received exceptions to chain
-                exc.__cause__ = main_exc
-                main_exc = exc
-
-            # Closes stream on irrecoverable exceptions
-            if should_close:
-                try:
-                    self.reject(main_exc)
-                except InvalidStateError as exc:
-                    raise RuntimeError(f"{self} closed with a pending Exception") from exc
+                raise
+            finally:
+                # Close stream if araise requires
+                if should_close:
+                    self._close_guard = True
+                    self.loop.create_task(self.aclose())
 
     async def aclose(self) -> bool:
         """Close observer.
@@ -192,28 +197,18 @@ class Observer(
 
         """
         # Guard against repeated calls
-        if self._close_guard:
+        if self.closed:
             return False
 
         # This is necessary due to the uncertain timing of promise cancellation
-        self._close_guard = True
-
-        # Cancel close promise
-        self._close_promise.cancel(task=False)
+        self._closed = True
 
         # Wait remaining propagations
         if self._propagation_count > 0:
             self._propagation_guard = self.loop.create_future()
             await self._propagation_guard
 
-        # Internal close
-        try:
-            await self.__aclose__()
-        finally:
-            # Cancel in case we didn't get resolved
-            if self.cancel():
-                self.loop.call_exception_handler(
-                    {"message": f"{self}: Failed to finalized correctly and had to be cancelled"}
-                )
+        # Call internal close
+        await self.__aclose__()
 
         return True

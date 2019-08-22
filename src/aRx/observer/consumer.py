@@ -1,30 +1,48 @@
-__all__ = ("Consumer", "consume")
-
 # Internal
 import typing as T
+from asyncio import Future
+
+# External
+from aRx.abstract.namespace import Namespace
 
 # Project
-from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
-from ..abstract.observable import Observable, observe
+from ..operation.observe import observe
+from ..abstract.observable import Observable
 
 # Generic Types
 K = T.TypeVar("K")
-L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
 
 
-class Consumer(Observer[K, K]):
+class ConsumerExit(Exception):
+    pass
+
+
+class Consumer(Observer[K]):
+    def __init__(self, **kwargs: T.Any) -> None:
+        super().__init__(keep_alive=False, **kwargs)
+
+        self.result: "Future[K]" = self.loop.create_future()
+
     async def __asend__(self, value: K, _: Namespace) -> None:
-        self.resolve(value)
+        if self.result.done():
+            return
 
-    async def __araise__(self, _: Exception, __: Namespace) -> bool:
+        self.result.set_result(value)
+
+        # Use exception as shorthand for closing consumer
+        raise ConsumerExit
+
+    async def __araise__(self, exc: Exception, __: Namespace) -> bool:
+        if not self.result.done():
+            self.result.set_exception(exc)
         return True
 
     async def __aclose__(self) -> None:
-        pass
+        self.result.cancel()
 
 
-async def consume(observable: Observable[K, L]) -> K:
+async def consume(observable: Observable[K]) -> K:
     """Consume an :class:`~.Observable` as a Promise.
 
     Arguments:
@@ -36,4 +54,7 @@ async def consume(observable: Observable[K, L]) -> K:
     """
     consumer: Consumer[K] = Consumer()
     async with observe(observable, consumer):
-        return await consumer
+        return await consumer.result
+
+
+__all__ = ("consume",)

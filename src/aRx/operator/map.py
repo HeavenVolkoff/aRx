@@ -1,117 +1,98 @@
 # Internal
 import typing as T
-from functools import partial
+
+# External
+import typing_extensions as Te
 
 # External
 from async_tools import attempt_await
+from aRx.abstract.namespace import Namespace
 
 # Project
-from ..disposable import CompositeDisposable
-from ..misc.namespace import Namespace
-from ..abstract.observer import Observer
-from ..misc.dispose_sink import dispose_sink
-from ..abstract.observable import Observable, observe
-from ..stream.single_stream import SingleStream
-
-__all__ = ("Map", "map_op")
-
+from ..stream.single_stream import SingleStreamBase
 
 # Generic Types
-J = T.TypeVar("J")
 K = T.TypeVar("K")
-L = T.TypeVar("L", bound=T.AsyncContextManager[T.Any])
+L = T.TypeVar("L")
 
 
-class _MapSink(T.Generic[J, K], SingleStream[K]):
-    @T.overload
-    def __init__(self, mapper: T.Callable[[J, int], T.Awaitable[K]], **kwargs: T.Any) -> None:
-        ...
-
-    @T.overload
-    def __init__(self, mapper: T.Callable[[J, int], K], **kwargs: T.Any) -> None:
-        ...
-
-    def __init__(self, mapper: T.Callable[[J, int], T.Any], **kwargs: T.Any) -> None:
-        super().__init__(**kwargs)
-
-        self._index = 0
-        self._mapper = mapper
-
-    async def __asend__(self, value: J, namespace: Namespace) -> None:
-        index = self._index
-        self._index += 1
-
-        result = attempt_await(self._mapper(value, index), self.loop)
-
-        # Remove reference early to avoid keeping large objects in memory
-        del value
-
-        awaitable = super().__asend__(await result, namespace)
-
-        del result
-
-        await awaitable
-
-
-class Map(T.Generic[J, K], Observable[K, CompositeDisposable]):
-    """Observable that outputs transmuted data from an observable source."""
-
+class Map(SingleStreamBase[K, L]):
     @T.overload
     def __init__(
         self,
-        mapper: T.Callable[[J, int], T.Awaitable[K]],
-        source: Observable[J, L],
+        asend_mapper: T.Callable[[K], T.Union[L, T.Awaitable[L]]],
+        araise_mapper: T.Optional[
+            T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
+        ],
+        *,
+        with_index: Te.Literal[False],
         **kwargs: T.Any,
     ) -> None:
         ...
 
     @T.overload
     def __init__(
-        self, mapper: T.Callable[[J, int], K], source: Observable[J, L], **kwargs: T.Any
+        self,
+        asend_mapper: Te.Literal[None],
+        araise_mapper: T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]],
+        *,
+        with_index: Te.Literal[False],
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    @T.overload
+    def __init__(
+        self,
+        asend_mapper: T.Callable[[K, int], T.Union[L, T.Awaitable[L]]],
+        araise_mapper: T.Optional[
+            T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
+        ],
+        *,
+        with_index: Te.Literal[True],
+        **kwargs: T.Any,
     ) -> None:
         ...
 
     def __init__(
-        self, mapper: T.Callable[[J, int], T.Any], source: Observable[J, L], **kwargs: T.Any
+        self,
+        asend_mapper: T.Any = None,
+        araise_mapper: T.Any = None,
+        *,
+        with_index: bool = False,
+        **kwargs: T.Any,
     ) -> None:
-        """Map constructor.
-
-        Arguments:
-            mapper: Transmutation function.
-            source: Observable source.
-            kwargs: Keyword parameters for super.
-
-        """
         super().__init__(**kwargs)
 
-        self._mapper = mapper
-        self._source = source
+        assert asend_mapper or araise_mapper
 
-    def __observe__(self, observer: Observer[K, T.Any]) -> CompositeDisposable:
-        sink: _MapSink[J, K] = _MapSink(self._mapper, loop=observer.loop)
-        with dispose_sink(sink):
-            return CompositeDisposable(
-                observe(self._source, T.cast(SingleStream[J], sink)), observe(sink, observer)
-            )
+        self._index = 0 if with_index else None
+        self._asend_mapper = asend_mapper
+        self._araise_mapper = araise_mapper
+
+    async def __asend__(self, value: K, namespace: Namespace) -> None:
+        if self._index is None:
+            awaitable = self._asend_mapper(value)
+        else:
+            awaitable = self._asend_mapper(value, self._index)
+            self._index += 1
+
+        result = attempt_await(awaitable)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del value
+
+        awaitable = super().__asend_impl__(await result, namespace)
+
+        # Remove reference early to avoid keeping large objects in memory
+        del result
+
+        await awaitable
+
+    async def __araise__(self, exc: Exception, namespace: Namespace) -> bool:
+        return await super().__araise_impl__(
+            await attempt_await(self._araise_mapper(exc)), namespace
+        )
 
 
-@T.overload
-def map_op(
-    mapper: T.Callable[[J, int], T.Awaitable[K]]
-) -> T.Callable[[Observable[J, L]], Map[J, K]]:
-    ...
-
-
-@T.overload
-def map_op(mapper: T.Callable[[J, int], K]) -> T.Callable[[Observable[J, L]], Map[J, K]]:
-    ...
-
-
-def map_op(mapper: T.Callable[[J, int], T.Any]) -> T.Callable[[Observable[J, L]], Map[J, T.Any]]:
-    """Partial implementation of :class:`~.Map` to be used with operator semantics.
-
-    Returns:
-        Partial implementation of Map
-
-    """
-    return T.cast(T.Callable[[Observable[J, L]], Map[J, K]], partial(Map, mapper))
+__all__ = ("Map",)

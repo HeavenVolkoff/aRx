@@ -3,20 +3,21 @@ __all__ = ("IteratorObserver",)
 
 # Internal
 import typing as T
-from uuid import UUID
 from asyncio import Future, InvalidStateError
 from contextlib import suppress
 from collections import deque
 
+# External
+from aRx.abstract.namespace import Namespace
+
 # Project
-from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 
 # Generic Types
 K = T.TypeVar("K")
 
 
-class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
+class IteratorObserver(Observer[K], T.AsyncIterator[K]):
     """An async observer that can be iterated asynchronously."""
 
     def __init__(self, **kwargs: T.Any) -> None:
@@ -56,8 +57,7 @@ class IteratorObserver(Observer[K, int], T.AsyncIterator[K]):
         return True
 
     async def __aclose__(self) -> None:
-        with suppress(InvalidStateError):
-            self.resolve(self._counter)
+        pass
 
     async def __anext__(self) -> K:
         while not self._queue:

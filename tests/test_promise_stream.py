@@ -2,15 +2,13 @@
 import unittest
 
 # External
+import asynctest
 from aRx.stream import MultiStream
 from aRx.observer import AnonymousObserver
 from aRx.operator import map_op, assert_op, filter_op
 from aRx.observable import observe
-from aRx.misc.namespace import Namespace
-
-# External
-import asynctest
 from async_tools.operator import aexit
+from aRx.abstract.namespace import Namespace
 
 
 # noinspection PyAttributeOutsideInit

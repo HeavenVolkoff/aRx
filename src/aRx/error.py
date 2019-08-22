@@ -1,13 +1,14 @@
-__all__ = (
-    "ARxError",
-    "ObserverError",
-    "ObserverClosedError",
-    "SingleStreamError",
-    "MultiStreamError",
-)
+# Internal
+import traceback
 
 
 class ARxError(Exception):
+    """aRx base error class."""
+
+    pass
+
+
+class ARxWarning(UserWarning):
     """aRx base error class."""
 
     pass
@@ -34,6 +35,19 @@ class ObserverClosedError(ObserverError):
     pass
 
 
+class ObserverClosedWarning(ARxWarning):
+    def __init__(self, msg: str, exc: Exception):
+        super().__init__(msg)
+        self.exc = exc
+
+    def __str__(self) -> str:
+        return (
+            super().__str__()
+            + "\n"
+            + "".join(traceback.format_exception(None, self.exc, self.exc.__traceback__))
+        )
+
+
 class SingleStreamError(ARxError):
     """aRx error exclusive to :class:`~aRx.stream.single_stream.SingleStream`."""
 
@@ -44,3 +58,14 @@ class MultiStreamError(ARxError):
     """aRx error exclusive to :class:`~aRx.stream.multi_stream.MultiStream`."""
 
     pass
+
+
+__all__ = (
+    "ARxError",
+    "ARxWarning",
+    "ObserverError",
+    "ObserverClosedError",
+    "ObserverClosedWarning",
+    "SingleStreamError",
+    "MultiStreamError",
+)

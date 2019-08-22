@@ -1,8 +1,10 @@
-__all__ = ("AnonymousDisposable",)
-
 # Internal
 import typing as T
-from asyncio import iscoroutine
+
+# External
+from async_tools import attempt_await
+
+__all__ = ("AnonymousDisposable",)
 
 
 def default_dispose() -> None:
@@ -39,10 +41,8 @@ class AnonymousDisposable(T.AsyncContextManager["AnonymousDisposable"]):
 
     async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> T.Optional[bool]:
         """Call anonymous function on dispose."""
-        dispose = self._adispose()
 
-        if iscoroutine(dispose):
-            await T.cast(T.Coroutine[T.Any, T.Any, T.Any], dispose)
+        await attempt_await(self._adispose())
 
         return False
 

@@ -8,9 +8,9 @@ from contextlib import suppress
 
 # External
 from async_tools import attempt_await
+from aRx.abstract.namespace import Namespace
 
 # Project
-from ..misc.namespace import Namespace
 from ..abstract.observer import Observer
 
 # Generic Types
@@ -44,7 +44,7 @@ def default_aclose() -> None:
     return
 
 
-class AnonymousObserver(Observer[K, T.Optional[J]]):
+class AnonymousObserver(Observer[K]):
     """An anonymous Observer.
 
     Creates as sink where the implementation is provided by three
@@ -130,7 +130,4 @@ class AnonymousObserver(Observer[K, T.Optional[J]]):
         return bool(await attempt_await(self._raise(exc, namespace), loop=self.loop))
 
     async def __aclose__(self) -> None:
-        res = await attempt_await(self._close(), loop=self.loop)
-
-        with suppress(InvalidStateError):
-            self.resolve(res)
+        await attempt_await(self._close(), loop=self.loop)
