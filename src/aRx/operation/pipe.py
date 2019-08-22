@@ -16,7 +16,7 @@ L = T.TypeVar("L")
 
 def pipe(
     source: Observable[K], transformer: Transformer[K, L], sink: Observer[L]
-) -> T.AsyncContextManager[T.Any]:
+) -> T.AsyncContextManager[None]:
     """Pipe data from a source through a transformer to a sink.
 
     A simple data flow chart would be:

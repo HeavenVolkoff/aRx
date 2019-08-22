@@ -9,7 +9,7 @@ K = T.TypeVar("K")
 
 def observe(
     observable: Observable[K], observer: Observer[K], *, keep_alive: T.Optional[bool] = None
-) -> T.AsyncContextManager[T.Any]:
+) -> T.AsyncContextManager[None]:
     """Register an observer to an observable.
 
     Enable the observation of the data flowing through the observable to be captured by the

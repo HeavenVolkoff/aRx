@@ -11,7 +11,7 @@ def default_dispose() -> None:
     return
 
 
-class AnonymousDisposable(T.AsyncContextManager["AnonymousDisposable"]):
+class AnonymousDisposable(T.AsyncContextManager[None]):
     """An anonymous Disposable.
 
     Disposable where the custom close logic implementation is provided by a
@@ -38,6 +38,9 @@ class AnonymousDisposable(T.AsyncContextManager["AnonymousDisposable"]):
             raise TypeError("Argument must be Callable")
 
         self._adispose = dispose
+
+    async def __aenter__(self) -> None:
+        return None
 
     async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> T.Optional[bool]:
         """Call anonymous function on dispose."""

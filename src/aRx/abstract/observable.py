@@ -5,12 +5,8 @@ from abc import abstractmethod
 # External
 import typing_extensions as Te
 
-# Project
-from .observer import Observer
-
 # Generic Types
 K = T.TypeVar("K")
-L = T.TypeVar("L")
 
 
 @Te.runtime
@@ -25,7 +21,7 @@ class Observable(Te.Protocol[K]):
     and must be implemented in the magic method :meth:`~.Observable.__observe__`.
     """
 
-    def __init__(self, **kwargs: T.Any) -> None:
+    def __init__(self, **kwargs):
         """Observable constructor.
 
         Arguments:
@@ -35,9 +31,7 @@ class Observable(Te.Protocol[K]):
         super().__init__(**kwargs)  # type: ignore
 
     @abstractmethod
-    def __observe__(
-        self, observer: Observer[K], *, keep_alive: bool
-    ) -> T.AsyncContextManager[T.Any]:
+    def __observe__(self, observer, *, keep_alive: bool):
         """Interface through which observers are registered to observe the data flow.
 
         Define how each observers is registered into this observable and the
@@ -52,15 +46,7 @@ class Observable(Te.Protocol[K]):
         """
         raise NotImplementedError()
 
-    def __add__(self, other: "Observable[L]") -> "Observable[T.Union[K, L]]":
-        from ..operation.concat import concat
-
-        return concat(self, other)
-
-    def __iadd__(self, other: "Observable[L]") -> "Observable[T.Union[K, L]]":
-        return self + other
-
-    def __rshift__(self, observer: Observer[K]) -> T.AsyncContextManager[T.Any]:
+    def __gt__(self, observer):
         """Shortcut for :meth:`~.Observable.__observe__` magic method.
 
         Args:
@@ -71,6 +57,34 @@ class Observable(Te.Protocol[K]):
 
         """
         return self.__observe__(observer, keep_alive=observer.keep_alive)
+
+    def __or__(self, transformer):
+        """Shortcut for :meth:`~.Observable.__observe__` magic method.
+
+        Args:
+            transformer: Observer which will be registered.
+
+        Returns:
+            :class:`~.disposable.Disposable` that undoes this subscription.
+
+        """
+
+        from .transformer import Transformer
+
+        if not isinstance(transformer, Transformer):
+            raise ValueError("Argument must be a Transformer")
+
+        self.__observe__(transformer, keep_alive=transformer.keep_alive)
+
+        return transformer
+
+    def __add__(self, other):
+        from ..operation.concat import concat
+
+        return concat(self, other)
+
+    def __iadd__(self, other):
+        return self + other
 
 
 __all__ = ("Observable",)

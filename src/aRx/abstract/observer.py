@@ -77,14 +77,14 @@ class Observer(T.Generic[K], BasicRepr, Loopable, metaclass=AsyncABCMeta):
         """Method responsible for handling the logic necessary to close the observer."""
         raise NotImplemented()
 
-    async def __aenter__(self) -> "Observer[K]":
+    async def __aenter__(self) -> None:
         """Async context manager entrypoint.
 
         Returns:
             The observer object.
 
         """
-        return self
+        return None
 
     async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> bool:
         """Async context manager exit.
