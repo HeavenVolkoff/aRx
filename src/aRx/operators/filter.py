@@ -20,7 +20,9 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Callable[[K], T.Union[bool, T.Awaitable[bool]]],
-        araise_predicate: T.Optional[T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]],
+        araise_predicate: T.Optional[
+            T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
+        ] = None,
         *,
         with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
@@ -42,7 +44,9 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Callable[[K, int], T.Union[bool, T.Awaitable[bool]]],
-        araise_predicate: T.Optional[T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]],
+        araise_predicate: T.Optional[
+            T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
+        ] = None,
         *,
         with_index: Te.Literal[True] = True,
         **kwargs: T.Any,

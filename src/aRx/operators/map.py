@@ -23,7 +23,7 @@ class Map(SingleStreamBase[K, L]):
         asend_mapper: T.Callable[[K], T.Union[L, T.Awaitable[L]]],
         araise_mapper: T.Optional[
             T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
-        ],
+        ] = None,
         *,
         with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
@@ -47,7 +47,7 @@ class Map(SingleStreamBase[K, L]):
         asend_mapper: T.Callable[[K, int], T.Union[L, T.Awaitable[L]]],
         araise_mapper: T.Optional[
             T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
-        ],
+        ] = None,
         *,
         with_index: Te.Literal[True] = True,
         **kwargs: T.Any,
