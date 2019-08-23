@@ -3,8 +3,8 @@ import typing as T
 from asyncio import Future
 
 # Project
+from .observer import Observer
 from ..namespace import Namespace
-from ..observers import Observer
 
 # Generic Types
 K = T.TypeVar("K")
