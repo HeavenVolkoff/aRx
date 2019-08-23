@@ -3,10 +3,10 @@ import typing as T
 
 # External
 import typing_extensions as Te
+from async_tools.abstract import AsyncABCMeta
 
 # External
 from aRx.namespace import Namespace
-from async_tools.abstract import AsyncABCMeta
 
 # Project
 from .observer_protocol import ObserverProtocol
