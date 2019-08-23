@@ -17,6 +17,19 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
+async def pipe(
+    observable: ObservableProtocol[K],
+    transformer: T.Union[T.Awaitable[TransformerProtocol[K, L]], TransformerProtocol[K, L]],
+) -> TransformerProtocol[K, L]:
+    transformer = await attempt_await(transformer)
+
+    if not isinstance(transformer, TransformerProtocol):
+        raise ValueError("Argument must be a Transformer")
+
+    await observe(observable, transformer, keep_alive=transformer.keep_alive)
+    return transformer
+
+
 class Observable(ObservableProtocol[K], metaclass=ABCMeta):
     """Observable abstract class.
 
@@ -27,15 +40,6 @@ class Observable(ObservableProtocol[K], metaclass=ABCMeta):
     The logic that defines how the data is observed is specific for each Observable type,
     and must be implemented in the magic method :meth:`~.Observable.__observe__`.
     """
-
-    def __init__(self, **kwargs: T.Any) -> None:
-        """Observable constructor.
-
-        Arguments:
-            kwargs: Keyword parameters for super.
-
-        """
-        super().__init__(**kwargs)  # type: ignore
 
     @T.overload
     def __gt__(
@@ -62,7 +66,7 @@ class Observable(ObservableProtocol[K], metaclass=ABCMeta):
     def __or__(
         self,
         transformer: T.Union[T.Awaitable[TransformerProtocol[K, L]], TransformerProtocol[K, L]],
-    ) -> TransformerProtocol[K, L]:
+    ) -> T.Coroutine[None, None, TransformerProtocol[K, L]]:
         """Shortcut for :meth:`~.Observable.__observe__` magic method.
 
         Args:
@@ -72,13 +76,7 @@ class Observable(ObservableProtocol[K], metaclass=ABCMeta):
             :class:`~.disposable.Disposable` that undoes this subscription.
 
         """
-
-        if not isinstance(transformer, TransformerProtocol):
-            raise ValueError("Argument must be a Transformer")
-
-        observe(self, transformer, keep_alive=transformer.keep_alive)
-
-        return transformer
+        return pipe(self, transformer)
 
 
 __all__ = ("Observable",)

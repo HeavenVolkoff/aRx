@@ -2,6 +2,7 @@
 import typing as T
 
 # Project
+from ..observers import Consumer
 from ..operations.observe_op import observe
 from ..protocols.observable_protocol import ObservableProtocol
 
@@ -9,17 +10,9 @@ from ..protocols.observable_protocol import ObservableProtocol
 K = T.TypeVar("K")
 
 
-@T.overload
-async def consume(observable: ObservableProtocol[K]) -> K:
-    ...
-
-
-@T.overload
-async def consume(observable: T.Awaitable[ObservableProtocol[K]]) -> K:
-    ...
-
-
-async def consume(observable: T.Any) -> K:
+async def consume(
+    observable: T.Union[T.Awaitable[ObservableProtocol[K]], ObservableProtocol[K]]
+) -> K:
     """Consume an :class:`~.Observable` as a Promise.
 
     Arguments:
