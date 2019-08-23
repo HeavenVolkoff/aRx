@@ -31,7 +31,7 @@ class Pipe(T.Generic[K, L], T.Awaitable[T.AsyncContextManager[T.Any]]):
         p.__append__(transformer)
         return p
 
-    def __gt__(self, observer: ObserverProtocol[K]) -> T.Awaitable[Te.AsyncContextManager[T.Any]]:
+    def __gt__(self, observer: ObserverProtocol[L]) -> T.Awaitable[Te.AsyncContextManager[T.Any]]:
         """Shortcut for :meth:`~.Observable.__observe__` magic method.
 
         Args:
