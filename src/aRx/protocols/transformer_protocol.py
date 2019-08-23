@@ -3,8 +3,6 @@ import typing as T
 
 # External
 import typing_extensions as Te
-
-# External
 from async_tools.abstract import AsyncABCMeta
 
 # Project
@@ -17,7 +15,7 @@ L = T.TypeVar("L", contravariant=True)
 
 
 @Te.runtime
-class TransformerProtocol(Te.Protocol[K, L], ObservableProtocol[K], ObserverProtocol[L]):
+class TransformerProtocol(ObservableProtocol[K], ObserverProtocol[L], Te.Protocol[K, L]):
     """Transformer abstract class.
 
     Base class for defining an object that is an Observer and Observable at the same time,

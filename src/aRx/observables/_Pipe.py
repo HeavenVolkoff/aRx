@@ -5,13 +5,10 @@ from dataclasses import dataclass
 
 # External
 import typing_extensions as Te
-
-# External
 from async_tools.context import AsyncExitStack
 
 # Project
 from ..protocols import ObserverProtocol, ObservableProtocol, TransformerProtocol
-from ..operations import observe
 
 # Generic Types
 K = T.TypeVar("K")
@@ -46,6 +43,8 @@ class Pipe(T.Generic[K, L], T.Awaitable[T.AsyncContextManager[T.Any]]):
         return self
 
     def __await__(self) -> T.Generator[None, None, T.AsyncContextManager[T.Any]]:
+        from ..operations import observe
+
         main_ctx = AsyncExitStack()
         pipe_list: T.Iterator[T.Tuple[ObservableProtocol[T.Any], ObserverProtocol[T.Any]]] = (
             zip(self.__inner__[:-1], self.__inner__[1:])  # type: ignore

@@ -8,7 +8,6 @@ import typing_extensions as Te
 # Project
 from ._Pipe import Pipe
 from ..protocols import ObserverProtocol, ObservableProtocol, TransformerProtocol
-from ..operations.observe_op import observe
 
 # Generic Types
 K = T.TypeVar("K")
@@ -36,6 +35,8 @@ class Observable(ObservableProtocol[K], metaclass=ABCMeta):
             :class:`~.disposable.Disposable` that undoes this subscription.
 
         """
+        from ..operations.observe_op import observe
+
         return observe(self, observer)
 
     def __or__(self, transformer: TransformerProtocol[K, L]) -> Pipe[K, L]:

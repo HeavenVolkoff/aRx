@@ -3,8 +3,6 @@ import typing as T
 
 # External
 import typing_extensions as Te
-
-# External
 from async_tools import attempt_await
 from async_tools.context import asynccontextmanager
 
