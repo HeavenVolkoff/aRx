@@ -42,7 +42,7 @@ class Pipe(T.Generic[K, L], T.Awaitable[T.AsyncContextManager[T.Any]]):
         # TODO: Improve this
         return self
 
-    def __await__(self) -> T.Generator[None, None, T.AsyncContextManager[T.Any]]:
+    async def __await_impl__(self) -> T.AsyncContextManager[T.Any]:
         from ..operations import observe
 
         main_ctx = AsyncExitStack()
@@ -50,13 +50,15 @@ class Pipe(T.Generic[K, L], T.Awaitable[T.AsyncContextManager[T.Any]]):
             zip(self.__inner__[:-1], self.__inner__[1:])  # type: ignore
         )
 
-        for ctx in gather(
+        for ctx in await gather(
             *(observe(observable, observer) for observable, observer in pipe_list)
-        ).__await__():
-            main_ctx.enter_async_context(ctx)
-            yield
+        ):
+            await main_ctx.enter_async_context(ctx)
 
         return main_ctx
+
+    def __await__(self) -> T.Generator[None, None, T.AsyncContextManager[T.Any]]:
+        return self.__await_impl__().__await__()
 
     __iter__ = __await__  # make compatible with 'yield from'.
 
