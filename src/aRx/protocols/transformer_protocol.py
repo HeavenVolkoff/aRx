@@ -12,12 +12,12 @@ from .observer_protocol import ObserverProtocol
 from .observable_protocol import ObservableProtocol
 
 # Generic Types
-K = T.TypeVar("K", covariant=True)
-L = T.TypeVar("L", contravariant=True)
+K = T.TypeVar("K", contravariant=True)
+L = T.TypeVar("L", covariant=True)
 
 
 @Te.runtime
-class TransformerProtocol(ObservableProtocol[K], ObserverProtocol[L], Te.Protocol[K, L]):
+class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], Te.Protocol[K, L]):
     """Transformer abstract class.
 
     Base class for defining an object that is an Observer and Observable at the same time,
@@ -47,4 +47,26 @@ class TransformerProtocol(ObservableProtocol[K], ObserverProtocol[L], Te.Protoco
                 ███████
     """
 
-    pass
+    keep_alive: bool
+    """Flag that indicates the default behaviour on whether or not the observers should be closed on
+        observation disposition.
+    """
+
+    @property
+    def closed(self) -> bool:
+        ...
+
+    async def asend(self, data: K, namespace: T.Optional[Namespace] = None) -> None:
+        ...
+
+    async def athrow(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
+        ...
+
+    async def aclose(self) -> bool:
+        ...
+
+    async def __observe__(self, observer: ObserverProtocol[L]) -> None:
+        ...
+
+    async def __dispose__(self, observer: ObserverProtocol[L]) -> None:
+        ...
