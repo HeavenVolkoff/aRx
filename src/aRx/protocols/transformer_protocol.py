@@ -4,6 +4,9 @@ import typing as T
 # External
 import typing_extensions as Te
 
+# External
+from aRx.namespace import Namespace
+
 # Project
 from .observer_protocol import ObserverProtocol
 from .observable_protocol import ObservableProtocol

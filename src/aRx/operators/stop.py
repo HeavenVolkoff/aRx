@@ -13,6 +13,10 @@ from ..namespace import Namespace
 K = T.TypeVar("K")
 
 
+def noop(x: K) -> K:
+    return x
+
+
 class Stop(SingleStream[K]):
     @T.overload
     def __init__(
@@ -65,8 +69,8 @@ class Stop(SingleStream[K]):
 
         self._index = 0 if with_index else None
         self._close_guard = False
-        self._asend_predicate = asend_predicate
-        self._araise_predicate = araise_predicate
+        self._asend_predicate = noop if asend_predicate is None else asend_predicate
+        self._araise_predicate = noop if araise_predicate is None else araise_predicate
 
     async def __asend__(self, value: K, namespace: Namespace) -> None:
         if self._close_guard:
