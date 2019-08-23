@@ -16,7 +16,7 @@ L = T.TypeVar("L", covariant=True)
 K = T.TypeVar("K", contravariant=True)
 
 
-class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], metaclass=AsyncABCMeta):
+class TransformerProtocol(ObservableProtocol[K], ObserverProtocol[L], metaclass=AsyncABCMeta):
     """Transformer abstract class.
 
     Base class for defining an object that is an Observer and Observable at the same time,

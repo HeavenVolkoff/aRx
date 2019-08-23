@@ -19,7 +19,7 @@ L = T.TypeVar("L")
 
 
 class SingleStreamBase(
-    Observable[L], Observer[K], TransformerProtocol[K, L], metaclass=AsyncABCMeta
+    Observable[K], Observer[L], TransformerProtocol[K, L], metaclass=AsyncABCMeta
 ):
     """Cold streams tightly coupled with a single observers.
 
@@ -41,9 +41,9 @@ class SingleStreamBase(
 
         # Internal
         self._lock: "Future[None]" = self._loop.create_future()
-        self._observer: T.Optional[ObserverProtocol[L]] = None
+        self._observer: T.Optional[ObserverProtocol[K]] = None
 
-    async def _asend(self, value: K, namespace: Namespace) -> None:
+    async def _asend(self, value: L, namespace: Namespace) -> None:
         # Wait for observers
         await self._lock
 
@@ -62,7 +62,7 @@ class SingleStreamBase(
 
         await awaitable
 
-    async def _asend_impl(self, value: K) -> L:
+    async def _asend_impl(self, value: L) -> K:
         raise NotImplementedError()
 
     async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
@@ -86,7 +86,7 @@ class SingleStreamBase(
         self._lock.cancel()
         self._observer = None
 
-    async def __observe__(self, observer: ObserverProtocol[L]) -> None:
+    async def __observe__(self, observer: ObserverProtocol[K]) -> None:
         """Start streaming.
 
         Raises:
@@ -102,7 +102,7 @@ class SingleStreamBase(
         # Release any awaiting event
         self._lock.set_result(None)
 
-    async def __dispose__(self, observer: ObserverProtocol[L]) -> None:
+    async def __dispose__(self, observer: ObserverProtocol[K]) -> None:
         await self.aclose()
 
 
