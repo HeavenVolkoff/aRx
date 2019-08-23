@@ -1,18 +1,17 @@
 # Internal
 import typing as T
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from asyncio import Future, CancelledError
 from warnings import warn
 from contextlib import contextmanager
 
 # External
 from async_tools import Loopable
-from async_tools.abstract import BasicRepr, AsyncABCMeta
+from async_tools.abstract import BasicRepr
 
 # Project
 from ..error import ObserverClosedError, ObserverClosedWarning
 from ..namespace import Namespace, get_namespace
-from ..protocols.observer_protocol import ObserverProtocol
 
 __all__ = ("Observer",)
 
@@ -21,9 +20,7 @@ __all__ = ("Observer",)
 K = T.TypeVar("K")
 
 
-class Observer(
-    BasicRepr, Loopable, ObserverProtocol[K], T.AsyncContextManager[None], metaclass=AsyncABCMeta
-):
+class Observer(BasicRepr, Loopable, T.Generic[K], T.AsyncContextManager[None], metaclass=ABCMeta):
     """Observer abstract class.
 
     An abstract implementation of the ObserverProtocol that defines some basis for the data flow,
@@ -116,7 +113,7 @@ class Observer(
                 self._propagation_guard.set_result(None)
 
     @property
-    def closed(self) -> bool:  # type: ignore
+    def closed(self) -> bool:
         """Property that indicates if this observers is closed or not."""
         return self._closed
 

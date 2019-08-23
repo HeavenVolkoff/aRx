@@ -1,16 +1,13 @@
 # Internal
 import typing as T
-from abc import abstractmethod
+from abc import ABCMeta
 from asyncio import Future
-
-# External
-from async_tools.abstract import AsyncABCMeta
 
 # Project
 from ..error import SingleStreamError, ObserverClosedError
 from ..namespace import Namespace
 from ..observers import Observer
-from ..protocols import ObserverProtocol, TransformerProtocol
+from ..protocols import ObserverProtocol
 from ..observables import Observable
 
 # Generic Types
@@ -18,9 +15,7 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class SingleStreamBase(
-    TransformerProtocol[K, L], Observable[K], Observer[L], metaclass=AsyncABCMeta
-):
+class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
     """Cold streams tightly coupled with a single observers.
 
     .. Note::

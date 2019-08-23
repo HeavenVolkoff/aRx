@@ -3,6 +3,9 @@ import typing as T
 
 # External
 import typing_extensions as Te
+
+# External
+from aRx.namespace import Namespace
 from async_tools.abstract import AsyncABCMeta
 
 # Project

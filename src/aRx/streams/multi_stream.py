@@ -17,7 +17,7 @@ __all__ = ("MultiStream",)
 K = T.TypeVar("K")
 
 
-class MultiStream(TransformerProtocol[K, K], Observer[K], Observable[K]):
+class MultiStream(Observer[K], Observable[K]):
     """Hot streams that can be observed by multiple observers.
 
     .. Note::

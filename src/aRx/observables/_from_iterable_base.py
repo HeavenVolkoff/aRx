@@ -1,11 +1,10 @@
 # Internal
 import typing as T
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from asyncio import Task, wait
 
 # External
 from async_tools import get_running_loop
-from async_tools.abstract import AsyncABCMeta
 
 # Project
 from ..namespace import get_namespace
@@ -16,7 +15,7 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class _FromAsyncBase(T.Generic[K, L], ObservableProtocol[K], metaclass=AsyncABCMeta):
+class _FromAsyncBase(T.Generic[K, L], ObservableProtocol[K], metaclass=ABCMeta):
     def __init__(self, **kwargs: T.Any) -> None:
         """FromAsyncIterable constructor.
 
