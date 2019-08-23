@@ -1,5 +1,6 @@
 # Internal
 import typing as T
+from asyncio import CancelledError
 
 # External
 import typing_extensions as Te
@@ -55,6 +56,8 @@ async def observe(
 
     try:
         await observable.__observe__(observer)
+    except CancelledError:
+        raise
     except Exception:
         await dispose(observable, observer, keep_alive=keep_alive)
         raise

@@ -6,8 +6,8 @@ from abc import ABCMeta, abstractmethod
 import typing_extensions as Te
 
 # Project
-from ._Pipe import Pipe
 from ..protocols import ObserverProtocol, TransformerProtocol
+from ._internal.Pipe import Pipe
 
 # Generic Types
 K = T.TypeVar("K")
@@ -52,12 +52,7 @@ class Observable(T.Generic[K], metaclass=ABCMeta):
         if not isinstance(transformer, TransformerProtocol):
             raise ValueError("Argument must be a Transformer")
 
-        p: Pipe[K, L] = Pipe()
-
-        p.__append__(self)
-        p.__append__(transformer)
-
-        return p
+        return Pipe(self, transformer)
 
     @abstractmethod
     async def __observe__(self, observer: ObserverProtocol[K]) -> None:

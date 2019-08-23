@@ -1,5 +1,5 @@
 # External
-from importlib_metadata import version  # type: ignore
+from importlib_metadata import version
 
 try:
     __version__: str = version(__name__)

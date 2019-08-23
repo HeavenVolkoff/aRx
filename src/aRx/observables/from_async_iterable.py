@@ -6,13 +6,13 @@ from collections.abc import AsyncGenerator
 
 # Project
 from ..protocols import ObserverProtocol
-from ._from_iterable_base import _FromAsyncBase
+from ._internal.from_iterable_base import FromIterableBase
 
 # Generic Types
 K = T.TypeVar("K")
 
 
-class FromAsyncIterable(_FromAsyncBase[K, T.AsyncIterator[K]]):
+class FromIterableIterable(FromIterableBase[K, T.AsyncIterator[K]]):
     """Observable that uses an async iterable as data source."""
 
     def __init__(self, async_iterable: T.AsyncIterable[K], **kwargs: T.Any) -> None:
@@ -52,4 +52,4 @@ class FromAsyncIterable(_FromAsyncBase[K, T.AsyncIterator[K]]):
                 await observer.aclose()
 
 
-__all__ = ("FromAsyncIterable",)
+__all__ = ("FromIterableIterable",)

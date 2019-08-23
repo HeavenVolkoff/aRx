@@ -74,7 +74,7 @@ class Map(SingleStreamBase[K, L]):
 
     async def _asend_impl(self, value: L) -> K:
         if self._index is None:
-            awaitable = self._asend_mapper(value)
+            awaitable: T.Awaitable[K] = self._asend_mapper(value)
         else:
             awaitable = self._asend_mapper(value, self._index)
             self._index += 1

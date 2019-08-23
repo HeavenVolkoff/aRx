@@ -4,9 +4,6 @@ import typing as T
 # External
 import typing_extensions as Te
 
-# External
-from aRx.namespace import Namespace
-
 # Project
 from .observer_protocol import ObserverProtocol
 from .observable_protocol import ObservableProtocol
@@ -47,26 +44,4 @@ class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], Te.Protoco
                 ███████
     """
 
-    keep_alive: bool
-    """Flag that indicates the default behaviour on whether or not the observers should be closed on
-        observation disposition.
-    """
-
-    @property
-    def closed(self) -> bool:
-        ...
-
-    async def asend(self, data: K, namespace: T.Optional[Namespace] = None) -> None:
-        ...
-
-    async def athrow(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
-        ...
-
-    async def aclose(self) -> bool:
-        ...
-
-    async def __observe__(self, observer: ObserverProtocol[L]) -> None:
-        ...
-
-    async def __dispose__(self, observer: ObserverProtocol[L]) -> None:
-        ...
+    pass

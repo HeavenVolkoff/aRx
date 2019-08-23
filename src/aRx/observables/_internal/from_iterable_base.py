@@ -7,15 +7,15 @@ from asyncio import Task, wait
 from async_tools import get_running_loop
 
 # Project
-from ..namespace import get_namespace
-from ..protocols import ObserverProtocol, ObservableProtocol
+from ...namespace import get_namespace
+from ...protocols import ObserverProtocol, ObservableProtocol
 
 # Generic Types
 K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class _FromAsyncBase(T.Generic[K, L], ObservableProtocol[K], metaclass=ABCMeta):
+class FromIterableBase(T.Generic[K, L], ObservableProtocol[K], metaclass=ABCMeta):
     def __init__(self, **kwargs: T.Any) -> None:
         """FromAsyncIterable constructor.
 

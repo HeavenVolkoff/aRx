@@ -76,7 +76,7 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
 
         async with MultiStream(loop=self.loop) as stream:
             listener = AnonymousObserver(asend=check)
-            async with observe(stream | map_op(lambda x, _: str(x)), listener) as observation:
+            async with (stream | map_op(lambda x, _: str(x)), listener) as observation:
                 self.loop.create_task(send_data())
                 self.assertIsNone(await listener)
 

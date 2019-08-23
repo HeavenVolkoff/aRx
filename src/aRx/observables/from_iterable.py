@@ -5,13 +5,13 @@ from contextlib import suppress
 
 # Project
 from ..protocols import ObserverProtocol
-from ._from_iterable_base import _FromAsyncBase
+from ._internal.from_iterable_base import FromIterableBase
 
 # Generic Types
 K = T.TypeVar("K")
 
 
-class FromIterable(_FromAsyncBase[K, T.Iterable[K]]):
+class FromIterable(FromIterableBase[K, T.Iterable[K]]):
     """Observable that uses an iterable as data source."""
 
     def __init__(self, iterable: T.Iterable[K], **kwargs: T.Any) -> None:
