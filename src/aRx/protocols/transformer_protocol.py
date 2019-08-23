@@ -12,11 +12,12 @@ from .observer_protocol import ObserverProtocol
 from .observable_protocol import ObservableProtocol
 
 # Generic Types
-L = T.TypeVar("L", covariant=True)
-K = T.TypeVar("K", contravariant=True)
+K = T.TypeVar("K", covariant=True)
+L = T.TypeVar("L", contravariant=True)
 
 
-class TransformerProtocol(ObservableProtocol[K], ObserverProtocol[L], metaclass=AsyncABCMeta):
+@Te.runtime
+class TransformerProtocol(Te.Protocol[K, L], ObservableProtocol[K], ObserverProtocol[L]):
     """Transformer abstract class.
 
     Base class for defining an object that is an Observer and Observable at the same time,
