@@ -7,8 +7,10 @@ from asyncio import AbstractEventLoop
 
 # External
 from async_tools import attempt_await
-from aRx.namespace import Namespace
-from aRx.observers.observer import Observer
+
+# Project
+from ..namespace import Namespace
+from ..observers.observer import Observer
 
 # Generic Types
 K = T.TypeVar("K")

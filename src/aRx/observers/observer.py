@@ -7,11 +7,11 @@ from contextlib import contextmanager
 
 # External
 from async_tools import Loopable
-from aRx.namespace import Namespace, get_namespace
 from async_tools.abstract import BasicRepr, AsyncABCMeta
 
 # Project
 from ..error import ObserverClosedError, ObserverClosedWarning
+from ..namespace import Namespace, get_namespace
 from ..protocols.observer_protocol import ObserverProtocol
 
 __all__ = ("Observer",)

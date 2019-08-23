@@ -6,9 +6,9 @@ import typing_extensions as Te
 
 # External
 from async_tools import attempt_await
-from aRx.namespace import Namespace
 
 # Project
+from ..namespace import Namespace
 from ..streams.single_stream import SingleStreamBase
 
 # Generic Types

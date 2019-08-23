@@ -4,8 +4,8 @@ import typing as T
 # External
 import typing_extensions as Te
 
-# External
-from aRx.namespace import Namespace
+# Project
+from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K", contravariant=True)

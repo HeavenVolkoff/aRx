@@ -7,9 +7,9 @@ from asyncio import Future, InvalidStateError
 from contextlib import suppress
 from collections import deque
 
-# External
-from aRx.namespace import Namespace
-from aRx.observers.observer import Observer
+# Project
+from ..namespace import Namespace
+from ..observers.observer import Observer
 
 # Generic Types
 K = T.TypeVar("K")

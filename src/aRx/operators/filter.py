@@ -6,10 +6,10 @@ import typing_extensions as Te
 
 # External
 from async_tools import attempt_await
-from aRx.namespace import Namespace
 
 # Project
 from ..streams import SingleStream
+from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K")

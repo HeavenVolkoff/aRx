@@ -5,10 +5,10 @@ from asyncio import Task, wait
 
 # External
 from async_tools import get_running_loop
-from aRx.namespace import get_namespace
 from async_tools.abstract import AsyncABCMeta
 
 # Project
+from ..namespace import get_namespace
 from ..protocols import ObserverProtocol, ObservableProtocol
 
 # Generic Types

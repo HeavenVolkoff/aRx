@@ -2,11 +2,9 @@
 import typing as T
 from collections import deque
 
-# External
-from aRx.namespace import Namespace
-
 # Project
 from ..streams import SingleStream
+from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K")
