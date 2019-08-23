@@ -19,7 +19,7 @@ L = T.TypeVar("L")
 
 
 class SingleStreamBase(
-    TransformerProtocol[K, L], Observer[K], Observable[L], metaclass=AsyncABCMeta
+    Observable[L], Observer[K], TransformerProtocol[K, L], metaclass=AsyncABCMeta
 ):
     """Cold streams tightly coupled with a single observers.
 
@@ -43,7 +43,7 @@ class SingleStreamBase(
         self._lock: "Future[None]" = self._loop.create_future()
         self._observer: T.Optional[ObserverProtocol[L]] = None
 
-    async def _asend_impl(self, value: L, namespace: Namespace) -> None:
+    async def _asend(self, value: K, namespace: Namespace) -> None:
         # Wait for observers
         await self._lock
 
@@ -51,7 +51,9 @@ class SingleStreamBase(
         assert self._observer
 
         try:
-            awaitable: T.Awaitable[T.Any] = self._observer.asend(value, namespace)
+            awaitable: T.Awaitable[T.Any] = self._observer.asend(
+                await self._asend_impl(value), namespace
+            )
         except ObserverClosedError:
             awaitable = self.aclose()
 
@@ -60,7 +62,10 @@ class SingleStreamBase(
 
         await awaitable
 
-    async def _athrow_impl(self, exc: Exception, namespace: Namespace) -> bool:
+    async def _asend_impl(self, value: K) -> L:
+        raise NotImplementedError()
+
+    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
 
         # Wait for observers
         await self._lock
@@ -102,11 +107,8 @@ class SingleStreamBase(
 
 
 class SingleStream(SingleStreamBase[K, K]):
-    async def _asend(self, value: K, namespace: Namespace) -> None:
-        return await self._asend_impl(value, namespace)
-
-    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
-        return await self._athrow_impl(exc, namespace)
+    async def _asend_impl(self, value: K) -> K:
+        return value
 
 
 __all__ = ("SingleStreamBase", "SingleStream")

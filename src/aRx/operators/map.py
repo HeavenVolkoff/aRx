@@ -16,11 +16,15 @@ K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
+def noop(x: L) -> L:
+    return x
+
+
 class Map(SingleStreamBase[K, L]):
     @T.overload
     def __init__(
         self,
-        asend_mapper: T.Callable[[K], T.Union[L, T.Awaitable[L]]],
+        asend_mapper: T.Callable[[L], T.Union[K, T.Awaitable[K]]],
         araise_mapper: T.Optional[
             T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
         ] = None,
@@ -44,7 +48,7 @@ class Map(SingleStreamBase[K, L]):
     @T.overload
     def __init__(
         self,
-        asend_mapper: T.Callable[[K, int], T.Union[L, T.Awaitable[L]]],
+        asend_mapper: T.Callable[[L, int], T.Union[K, T.Awaitable[K]]],
         araise_mapper: T.Optional[
             T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
         ] = None,
@@ -67,10 +71,10 @@ class Map(SingleStreamBase[K, L]):
         assert asend_mapper or araise_mapper
 
         self._index = 0 if with_index else None
-        self._asend_mapper = asend_mapper
-        self._araise_mapper = araise_mapper
+        self._asend_mapper = noop if asend_mapper is None else asend_mapper
+        self._araise_mapper = noop if araise_mapper is None else araise_mapper
 
-    async def _asend(self, value: K, namespace: Namespace) -> None:
+    async def _asend_impl(self, value: L) -> K:
         if self._index is None:
             awaitable = self._asend_mapper(value)
         else:
@@ -82,15 +86,10 @@ class Map(SingleStreamBase[K, L]):
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        awaitable = super()._asend_impl(await result, namespace)
-
-        # Remove reference early to avoid keeping large objects in memory
-        del result
-
-        await awaitable
+        return await result
 
     async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
-        return await super()._athrow_impl(await attempt_await(self._araise_mapper(exc)), namespace)
+        return await super()._athrow(await attempt_await(self._araise_mapper(exc)), namespace)
 
 
 __all__ = ("Map",)

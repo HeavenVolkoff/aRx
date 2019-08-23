@@ -3,12 +3,11 @@ import unittest
 
 # External
 import asynctest
-from aRx.stream import MultiStream
-from aRx.observers import AnonymousObserver
-from aRx.operators import map_op, assert_op, filter_op
-from aRx.observables import observe
-from async_tools.operator import aexit
+from aRx.streams import MultiStream
 from aRx.namespace import Namespace
+from aRx.observers import AnonymousObserver
+from aRx.operators import Map, Assert, Filter
+from async_tools.operator import aexit
 
 
 # noinspection PyAttributeOutsideInit
@@ -30,14 +29,11 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
             await stream.asend(1.000)
             await stream.asend({})
             await stream.asend([])
-            await aexit(observation)
 
         async with MultiStream(loop=self.loop) as stream, AnonymousObserver(
             asend=lambda d, _: results.append(d), aclose=lambda: len(results)
-        ) as listener:
-            async with observe(stream, listener) as observation:
-                self.loop.create_task(send_data())
-                self.assertEqual(await listener, len(results))
+        ) as listener, await stream > listener:
+            await send_data()
 
         self.assertIsNone(self.exception_ctx)
         self.assertIsNone(await stream)
@@ -52,15 +48,10 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
                 await stream.asend(x)
                 x += 1
 
-            await aexit(observation)
-
         async with MultiStream(loop=self.loop) as stream:
             listener = AnonymousObserver(asend=lambda d, _: self.assertTrue(bool(d % 2)))
-            async with observe(
-                stream | filter_op(lambda x, _: bool(x % 2)), listener
-            ) as observation:
-                self.loop.create_task(send_data())
-                self.assertIsNone(await listener)
+            async with await (stream | Filter(lambda x, _: bool(x % 2)) > listener):
+                await send_data()
 
         self.assertIsNone(self.exception_ctx)
         self.assertIsNone(await stream)
