@@ -1,28 +1,29 @@
-__all__ = ("AnonymousObserver",)
-
-
 # Internal
 import typing as T
-from asyncio import AbstractEventLoop
 
 # External
 from async_tools import attempt_await
 
 # Project
-from ..namespace import Namespace
-from ..observers.observer import Observer
+from .observer import Observer
+
+if T.TYPE_CHECKING:
+    # Internal
+    from asyncio import AbstractEventLoop
+
+    # Project
+    from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K")
-J = T.TypeVar("J")
 
 
 def default_asend(_: T.Any, __: T.Any) -> None:
     return
 
 
-def setup_default_araise(loop: AbstractEventLoop) -> T.Callable[[Exception, Namespace], bool]:
-    def default_araise(exc: Exception, namespace: Namespace) -> bool:
+def setup_default_araise(loop: "AbstractEventLoop") -> T.Callable[[Exception, "Namespace"], bool]:
+    def default_araise(exc: Exception, namespace: "Namespace") -> bool:
         ref = namespace.ref
         loop.call_exception_handler(
             {
@@ -54,79 +55,56 @@ class AnonymousObserver(Observer[K]):
     @T.overload
     def __init__(
         self,
-        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
-        araise: T.Optional[
-            T.Callable[[Exception, Namespace], T.Awaitable[T.Optional[bool]]]
+        asend: T.Optional[T.Callable[[K, "Namespace"], T.Any]] = None,
+        athrow: T.Optional[
+            T.Callable[[Exception, "Namespace"], T.Awaitable[T.Optional[bool]]]
         ] = None,
-        aclose: T.Optional[T.Callable[[], T.Awaitable[J]]] = None,
-        **kwargs: T.Any,
-    ) -> None:
-        ...
-
-    @T.overload
-    def __init__(
-        self,
-        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
-        araise: T.Optional[
-            T.Callable[[Exception, Namespace], T.Awaitable[T.Optional[bool]]]
-        ] = None,
-        aclose: T.Optional[T.Callable[[], J]] = None,
-        **kwargs: T.Any,
-    ) -> None:
-        ...
-
-    @T.overload
-    def __init__(
-        self,
-        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
-        araise: T.Optional[T.Callable[[Exception, Namespace], T.Optional[bool]]] = None,
-        aclose: T.Optional[T.Callable[[], T.Awaitable[J]]] = None,
-        **kwargs: T.Any,
-    ) -> None:
-        ...
-
-    @T.overload
-    def __init__(
-        self,
-        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
-        araise: T.Optional[T.Callable[[Exception, Namespace], T.Optional[bool]]] = None,
-        aclose: T.Optional[T.Callable[[], J]] = None,
-        **kwargs: T.Any,
-    ) -> None:
-        ...
-
-    def __init__(
-        self,
-        asend: T.Optional[T.Callable[[K, Namespace], T.Any]] = None,
-        araise: T.Optional[T.Callable[[Exception, Namespace], T.Any]] = None,
         aclose: T.Optional[T.Callable[[], T.Any]] = None,
         **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    @T.overload
+    def __init__(
+        self,
+        asend: T.Optional[T.Callable[[K, "Namespace"], T.Any]] = None,
+        athrow: T.Optional[T.Callable[[Exception, "Namespace"], T.Optional[bool]]] = None,
+        aclose: T.Optional[T.Callable[[], T.Any]] = None,
+        **kwargs: T.Any,
+    ) -> None:
+        ...
+
+    def __init__(
+        self, asend: T.Any = None, athrow: T.Any = None, aclose: T.Any = None, **kwargs: T.Any
     ) -> None:
         """AnonymousObserver Constructor.
 
         Arguments:
             asend: Implementation of asend logic.
-            araise: Implementation of araise logic.
+            athrow: Implementation of araise logic.
             aclose: Implementation of aclose logic.
             kwargs: Keyword parameters for super.
 
         """
         super().__init__(**kwargs)
 
-        self._send = default_asend if asend is None else asend
-        self._raise = setup_default_araise(self.loop) if araise is None else araise
-        self._close = default_aclose if aclose is None else aclose
+        self._asend_impl = default_asend if asend is None else asend
+        self._athrow_impl = setup_default_araise(self.loop) if athrow is None else athrow
+        self._aclose_impl = default_aclose if aclose is None else aclose
 
-    async def _asend(self, value: K, namespace: Namespace) -> None:
-        res = self._send(value, namespace)
+    async def _asend(self, value: K, namespace: "Namespace") -> None:
+        res = self._asend_impl(value, namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
         await attempt_await(res, loop=self.loop)
 
-    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
-        return bool(await attempt_await(self._raise(exc, namespace), loop=self.loop))
+    async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
+        return await attempt_await(self._athrow_impl(exc, namespace))
 
     async def _aclose(self) -> None:
-        await attempt_await(self._close(), loop=self.loop)
+        await attempt_await(self._aclose_impl(), loop=self.loop)
+
+
+__all__ = ("AnonymousObserver",)

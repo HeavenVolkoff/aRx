@@ -2,18 +2,21 @@
 import typing as T
 
 # Project
-from ..protocols import ObserverProtocol, ObservableProtocol
+from .observable import Observable
+from ..operations import observe
+
+if T.TYPE_CHECKING:
+    # Project
+    from ..protocols import ObserverProtocol
 
 
-class Empty(ObservableProtocol[T.Any]):
+class Empty(Observable[T.Any]):
     """Observable that doesn't output data and closes any observers as soon as possible."""
 
-    async def __observe__(self, observer: ObserverProtocol[T.Any]) -> None:
-        from ..operations import dispose
+    async def __observe__(self, observer: "ObserverProtocol"[T.Any]) -> None:
+        await observe(self, observer).dispose()
 
-        await dispose(self, observer)
-
-    async def __dispose__(self, observer: ObserverProtocol[T.Any]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol"[T.Any]) -> None:
         return
 
 

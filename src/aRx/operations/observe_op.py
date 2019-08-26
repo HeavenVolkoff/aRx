@@ -4,65 +4,80 @@ from asyncio import CancelledError
 
 # External
 import typing_extensions as Te
-from async_tools import attempt_await
-from async_tools.context import asynccontextmanager
 
-# Project
-from ..protocols import ObserverProtocol, ObservableProtocol
-from .dispose_op import dispose
+if T.TYPE_CHECKING:
+    # Internal
+    from types import TracebackType
 
+    # Project
+    from ..protocols import ObserverProtocol, ObservableProtocol
+
+# Generic Types
 K = T.TypeVar("K")
 
 
-@asynccontextmanager
-async def disposable(
-    observable: ObservableProtocol[K],
-    observer: ObserverProtocol[K],
-    keep_alive: T.Optional[bool] = None,
-) -> Te.AsyncGenerator[None, None]:
-    try:
-        yield None
-    finally:
-        await dispose(observable, observer, keep_alive=keep_alive)
+class observe(T.Generic[K], T.Awaitable["observe"[K]], Te.AsyncContextManager[None]):
+    def __init__(
+        self,
+        observable: "ObservableProtocol"[K],
+        observer: "ObserverProtocol"[K],
+        *,
+        keep_alive: T.Optional[bool] = None,
+        **kwargs: T.Any,
+    ):
+        super().__init__(**kwargs)  # type: ignore
 
+        # Internal
+        self._observer = observer
+        self._observable = observable
+        self._keep_alive = keep_alive
 
-async def observe(
-    observable: ObservableProtocol[K],
-    observer: ObserverProtocol[K],
-    *,
-    keep_alive: T.Optional[bool] = None,
-) -> T.AsyncContextManager[None]:
-    """Register an observers to an observables.
+    def __await__(self) -> T.Generator[None, None, "observe"[K]]:
+        yield from self.__aenter__().__await__()
+        return self
 
-    Enable the observation of the data flowing through the observables to be captured by the
-    observers.
+    __iter__ = __await__  # make compatible with 'yield from'.
 
-    A simple data flow chart would be:
-    data ‐→ observables ‐‐(data)‐→ observers
+    async def __aenter__(self) -> None:
+        try:
+            await self._observable.__observe__(self._observer)
+        except CancelledError:
+            raise
+        except Exception as exc:
+            if not await self.__aexit__(type(exc), exc, exc.__traceback__):
+                raise
 
-    The logic for registering an observers is specific to each observables, so this function acts as a
-    simple access to the :meth:`~.Observable.__observe__` magic method.
+    async def __aexit__(
+        self,
+        exc_type: T.Optional[T.Type[BaseException]],
+        exc_value: T.Optional[BaseException],
+        traceback: T.Optional["TracebackType"],
+    ) -> None:
+        cancelled = False
 
-    Arguments:
-        observable: Observable to be subscribed.
-        observer: Observer which will subscribe.
-        loop: Event loop
-        keep_alive: Flag to keep observers alive when observation is disposed.
+        keep_alive = self._keep_alive
 
-    Returns:
-        Disposable that undoes this subscription.
+        try:
+            await self._observable.__dispose__(self._observer)
+        except CancelledError:
+            cancelled = True
+            raise
+        except Exception:
+            keep_alive = False
+            raise
+        except BaseException:
+            cancelled = True
+            raise
+        finally:
+            if not cancelled:
+                if keep_alive is None:
+                    keep_alive = self._observer.keep_alive
 
-    """
+                if not (self._observer.closed or keep_alive):
+                    await self._observer.aclose()
 
-    try:
-        await observable.__observe__(observer)
-    except CancelledError:
-        raise
-    except Exception:
-        await dispose(observable, observer, keep_alive=keep_alive)
-        raise
-
-    return disposable(observable, observer, keep_alive)
+    async def dispose(self) -> None:
+        return await self.__aexit__(None, None, None)
 
 
 __all__ = ("observe",)

@@ -1,16 +1,20 @@
 # Internal
 import typing as T
-from asyncio import AbstractEventLoop
+from asyncio import CancelledError
 
 # External
 from async_tools.abstract import Loopable
 
 # Project
-from ..streams import SingleStream
-from ..protocols import ObservableProtocol
-from .dispose_op import dispose
 from .observe_op import observe
-from ..observables import Observable
+
+if T.TYPE_CHECKING:
+    # Internal
+    from asyncio import AbstractEventLoop
+
+    # Project
+    from ..protocols import ObservableProtocol
+    from ..observables import Observable
 
 # Generic Types
 K = T.TypeVar("K")
@@ -19,11 +23,14 @@ M = T.TypeVar("M")
 
 
 async def concat(
-    a: ObservableProtocol[K],
-    b: ObservableProtocol[L],
+    a: "ObservableProtocol"[K],
+    b: "ObservableProtocol"[L],
     *,
-    loop: T.Optional[AbstractEventLoop] = None,
-) -> Observable[T.Union[K, L]]:
+    loop: T.Optional["AbstractEventLoop"] = None,
+) -> "Observable"[T.Union[K, L]]:
+    # Project
+    from ..streams import SingleStream
+
     if loop is None:
         if isinstance(a, Loopable):
             loop = a.loop
@@ -32,13 +39,14 @@ async def concat(
 
     sink: SingleStream[T.Any] = SingleStream(loop=loop)
 
-    try:
-        await observe(a, sink)
-        await observe(b, sink)
-    except Exception:
-        await dispose(a, sink)
-        await dispose(b, sink)
+    observation = await observe(a, sink)
 
+    try:
+        await observe(b, sink)
+    except CancelledError:
+        raise
+    except Exception:
+        await observation.dispose()
         raise
 
     return sink

@@ -1,26 +1,32 @@
 # Internal
 import typing as T
-from abc import ABCMeta, abstractmethod
-from asyncio import Future, CancelledError
-from warnings import warn
+from abc import abstractmethod
+from asyncio import CancelledError
 from contextlib import contextmanager
 
 # External
+import typing_extensions as Te
+
+# External
 from async_tools import Loopable
-from async_tools.abstract import BasicRepr
+from async_tools.abstract import BasicRepr, AsyncABCMeta
 
 # Project
-from ..error import ObserverClosedError, ObserverClosedWarning
-from ..namespace import Namespace, get_namespace
+from ..error import ObserverClosedError
+from ..namespace import Namespace
 
-__all__ = ("Observer",)
+if T.TYPE_CHECKING:
+    # Internal
+    from asyncio import Future
 
 
 # Generic Types
 K = T.TypeVar("K")
 
 
-class Observer(BasicRepr, Loopable, T.Generic[K], T.AsyncContextManager[None], metaclass=ABCMeta):
+class Observer(
+    BasicRepr, Loopable, T.Generic[K], Te.AsyncContextManager[None], metaclass=AsyncABCMeta
+):
     """Observer abstract class.
 
     An abstract implementation of the ObserverProtocol that defines some basis for the data flow,
@@ -50,7 +56,7 @@ class Observer(BasicRepr, Loopable, T.Generic[K], T.AsyncContextManager[None], m
         self._closed = False
         self._close_guard = False
         self._propagation_count = 0
-        self._propagation_guard: T.Optional["Future[None]"] = None
+        self._propagation_guard: T.Optional["Future"[None]] = None
 
     async def __aenter__(self) -> None:
         """Async context manager entrypoint.
@@ -131,21 +137,36 @@ class Observer(BasicRepr, Loopable, T.Generic[K], T.AsyncContextManager[None], m
         if self.closed or self._close_guard:
             raise ObserverClosedError(self)
 
-        with self._propagating():
-            namespace = get_namespace(self, "asend", namespace)
-            awaitable = self._asend(data, namespace)
+        aclose_awaitable: T.Optional[T.Awaitable[bool]] = None
 
-            # Remove reference early to avoid keeping large objects in memory
-            del data
+        try:
+            with self._propagating():
+                namespace = Namespace(self, "asend", namespace)
+                awaitable = self._asend(data, namespace)
 
-            try:
-                await awaitable
-            except CancelledError:
-                raise  # Cancelled errors are not redirected
-            except Exception as ex:
-                # Any exception raised during the handling of the input data will be inputted to
-                # the observers for it to handle.
-                await self.athrow(ex, namespace)
+                # Remove reference early to avoid keeping large objects in memory
+                del data
+
+                try:
+                    await awaitable
+                except CancelledError:
+                    # Cancelled errors are irreversible
+                    raise
+                except Exception as ex:
+                    # Any exception raised during the handling of the input data will be inputted to
+                    # the observers for it to handle.
+                    try:
+                        await self.athrow(ex, namespace)
+                    except CancelledError:
+                        raise
+                    except Exception:
+                        if self._close_guard:
+                            aclose_awaitable = self.aclose()
+
+                        raise
+        finally:
+            if aclose_awaitable:
+                await aclose_awaitable
 
     async def athrow(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
         """Interface through which exceptions are inputted.
@@ -161,35 +182,35 @@ class Observer(BasicRepr, Loopable, T.Generic[K], T.AsyncContextManager[None], m
             Boolean indicating if observers will close due to the exception.
 
         """
-        if self.closed or self._close_guard:
-            if namespace and namespace.ref is self:
-                # Allow calls to araise event when observers is closed if it's originated from the
-                # observers's own asend.
-                warn(
-                    ObserverClosedWarning(
-                        f"{self}: Observer is closed but an exception was propagated from asend",
-                        main_exc,
-                    )
-                )
-            else:
-                raise ObserverClosedError(self)
+        from_asend = namespace and namespace.ref is self and namespace.action == "asend"
 
-        with self._propagating():
-            awaitable = self._athrow(main_exc, get_namespace(self, "araise", namespace))
+        if (self.closed and not from_asend) or self._close_guard:
+            raise ObserverClosedError(self)
 
-            try:
-                should_close = await awaitable
-            except CancelledError:
-                raise  # Cancelled errors are irreversible
-            except Exception:
-                # Closes streams on irrecoverable exceptions
-                should_close = True
-                raise
-            finally:
-                # Close streams if araise requires
-                if should_close:
+        cancelled = False
+
+        try:
+            with self._propagating():
+                awaitable = self._athrow(main_exc, Namespace(self, "araise", namespace))
+
+                try:
+                    self._close_guard = await awaitable
+                except CancelledError:
+                    # Cancelled errors are irreversible
+                    cancelled = True
                     self._close_guard = True
-                    self.loop.create_task(self.aclose())
+                    raise
+                except Exception:
+                    # Closes streams on irrecoverable exceptions
+                    self._close_guard = True
+                    raise
+                except BaseException:
+                    cancelled = True
+                    self._close_guard = True
+                    raise
+        finally:
+            if self._close_guard and not (cancelled or from_asend):
+                await self.aclose()
 
     async def aclose(self) -> bool:
         """Close observers.
@@ -214,3 +235,6 @@ class Observer(BasicRepr, Loopable, T.Generic[K], T.AsyncContextManager[None], m
         await self._aclose()
 
         return True
+
+
+__all__ = ("Observer",)

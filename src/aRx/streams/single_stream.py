@@ -1,21 +1,27 @@
 # Internal
 import typing as T
-from abc import ABCMeta
 from asyncio import Future
+from warnings import warn
+
+# External
+from async_tools.abstract import AsyncABCMeta
 
 # Project
-from ..error import SingleStreamError, ObserverClosedError
-from ..namespace import Namespace
+from ..error import DisposeWarning, SingleStreamError
 from ..observers import Observer
-from ..protocols import ObserverProtocol
 from ..observables import Observable
+
+if T.TYPE_CHECKING:
+    # Project
+    from ..namespace import Namespace
+    from ..protocols import ObserverProtocol
 
 # Generic Types
 K = T.TypeVar("K")
 L = T.TypeVar("L")
 
 
-class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
+class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
     """Cold streams tightly coupled with a single observers.
 
     .. Note::
@@ -24,6 +30,8 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
         So that it will await until it is observed before redirecting any event, and all redirection
         wait for the observers action to execute.
     """
+
+    __slots__ = ("_lock", "_observer")
 
     def __init__(self, **kwargs: T.Any) -> None:
         """SingleStream constructor.
@@ -35,22 +43,17 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
         super().__init__(**kwargs)
 
         # Internal
-        self._lock: "Future[None]" = self._loop.create_future()
-        self._observer: T.Optional[ObserverProtocol[K]] = None
+        self._lock: "Future"[None] = self._loop.create_future()
+        self._observer: T.Optional["ObserverProtocol"[K]] = None
 
-    async def _asend(self, value: L, namespace: Namespace) -> None:
+    async def _asend(self, value: L, namespace: "Namespace") -> None:
         # Wait for observers
         await self._lock
 
         # _observer must be available at this point
         assert self._observer
 
-        try:
-            awaitable: T.Awaitable[T.Any] = self._observer.asend(
-                await self._asend_impl(value), namespace
-            )
-        except ObserverClosedError:
-            awaitable = self.aclose()
+        awaitable = self._observer.asend(await self._asend_impl(value), namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
@@ -58,9 +61,9 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
         await awaitable
 
     async def _asend_impl(self, value: L) -> K:
-        raise NotImplementedError()
+        raise NotImplementedError
 
-    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
+    async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
 
         # Wait for observers
         await self._lock
@@ -68,10 +71,11 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
         # _observer must be available at this point
         assert self._observer
 
-        try:
-            await self._observer.athrow(exc, namespace)
-        except ObserverClosedError:
-            await self.aclose()
+        if self._observer.closed:
+            # close stream
+            return True
+
+        await self._observer.athrow(exc, namespace)
 
         # SingleStream doesn't close on raise
         return False
@@ -81,7 +85,7 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
         self._lock.cancel()
         self._observer = None
 
-    async def __observe__(self, observer: ObserverProtocol[K]) -> None:
+    async def __observe__(self, observer: "ObserverProtocol"[K]) -> None:
         """Start streaming.
 
         Raises:
@@ -89,6 +93,9 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
 
         """
         if self._observer:
+            if self._observer is observer:
+                return
+
             raise SingleStreamError("Can't assign multiple observers to a SingleStream")
 
         # Set streams observers
@@ -97,7 +104,11 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=ABCMeta):
         # Release any awaiting event
         self._lock.set_result(None)
 
-    async def __dispose__(self, observer: ObserverProtocol[K]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol"[K]) -> None:
+        if observer is not self._observer:
+            warn(DisposeWarning("Attempting to dispose of a unknown observer"))
+            return
+
         await self.aclose()
 
 

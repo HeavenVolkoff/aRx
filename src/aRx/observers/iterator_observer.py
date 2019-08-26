@@ -1,15 +1,19 @@
-__all__ = ("IteratorObserver",)
-
-
 # Internal
 import typing as T
-from asyncio import Future, InvalidStateError
-from contextlib import suppress
-from collections import deque
+
+# External
+import typing_extensions as Te
 
 # Project
-from ..namespace import Namespace
-from ..observers.observer import Observer
+from .observer import Observer
+
+if T.TYPE_CHECKING:
+    # Internal
+    from asyncio import Future
+
+    # Project
+    from ..namespace import Namespace
+
 
 # Generic Types
 K = T.TypeVar("K")
@@ -24,12 +28,14 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         Arguments:
             kwargs: Keyword parameters for super.
         """
+        from collections import deque
+
         super().__init__(**kwargs)
 
         # Private
-        self._queue: T.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
+        self._queue: Te.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
         self._counter = 0
-        self._control: "Future[None]" = self.loop.create_future()
+        self._control: "Future"[None] = self.loop.create_future()
 
     @property
     def _next_value(self) -> T.Tuple[bool, T.Union[K, Exception]]:
@@ -38,6 +44,10 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
 
     @_next_value.setter
     def _next_value(self, value: T.Tuple[bool, T.Union[K, Exception]]) -> None:
+        # Internal
+        from asyncio import InvalidStateError
+        from contextlib import suppress
+
         self._queue.append(value)
 
         with suppress(InvalidStateError):
@@ -46,11 +56,11 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
     def __aiter__(self) -> T.AsyncIterator[K]:
         return self
 
-    async def _asend(self, value: K, _: Namespace) -> None:
+    async def _asend(self, value: K, _: "Namespace") -> None:
         self._counter += 1
         self._next_value = (False, value)
 
-    async def _athrow(self, err: Exception, _: Namespace) -> bool:
+    async def _athrow(self, err: Exception, _: "Namespace") -> bool:
         self._next_value = (True, err)
         return True
 
@@ -72,3 +82,6 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
             raise value
         else:
             return T.cast(K, value)
+
+
+__all__ = ("IteratorObserver",)

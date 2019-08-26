@@ -1,16 +1,17 @@
 # Internal
 import typing as T
-from asyncio import ALL_COMPLETED, Future, wait
-from contextlib import suppress
+from asyncio import ALL_COMPLETED, wait
+from warnings import warn
 
 # Project
-from ..error import MultiStreamError
-from ..namespace import Namespace
+from ..error import DisposeWarning
 from ..observers import Observer
-from ..protocols import ObserverProtocol, TransformerProtocol
 from ..observables import Observable
 
-__all__ = ("MultiStream",)
+if T.TYPE_CHECKING:
+    # Project
+    from ..namespace import Namespace
+    from ..protocols import ObserverProtocol
 
 
 # Generic Types
@@ -37,38 +38,42 @@ class MultiStream(Observer[K], Observable[K]):
         super().__init__(**kwargs)
 
         # Internal
-        self._observers: T.List[ObserverProtocol[K]] = []
+        self._observers: T.Set["ObserverProtocol"[K]] = set()
 
-    async def _asend(self, value: K, namespace: Namespace) -> None:
-        self._observers = [obv for obv in self._observers if not obv.closed]
-        if self._observers:
-            awaitable = wait(
-                tuple(obv.asend(value, namespace) for obv in self._observers),
-                return_when=ALL_COMPLETED,
-            )
+    async def _asend(self, value: K, namespace: "Namespace") -> None:
+        self._observers = set(obv for obv in self._observers if not obv.closed)
 
-            # Remove reference early to avoid keeping large objects in memory
-            del value
+        if not self._observers:
+            return
 
-            done, pending = await awaitable  # type: T.Set[Future[None]], T.Set[Future[None]]
+        awaitable = wait(
+            tuple(obv.asend(value, namespace) for obv in self._observers),
+            return_when=ALL_COMPLETED,
+        )
 
-            assert not pending
+        # Remove reference early to avoid keeping large objects in memory
+        del value
 
-            for fut in done:
-                exc = fut.exception()
-                if exc:
-                    self.loop.call_exception_handler(
-                        {
-                            "message": (
-                                "Unhandled exception while attempt "
-                                "to propagate data through observers"
-                            ),
-                            "exception": exc,
-                        }
-                    )
+        done, pending = await awaitable
 
-    async def _athrow(self, main_exc: Exception, namespace: Namespace) -> bool:
-        self._observers = [obv for obv in self._observers if not obv.closed]
+        assert not pending
+
+        for fut in done:
+            exc = fut.exception()
+            if exc:
+                self.loop.call_exception_handler(
+                    {
+                        "message": (
+                            "Unhandled exception while attempt "
+                            "to propagate data through observers"
+                        ),
+                        "exception": exc,
+                    }
+                )
+
+    async def _athrow(self, main_exc: Exception, namespace: "Namespace") -> bool:
+        self._observers = set(obv for obv in self._observers if not obv.closed)
+
         if self._observers:
             awaitable = wait(
                 tuple(obv.athrow(main_exc, namespace) for obv in self._observers),
@@ -101,14 +106,15 @@ class MultiStream(Observer[K], Observable[K]):
     async def _aclose(self) -> None:
         pass
 
-    async def __observe__(self, observer: ObserverProtocol[K]) -> None:
-        # Guard against duplicated observers
-        if observer in self._observers:
-            raise MultiStreamError(f"{observer} is already observing this streams")
+    async def __observe__(self, observer: "ObserverProtocol"[K]) -> None:
+        # Add observers to internal observation set
+        self._observers.add(observer)
 
-        # Add observers to internal observation list
-        self._observers.append(observer)
-
-    async def __dispose__(self, observer: ObserverProtocol[K]) -> None:
-        with suppress(ValueError):
+    async def __dispose__(self, observer: "ObserverProtocol"[K]) -> None:
+        try:
             self._observers.remove(observer)
+        except ValueError:
+            warn(DisposeWarning("Attempting to dispose of a unknown observer"))
+
+
+__all__ = ("MultiStream",)

@@ -1,6 +1,5 @@
 # Internal
 import typing as T
-from abc import abstractmethod
 
 # External
 import typing_extensions as Te

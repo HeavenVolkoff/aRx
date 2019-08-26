@@ -97,7 +97,7 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
         async with MultiStream(loop=self.loop) as stream:
             listener = AnonymousObserver(
                 asend=lambda x, _: self.assertEqual(x, 1),
-                araise=lambda e, _: self.assertIs(e, exc),
+                athrow=lambda e, _: self.assertIs(e, exc),
             )
             async with observe(stream | assert_op(lambda x: x == 1, exc), listener) as observation:
                 self.loop.create_task(send_data())
@@ -116,7 +116,7 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
             await aexit(observation)
 
         async with MultiStream(loop=self.loop) as stream, AnonymousObserver(
-            araise=lambda e, _: self.assertEqual(e, exc)
+            athrow=lambda e, _: self.assertEqual(e, exc)
         ) as listener:
             async with observe(stream, listener) as observation:
                 self.loop.create_task(send_data())
@@ -147,7 +147,7 @@ class TestStream(asynctest.TestCase, unittest.TestCase):
                 self.assertIs(n.previous.ref, stream),
                 self.assertTrue(n.previous.is_root),
             ),
-            araise=lambda _, n: not bool(
+            athrow=lambda _, n: not bool(
                 (
                     self.assertIsInstance(n, Namespace),
                     self.assertEqual(n.type, "AnonymousObserver"),

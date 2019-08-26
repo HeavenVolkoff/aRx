@@ -19,29 +19,6 @@ class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], Te.Protoco
 
     Base class for defining an object that is an Observer and Observable at the same time,
     in other words something through which data is inputted, transformed and outputted.
-
-               ▄▄▄▄▄▄▄▄▄
-            ▄█████████████▄
-    █████  █████████████████  █████
-    ▐████▌ ▀███▄       ▄███▀ ▐████▌
-     █████▄  ▀███▄   ▄███▀  ▄█████
-     ▐██▀███▄  ▀███▄███▀  ▄███▀██▌
-      ███▄▀███▄  ▀███▀  ▄███▀▄███
-      ▐█▄▀█▄▀███ ▄ ▀ ▄ ███▀▄█▀▄█▌
-       ███▄▀█▄██ ██▄██ ██▄█▀▄███
-        ▀███▄▀██ █████ ██▀▄███▀
-       █▄ ▀█████ █████ █████▀ ▄█
-       ███        ███        ███
-       ███▄    ▄█ ███ █▄    ▄███
-       █████ ▄███ ███ ███▄ █████
-       █████ ████ ███ ████ █████
-       █████ ████ ███ ████ █████
-       █████ ████ ███ ████ █████
-       █████ ████▄▄▄▄▄████ █████
-        ▀███ █████████████ ███▀
-          ▀█ ███ ▄▄▄▄▄ ███ █▀
-             ▀█▌▐█████▌▐█▀
-                ███████
     """
 
     pass

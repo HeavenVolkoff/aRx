@@ -3,11 +3,16 @@ import typing as T
 
 # External
 import typing_extensions as Te
+
+# External
 from async_tools import attempt_await
 
 # Project
-from ..namespace import Namespace
 from ..streams.single_stream import SingleStreamBase
+
+if T.TYPE_CHECKING:
+    # Project
+    from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K")
@@ -86,7 +91,7 @@ class Map(SingleStreamBase[K, L]):
 
         return await result
 
-    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
+    async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
         return await super()._athrow(await attempt_await(self._araise_mapper(exc)), namespace)
 
 

@@ -3,11 +3,16 @@ import typing as T
 
 # External
 import typing_extensions as Te
+
+# External
 from async_tools import attempt_await
 
 # Project
 from ..streams import SingleStream
-from ..namespace import Namespace
+
+if T.TYPE_CHECKING:
+    # Project
+    from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K")
@@ -71,7 +76,7 @@ class Filter(SingleStream[K]):
         self._asend_predicate = noop if asend_predicate is None else asend_predicate
         self._araise_predicate = noop if araise_predicate is None else araise_predicate
 
-    async def _asend(self, value: K, namespace: Namespace) -> None:
+    async def _asend(self, value: K, namespace: "Namespace") -> None:
         if self._index is None:
             awaitable = self._asend_predicate(value)
         else:
@@ -86,7 +91,7 @@ class Filter(SingleStream[K]):
 
             await result
 
-    async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
+    async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
         if await attempt_await(self._araise_predicate(exc)):
             return await super()._athrow(exc, namespace)
 

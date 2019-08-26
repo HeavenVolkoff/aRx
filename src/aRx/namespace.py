@@ -1,18 +1,21 @@
-__all__ = ("Namespace", "get_namespace")
-
 # Internal
 import typing as T
 from weakref import WeakValueDictionary
-from dataclasses import dataclass
+from dataclasses import InitVar, field, dataclass
 
-ref_map: T.MutableMapping[int, object] = WeakValueDictionary()
+_ref_map: T.MutableMapping[int, object] = WeakValueDictionary()
 
 
 @dataclass
 class Namespace:
-    type: T.Type[T.Any]
+    obj: InitVar[object]
+    type: T.Type[T.Any] = field(init=False)
     action: str
-    previous: T.Optional["Namespace"]
+    previous: T.Optional["Namespace"] = None
+
+    def __post_init__(self, obj: object) -> None:
+        _ref_map[self.id] = obj
+        self.type = type(obj)
 
     @property
     def id(self) -> int:
@@ -32,7 +35,7 @@ class Namespace:
             Reference to the object.
 
         """
-        return ref_map.get(self.id, None)
+        return _ref_map.get(self.id, None)
 
     @property
     def is_root(self) -> bool:
@@ -79,20 +82,4 @@ class Namespace:
         return self.search(item) is not None
 
 
-def get_namespace(obj: object, action: str, previous: T.Optional[Namespace] = None) -> Namespace:
-    """Generate namespace for given namespace.
-
-    Args:
-        obj: Object for which to generate namespace.
-        action: Action represented by namespace.
-        previous: Previous namespace in chain.
-
-    Returns:
-        Namespace.
-
-    """
-    namespace = Namespace(type=type(obj), action=action, previous=previous)
-
-    ref_map[namespace.id] = obj
-
-    return namespace
+__all__ = ("Namespace",)

@@ -22,13 +22,12 @@ Example using operators to filter odd numbers from a Iterable source.
 
     async def run() -> None:
         # Observer that will print all data that passes through it
-        async with AnonymousObserver(asend=lambda x: print(x)) as listener:
-            # Apply filter operators to source observables
-            source = observables.FromIterable(range(100)) | op.filter(lambda x: bool(x % 2))
-            # Subscribe listener to filtered observables, and await for all data to be processed
-            await observables.observe(source, listener)
-"""
+        await (
+            observables.FromIterable(range(100)) | op.Filter(lambda x: bool(x % 2))
+            > AnonymousObserver(asend=lambda x, _: print(x))
+        )
 
+"""
 
 # Project
 from .map import Map

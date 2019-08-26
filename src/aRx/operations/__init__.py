@@ -1,4 +1,5 @@
 # Project
+from .pipe_op import pipe
+from .sink_op import sink
 from .concat_op import concat
-from .dispose_op import dispose
 from .observe_op import observe

@@ -6,7 +6,10 @@ import typing_extensions as Te
 
 # Project
 from ..streams import SingleStream
-from ..namespace import Namespace
+
+if T.TYPE_CHECKING:
+    # Project
+    from ..namespace import Namespace
 
 # Generic Types
 K = T.TypeVar("K")
@@ -25,15 +28,12 @@ class Min(SingleStream[M]):
     def __init__(self, **kwargs: T.Any) -> None:
         super().__init__(**kwargs)
         self._min: M = _NOT_PROVIDED  # type: ignore
-        self._namespace: T.Optional[Namespace] = None
+        self._namespace: T.Optional["Namespace"] = None
 
-    async def _asend(self, value: M, namespace: Namespace) -> None:
-        if self._min != _NOT_PROVIDED:
-            if not value < self._min:
-                return
-
-        self._min = value
-        self._namespace = namespace
+    async def _asend(self, value: M, namespace: "Namespace") -> None:
+        if self._min == _NOT_PROVIDED or value < self._min:
+            self._min = value
+            self._namespace = namespace
 
     async def _aclose(self) -> None:
         if self._min != _NOT_PROVIDED:

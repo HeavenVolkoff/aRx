@@ -1,18 +1,18 @@
 # Internal
 import typing as T
 from asyncio import CancelledError
-from contextlib import suppress
-from collections.abc import AsyncGenerator
+
+# External
+import typing_extensions as Te
 
 # Project
-from ..protocols import ObserverProtocol
-from ._internal.from_iterable_base import FromIterableBase
+from ._internal.from_source import FromSource
 
 # Generic Types
 K = T.TypeVar("K")
 
 
-class FromIterableIterable(FromIterableBase[K, T.AsyncIterator[K]]):
+class FromIterableIterable(FromSource[K, T.AsyncIterator[K]]):
     """Observable that uses an async iterable as data source."""
 
     def __init__(self, async_iterable: T.AsyncIterable[K], **kwargs: T.Any) -> None:
@@ -23,33 +23,32 @@ class FromIterableIterable(FromIterableBase[K, T.AsyncIterator[K]]):
             kwargs: Keyword parameters for super.
 
         """
-        super().__init__(**kwargs)
+        super().__init__(async_iterable.__aiter__(), **kwargs)
 
-        # Internal
-        self._iterator = async_iterable.__aiter__()
+    async def _worker(self) -> None:
+        assert self._observer is not None
 
-    async def _worker(
-        self, async_iterator: T.AsyncIterator[K], observer: ObserverProtocol[K]
-    ) -> None:
-        with suppress(CancelledError):
-            try:
-                async for data in async_iterator:
-                    if observer.closed:
-                        break
+        cancelled = False
 
-                    await observer.asend(data, self._namespace)
-            except CancelledError:
-                raise
-            except Exception as exc:
-                if not observer.closed:
-                    await observer.athrow(exc, self._namespace)
+        try:
+            async for data in self._source:
+                if self._observer.closed:
+                    break
 
-            if isinstance(async_iterator, AsyncGenerator):
+                await self._observer.asend(data, self._namespace)
+        except CancelledError:
+            cancelled = True
+            raise
+        except Exception as exc:
+            if not self._observer.closed:
+                await self._observer.athrow(exc, self._namespace)
+        except BaseException:
+            cancelled = True
+            raise
+        finally:
+            if not cancelled and isinstance(self._source, Te.AsyncGenerator):
                 # Ensure async_generator gets closed
-                await async_iterator.aclose()
-
-            if not (observer.closed or observer.keep_alive):
-                await observer.aclose()
+                await self._source.aclose()
 
 
 __all__ = ("FromIterableIterable",)
