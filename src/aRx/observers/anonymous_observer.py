@@ -48,7 +48,7 @@ class AnonymousObserver(Observer[K]):
     """An anonymous Observer.
 
     Creates as sink where the implementation is provided by three
-    optional and anonymous functions, asend, araise and aclose. Used for
+    optional and anonymous functions, asend, athrow and aclose. Used for
     listening to a source.
     """
 
@@ -81,7 +81,7 @@ class AnonymousObserver(Observer[K]):
 
         Arguments:
             asend: Implementation of asend logic.
-            athrow: Implementation of araise logic.
+            athrow: Implementation of athrow logic.
             aclose: Implementation of aclose logic.
             kwargs: Keyword parameters for super.
 

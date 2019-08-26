@@ -6,6 +6,7 @@ import typing_extensions as Te
 from async_tools import attempt_await
 
 # Project
+from ..error import ObserverClosedError
 from ..streams import SingleStream
 
 if T.TYPE_CHECKING:
@@ -16,8 +17,12 @@ if T.TYPE_CHECKING:
 K = T.TypeVar("K")
 
 
-def noop(x: K) -> K:
-    return x
+def noop(_: T.Any) -> bool:
+    return False
+
+
+class _StopMark(ObserverClosedError):
+    pass
 
 
 class Stop(SingleStream[K]):
@@ -25,7 +30,7 @@ class Stop(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Callable[[K], T.Union[bool, T.Awaitable[bool]]],
-        araise_predicate: T.Optional[
+        athrow_predicate: T.Optional[
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
@@ -38,7 +43,7 @@ class Stop(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: Te.Literal[None],
-        araise_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
+        athrow_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
         *,
         with_index: Te.Literal[False],
         **kwargs: T.Any,
@@ -49,7 +54,7 @@ class Stop(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Callable[[K, int], T.Union[bool, T.Awaitable[bool]]],
-        araise_predicate: T.Optional[
+        athrow_predicate: T.Optional[
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
@@ -61,24 +66,20 @@ class Stop(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Any = None,
-        araise_predicate: T.Any = None,
+        athrow_predicate: T.Any = None,
         *,
         with_index: bool = False,
         **kwargs: T.Any,
     ) -> None:
         super().__init__(**kwargs)
 
-        assert asend_predicate or araise_predicate
+        assert asend_predicate or athrow_predicate
 
         self._index = 0 if with_index else None
-        self._close_guard = False
         self._asend_predicate = noop if asend_predicate is None else asend_predicate
-        self._araise_predicate = noop if araise_predicate is None else araise_predicate
+        self._athrow_predicate = noop if athrow_predicate is None else athrow_predicate
 
-    async def __asend__(self, value: K, namespace: "Namespace") -> None:
-        if self._close_guard:
-            return
-
+    async def _asend(self, value: K, namespace: "Namespace") -> None:
         if self._index is None:
             stop_awaitable = self._asend_predicate(value)
         else:
@@ -86,25 +87,19 @@ class Stop(SingleStream[K]):
             self._index += 1
 
         if await attempt_await(stop_awaitable):
-            self._close_guard = True
-            self.loop.create_task(self.aclose())
-        else:
-            awaitable = super()._asend(value, namespace)
+            raise _StopMark
 
-            # Remove reference early to avoid keeping large objects in memory
-            del value
+        awaitable = super()._asend(value, namespace)
 
-            await awaitable
+        # Remove reference early to avoid keeping large objects in memory
+        del value
 
-    async def __araise__(self, exc: Exception, namespace: "Namespace") -> bool:
-        if not self._close_guard:
-            if await attempt_await(self._araise_predicate(exc)):
-                self._close_guard = True
-                self.loop.create_task(self.aclose())
-            else:
-                return await super()._athrow(exc, namespace)
+        await awaitable
 
-        return False
+    async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
+        if isinstance(exc, _StopMark) or await attempt_await(self._athrow_predicate(exc)):
+            return True
+        return await super()._athrow(exc, namespace)
 
 
 __all__ = ("Stop",)

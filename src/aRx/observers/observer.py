@@ -111,7 +111,7 @@ class Observer(
 
     @contextmanager
     def _propagating(self) -> T.Generator[None, None, None]:
-        """Context manager to keep track of any ongoing asend or araise operations."""
+        """Context manager to keep track of any ongoing asend or athrow operations."""
         self._propagation_count += 1
 
         try:
@@ -194,7 +194,7 @@ class Observer(
 
         try:
             with self._propagating():
-                awaitable = self._athrow(main_exc, Namespace(self, "araise", namespace))
+                awaitable = self._athrow(main_exc, Namespace(self, "athrow", namespace))
 
                 try:
                     self._close_guard = await awaitable

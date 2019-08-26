@@ -100,7 +100,7 @@ class MultiStream(Observer[K], Observable[K]):
                         }
                     )
 
-        # A MultiStream never closes on araise
+        # A MultiStream never closes on athrow
         return False
 
     async def _aclose(self) -> None:

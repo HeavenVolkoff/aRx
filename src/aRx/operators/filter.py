@@ -16,8 +16,8 @@ if T.TYPE_CHECKING:
 K = T.TypeVar("K")
 
 
-def noop(x: K) -> K:
-    return x
+def noop(_: T.Any) -> bool:
+    return True
 
 
 class Filter(SingleStream[K]):
