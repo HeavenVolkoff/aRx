@@ -201,6 +201,7 @@ $RECYCLE.BIN/
 *.lnk
 
 ### Project ###
-.idea
+.idea/**/*
+!.idea/MypyConfig.xml
 
 # End of https://www.gitignore.io/api/macos,linux,python,windows

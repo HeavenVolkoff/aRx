@@ -12,11 +12,11 @@ if T.TYPE_CHECKING:
 class Never(Observable[None]):
     """Observable that never outputs data, but stays open."""
 
-    async def __observe__(self, _: "ObserverProtocol"[T.Any]) -> None:
+    async def __observe__(self, _: "ObserverProtocol[T.Any]") -> None:
         """Do nothing."""
         return
 
-    async def __dispose__(self, _: "ObserverProtocol"[T.Any]) -> None:
+    async def __dispose__(self, _: "ObserverProtocol[T.Any]") -> None:
         """Do nothing."""
         return
 

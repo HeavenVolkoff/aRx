@@ -6,8 +6,6 @@ from contextlib import contextmanager
 
 # External
 import typing_extensions as Te
-
-# External
 from async_tools import Loopable
 from async_tools.abstract import BasicRepr, AsyncABCMeta
 
@@ -22,10 +20,15 @@ if T.TYPE_CHECKING:
 
 # Generic Types
 K = T.TypeVar("K")
+L = T.TypeVar("L")
 
 
 class Observer(
-    BasicRepr, Loopable, T.Generic[K], Te.AsyncContextManager[None], metaclass=AsyncABCMeta
+    BasicRepr,
+    Loopable,
+    T.Generic[K],
+    Te.AsyncContextManager["Observer[K]"],
+    metaclass=AsyncABCMeta,
 ):
     """Observer abstract class.
 
@@ -56,16 +59,16 @@ class Observer(
         self._closed = False
         self._close_guard = False
         self._propagation_count = 0
-        self._propagation_guard: T.Optional["Future"[None]] = None
+        self._propagation_guard: T.Optional["Future[None]"] = None
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self: L) -> L:
         """Async context manager entrypoint.
 
         Returns:
             The observers object.
 
         """
-        return None
+        return self
 
     async def __aexit__(self, _: T.Any, __: T.Any, ___: T.Any) -> bool:
         """Async context manager exit.

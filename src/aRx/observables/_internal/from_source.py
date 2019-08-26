@@ -40,19 +40,19 @@ class FromSource(T.Generic[K, L], Observable[K], metaclass=AsyncABCMeta):
         super().__init__(**kwargs)  # type: ignore
 
         # Internal
-        self._task: T.Optional["Task"[None]] = None
+        self._task: T.Optional["Task[None]"] = None
         self._source: L = source
-        self._observer: T.Optional["ObserverProtocol"[K]] = None
+        self._observer: T.Optional["ObserverProtocol[K]"] = None
         self._namespace = Namespace(self, "_worker")
 
-    async def __observe__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         if self._task is not None:
             raise RuntimeError("Iterator is already in use")
 
         self._task = get_running_loop().create_task(self._worker())
         self._observer = observer
 
-    async def __dispose__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
         if self._observer is not observer:
             warn(DisposeWarning("Attempting to dispose of a unknown observer"))
             return

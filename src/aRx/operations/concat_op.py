@@ -23,11 +23,11 @@ M = T.TypeVar("M")
 
 
 async def concat(
-    a: "ObservableProtocol"[K],
-    b: "ObservableProtocol"[L],
+    a: "ObservableProtocol[K]",
+    b: "ObservableProtocol[L]",
     *,
     loop: T.Optional["AbstractEventLoop"] = None,
-) -> "Observable"[T.Union[K, L]]:
+) -> "Observable[T.Union[K, L]]":
     # Project
     from ..streams import SingleStream
 

@@ -98,13 +98,13 @@ class AnonymousObserver(Observer[K]):
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        await attempt_await(res, loop=self.loop)
+        await attempt_await(res)
 
     async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
         return await attempt_await(self._athrow_impl(exc, namespace))
 
     async def _aclose(self) -> None:
-        await attempt_await(self._aclose_impl(), loop=self.loop)
+        await attempt_await(self._aclose_impl())
 
 
 __all__ = ("AnonymousObserver",)

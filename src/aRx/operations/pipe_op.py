@@ -21,10 +21,10 @@ M = T.TypeVar("M")
 class pipe(T.Generic[K, L], observe[K]):
     def __init__(
         self,
-        observable: "ObservableProtocol"[K],
-        transformer: "TransformerProtocol"[K, L],
+        observable: "ObservableProtocol[K]",
+        transformer: "TransformerProtocol[K, L]",
         *,
-        previous_pipe: T.Optional["pipe"[M, K]] = None,
+        previous_pipe: T.Optional["pipe[M, K]"] = None,
         **kwargs: T.Any,
     ) -> None:
         super().__init__(observable, transformer, **kwargs)
@@ -33,10 +33,10 @@ class pipe(T.Generic[K, L], observe[K]):
         self._previous = previous_pipe
         self._transformer = transformer
 
-    def __or__(self, transformer: "TransformerProtocol"[L, M]) -> "pipe"[L, M]:
+    def __or__(self, transformer: "TransformerProtocol[L, M]") -> "pipe[L, M]":
         return pipe(self._transformer, transformer, previous_pipe=self)
 
-    def __gt__(self, observer: ObserverProtocol[L]) -> sink[L]:
+    def __gt__(self, observer: "ObserverProtocol[L]") -> sink[L]:
         return sink(self._transformer, observer, previous_pipe=self)
 
     async def __aenter__(self) -> None:

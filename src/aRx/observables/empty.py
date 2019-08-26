@@ -13,10 +13,10 @@ if T.TYPE_CHECKING:
 class Empty(Observable[T.Any]):
     """Observable that doesn't output data and closes any observers as soon as possible."""
 
-    async def __observe__(self, observer: "ObserverProtocol"[T.Any]) -> None:
+    async def __observe__(self, observer: "ObserverProtocol[T.Any]") -> None:
         await observe(self, observer).dispose()
 
-    async def __dispose__(self, observer: "ObserverProtocol"[T.Any]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol[T.Any]") -> None:
         return
 
 

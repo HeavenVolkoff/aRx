@@ -38,7 +38,7 @@ class MultiStream(Observer[K], Observable[K]):
         super().__init__(**kwargs)
 
         # Internal
-        self._observers: T.Set["ObserverProtocol"[K]] = set()
+        self._observers: T.Set["ObserverProtocol[K]"] = set()
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:
         self._observers = set(obv for obv in self._observers if not obv.closed)
@@ -106,14 +106,14 @@ class MultiStream(Observer[K], Observable[K]):
     async def _aclose(self) -> None:
         pass
 
-    async def __observe__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         # Add observers to internal observation set
         self._observers.add(observer)
 
-    async def __dispose__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
         try:
             self._observers.remove(observer)
-        except ValueError:
+        except KeyError:
             warn(DisposeWarning("Attempting to dispose of a unknown observer"))
 
 

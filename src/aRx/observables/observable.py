@@ -29,7 +29,7 @@ class Observable(T.Generic[K], metaclass=AsyncABCMeta):
     and must be implemented in the magic method :meth:`~.Observable.__observe__`.
     """
 
-    def __gt__(self, observer: "ObserverProtocol"[K]) -> sink[K]:
+    def __gt__(self, observer: "ObserverProtocol[K]") -> sink[K]:
         return sink(self, observer)
 
     def __or__(self, transformer: TransformerProtocol[K, L]) -> pipe[K, L]:
@@ -39,7 +39,7 @@ class Observable(T.Generic[K], metaclass=AsyncABCMeta):
         return pipe(self, transformer)
 
     @abstractmethod
-    async def __observe__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         """Interface through which observers are registered to observe the data flow.
 
         Define how each observers is registered into this observable and the mechanisms necessary
@@ -52,7 +52,7 @@ class Observable(T.Generic[K], metaclass=AsyncABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    async def __dispose__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
         """Interface through which observers are unregistered from observation of the data flow.
 
         Define how each observers is unregistered from this observable and the mechanisms necessary

@@ -43,8 +43,8 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         super().__init__(**kwargs)
 
         # Internal
-        self._lock: "Future"[None] = self._loop.create_future()
-        self._observer: T.Optional["ObserverProtocol"[K]] = None
+        self._lock: "Future[None]" = self._loop.create_future()
+        self._observer: T.Optional["ObserverProtocol[K]"] = None
 
     async def _asend(self, value: L, namespace: "Namespace") -> None:
         # Wait for observers
@@ -85,7 +85,7 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         self._lock.cancel()
         self._observer = None
 
-    async def __observe__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         """Start streaming.
 
         Raises:
@@ -104,7 +104,7 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         # Release any awaiting event
         self._lock.set_result(None)
 
-    async def __dispose__(self, observer: "ObserverProtocol"[K]) -> None:
+    async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
         if observer is not self._observer:
             warn(DisposeWarning("Attempting to dispose of a unknown observer"))
             return

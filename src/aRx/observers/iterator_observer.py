@@ -35,7 +35,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         # Private
         self._queue: Te.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
         self._counter = 0
-        self._control: "Future"[None] = self.loop.create_future()
+        self._control: "Future[None]" = self.loop.create_future()
 
     @property
     def _next_value(self) -> T.Tuple[bool, T.Union[K, Exception]]:

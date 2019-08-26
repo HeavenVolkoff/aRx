@@ -19,10 +19,10 @@ K = T.TypeVar("K")
 class sink(observe[K]):
     def __init__(
         self,
-        observable: "ObservableProtocol"[K],
-        observer: "ObserverProtocol"[K],
+        observable: "ObservableProtocol[K]",
+        observer: "ObserverProtocol[K]",
         *,
-        previous_pipe: T.Optional["pipe"[T.Any, K]] = None,
+        previous_pipe: T.Optional["pipe[T.Any, K]"] = None,
         **kwargs: T.Any,
     ) -> None:
         super().__init__(observable, observer, **kwargs)

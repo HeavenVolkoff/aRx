@@ -23,6 +23,8 @@ import re
 
 # External
 import sphinx_bootstrap_theme
+
+# External
 from aRx import __version__
 
 project = "aRx"
