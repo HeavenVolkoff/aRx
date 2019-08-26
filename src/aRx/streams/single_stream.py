@@ -1,17 +1,21 @@
 # Internal
 import typing as T
-from asyncio import Future
+from asyncio import InvalidStateError
 from warnings import warn
+from contextlib import suppress
 
 # External
 from async_tools.abstract import AsyncABCMeta
 
 # Project
-from ..error import DisposeWarning, SingleStreamError
+from ..error import DisposeWarning, SingleStreamError, ObserverClosedError
 from ..observers import Observer
 from ..observables import Observable
 
 if T.TYPE_CHECKING:
+    # Internal
+    from asyncio import Future
+
     # Project
     from ..namespace import Namespace
     from ..protocols import ObserverProtocol
@@ -82,8 +86,8 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
 
     async def _aclose(self) -> None:
         # Cancel all awaiting event in the case we weren't subscribed
-        self._lock.cancel()
-        self._observer = None
+        with suppress(InvalidStateError):
+            self._lock.set_exception(ObserverClosedError)
 
     async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         """Start streaming.

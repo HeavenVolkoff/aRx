@@ -1,8 +1,9 @@
 # Internal
 import typing as T
 from abc import abstractmethod
-from asyncio import wait
+from asyncio import CancelledError
 from warnings import warn
+from contextlib import suppress
 
 # External
 from async_tools import get_running_loop
@@ -58,8 +59,12 @@ class FromSource(T.Generic[K, L], Observable[K], metaclass=AsyncABCMeta):
             return
 
         if self._task:
+            if self._task.cancelled():
+                self._task.result()  # raise CancelledError
             self._task.cancel()
-            await wait((self._task,))
+
+            with suppress(CancelledError, Exception):
+                await self._task
 
         self._task = None
         self._observer = None

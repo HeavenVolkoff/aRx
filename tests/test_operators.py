@@ -3,9 +3,6 @@ import unittest
 
 # External
 import asynctest
-from async_tools.operator import aexit
-
-# External
 from aRx.streams import MultiStream
 from aRx.namespace import Namespace
 from aRx.observers import AnonymousObserver
