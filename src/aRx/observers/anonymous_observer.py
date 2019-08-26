@@ -22,8 +22,8 @@ def default_asend(_: T.Any, __: T.Any) -> None:
     return
 
 
-def setup_default_araise(loop: "AbstractEventLoop") -> T.Callable[[Exception, "Namespace"], bool]:
-    def default_araise(exc: Exception, namespace: "Namespace") -> bool:
+def setup_default_athrow(loop: "AbstractEventLoop") -> T.Callable[[Exception, "Namespace"], bool]:
+    def default_athrow(exc: Exception, namespace: "Namespace") -> bool:
         ref = namespace.ref
         loop.call_exception_handler(
             {
@@ -37,7 +37,7 @@ def setup_default_araise(loop: "AbstractEventLoop") -> T.Callable[[Exception, "N
 
         return False
 
-    return default_araise
+    return default_athrow
 
 
 def default_aclose() -> None:
@@ -89,7 +89,7 @@ class AnonymousObserver(Observer[K]):
         super().__init__(**kwargs)
 
         self._asend_impl = default_asend if asend is None else asend
-        self._athrow_impl = setup_default_araise(self.loop) if athrow is None else athrow
+        self._athrow_impl = setup_default_athrow(self.loop) if athrow is None else athrow
         self._aclose_impl = default_aclose if aclose is None else aclose
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:

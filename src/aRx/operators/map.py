@@ -26,7 +26,7 @@ class Map(SingleStreamBase[K, L]):
     def __init__(
         self,
         asend_mapper: T.Callable[[L], T.Union[K, T.Awaitable[K]]],
-        araise_mapper: T.Optional[
+        athrow_mapper: T.Optional[
             T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
         ] = None,
         *,
@@ -39,7 +39,7 @@ class Map(SingleStreamBase[K, L]):
     def __init__(
         self,
         asend_mapper: Te.Literal[None],
-        araise_mapper: T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]],
+        athrow_mapper: T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]],
         *,
         with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
@@ -50,7 +50,7 @@ class Map(SingleStreamBase[K, L]):
     def __init__(
         self,
         asend_mapper: T.Callable[[L, int], T.Union[K, T.Awaitable[K]]],
-        araise_mapper: T.Optional[
+        athrow_mapper: T.Optional[
             T.Callable[[Exception], T.Union[Exception, T.Awaitable[Exception]]]
         ] = None,
         *,
@@ -62,18 +62,18 @@ class Map(SingleStreamBase[K, L]):
     def __init__(
         self,
         asend_mapper: T.Any = None,
-        araise_mapper: T.Any = None,
+        athrow_mapper: T.Any = None,
         *,
         with_index: bool = False,
         **kwargs: T.Any,
     ) -> None:
         super().__init__(**kwargs)
 
-        assert asend_mapper or araise_mapper
+        assert asend_mapper or athrow_mapper
 
         self._index = 0 if with_index else None
         self._asend_mapper = noop if asend_mapper is None else asend_mapper
-        self._araise_mapper = noop if araise_mapper is None else araise_mapper
+        self._athrow_mapper = noop if athrow_mapper is None else athrow_mapper
 
     async def _asend_impl(self, value: L) -> K:
         if self._index is None:
@@ -90,7 +90,7 @@ class Map(SingleStreamBase[K, L]):
         return await result
 
     async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
-        return await super()._athrow(await attempt_await(self._araise_mapper(exc)), namespace)
+        return await super()._athrow(await attempt_await(self._athrow_mapper(exc)), namespace)
 
 
 __all__ = ("Map",)

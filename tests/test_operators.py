@@ -104,11 +104,11 @@ class TestOperators(asynctest.TestCase, unittest.TestCase):
                 (
                     self.assertIsInstance(n, Namespace),
                     self.assertEqual(n.type, AnonymousObserver),
-                    self.assertEqual(n.action, "araise"),
+                    self.assertEqual(n.action, "athrow"),
                     self.assertIs(n.ref, listener),
                     self.assertIsInstance(n.previous, Namespace),
                     self.assertEqual(n.previous.type, MultiStream),
-                    self.assertEqual(n.previous.action, "araise"),
+                    self.assertEqual(n.previous.action, "athrow"),
                     self.assertIs(n.previous.ref, stream),
                     self.assertTrue(n.previous.is_root),
                 )

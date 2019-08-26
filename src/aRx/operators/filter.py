@@ -25,7 +25,7 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Callable[[K], T.Union[bool, T.Awaitable[bool]]],
-        araise_predicate: T.Optional[
+        athrow_predicate: T.Optional[
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
@@ -38,7 +38,7 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: Te.Literal[None],
-        araise_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
+        athrow_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
         *,
         with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
@@ -49,7 +49,7 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Callable[[K, int], T.Union[bool, T.Awaitable[bool]]],
-        araise_predicate: T.Optional[
+        athrow_predicate: T.Optional[
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
@@ -61,18 +61,18 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: T.Any = None,
-        araise_predicate: T.Any = None,
+        athrow_predicate: T.Any = None,
         *,
         with_index: bool = False,
         **kwargs: T.Any,
     ) -> None:
         super().__init__(**kwargs)
 
-        assert asend_predicate or araise_predicate
+        assert asend_predicate or athrow_predicate
 
         self._index = 0 if with_index else None
         self._asend_predicate = noop if asend_predicate is None else asend_predicate
-        self._araise_predicate = noop if araise_predicate is None else araise_predicate
+        self._athrow_predicate = noop if athrow_predicate is None else athrow_predicate
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:
         if self._index is None:
@@ -90,7 +90,7 @@ class Filter(SingleStream[K]):
             await result
 
     async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
-        if await attempt_await(self._araise_predicate(exc)):
+        if await attempt_await(self._athrow_predicate(exc)):
             return await super()._athrow(exc, namespace)
 
         return False

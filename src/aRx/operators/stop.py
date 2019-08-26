@@ -34,7 +34,7 @@ class Stop(SingleStream[K]):
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
-        with_index: Te.Literal[False],
+        with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -45,7 +45,7 @@ class Stop(SingleStream[K]):
         asend_predicate: Te.Literal[None],
         athrow_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
         *,
-        with_index: Te.Literal[False],
+        with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -58,7 +58,7 @@ class Stop(SingleStream[K]):
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
-        with_index: Te.Literal[True],
+        with_index: Te.Literal[True] = True,
         **kwargs: T.Any,
     ) -> None:
         ...
