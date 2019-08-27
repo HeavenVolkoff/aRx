@@ -1,6 +1,6 @@
 # Internal
 import typing as T
-from asyncio import ALL_COMPLETED, wait, gather
+from asyncio import ALL_COMPLETED, CancelledError, wait, gather
 from contextlib import suppress
 
 # Project
@@ -43,18 +43,20 @@ class MultiStream(Observer[K], Observable[K]):
         self._disposables: T.Optional[T.Awaitable[T.Any]] = None
 
     async def _clear_closed_observers(self) -> None:
-        if self._disposables:
-            # Already disposing something, try again later
-            return
-
         # gather all closed observers
         disposables = tuple(obv for obv in self._observers if obv.closed)
         if not disposables:
             return  # Nothing to do
 
         try:
-            self._disposables = gather(*(observe(self, obv).dispose() for obv in disposables))
-            await self._disposables
+            await gather(*(observe(self, obv).dispose() for obv in disposables))
+        except CancelledError:
+            raise
+        except Exception as exc:
+            self.loop.call_exception_handler(
+                {"message": f"{self}: Failed to dispose a closed observer", "exception": exc}
+            )
+            # Don't raise cause we don't want to trigger Task error reporting
         finally:
             self._disposables = None
 
@@ -90,7 +92,9 @@ class MultiStream(Observer[K], Observable[K]):
                     }
                 )
 
-        await self._clear_closed_observers()
+        if not self._disposables:
+            # Enqueue clearing
+            self._disposables = self.loop.create_task(self._clear_closed_observers())
 
     async def _athrow(self, main_exc: Exception, namespace: "Namespace") -> bool:
         if self._observers:
@@ -120,12 +124,17 @@ class MultiStream(Observer[K], Observable[K]):
                         }
                     )
 
-            await self._clear_closed_observers()
+            if not self._disposables:
+                # Enqueue clearing
+                self._disposables = self.loop.create_task(self._clear_closed_observers())
 
         # A MultiStream never closes on athrow
         return False
 
     async def _aclose(self) -> None:
+        if self._disposables:
+            await self._disposables
+
         await gather(*(observe(self, observer).dispose() for observer in self._observers))
 
     async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
