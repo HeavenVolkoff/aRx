@@ -35,7 +35,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         # Private
         self._queue: Te.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
         self._counter = 0
-        self._control: "Future[None]" = self.loop.create_future()
+        self._control: "Future[bool]" = self.loop.create_future()
 
     @property
     def _next_value(self) -> T.Tuple[bool, T.Union[K, Exception]]:
@@ -51,7 +51,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         self._queue.append(value)
 
         with suppress(InvalidStateError):
-            self._control.set_result(None)
+            self._control.set_result(True)
 
     def __aiter__(self) -> T.AsyncIterator[K]:
         return self
@@ -65,15 +65,15 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         return True
 
     async def _aclose(self) -> None:
-        pass
+        self._control.set_result(False)
 
     async def __anext__(self) -> K:
         while not self._queue:
             if self.closed:
                 raise StopAsyncIteration()
 
-            await self._control
-            self._control = self.loop.create_future()
+            if await self._control:
+                self._control = self.loop.create_future()
 
         is_error, value = self._next_value
 
