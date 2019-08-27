@@ -10,6 +10,7 @@ from async_tools.abstract import AsyncABCMeta
 # Project
 from ..error import DisposeWarning, SingleStreamError, ObserverClosedError
 from ..observers import Observer
+from ..operations import observe
 from ..observables import Observable
 
 if T.TYPE_CHECKING:
@@ -89,6 +90,9 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         with suppress(InvalidStateError):
             self._lock.set_exception(ObserverClosedError)
 
+        if self._observer:
+            await observe(self, self._observer).dispose()
+
     async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         """Start streaming.
 
@@ -109,10 +113,14 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         self._lock.set_result(None)
 
     async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
+        if self.closed:
+            return  # Ignore dispose after stream is closed
+
         if observer is not self._observer:
             warn(DisposeWarning("Attempting to dispose of a unknown observer"))
             return
 
+        self._observer = None
         await self.aclose()
 
 

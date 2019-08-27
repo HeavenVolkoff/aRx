@@ -1,11 +1,12 @@
 # Internal
 import typing as T
-from asyncio import ALL_COMPLETED, wait
+from asyncio import ALL_COMPLETED, wait, gather
 from warnings import warn
 
 # Project
 from ..error import DisposeWarning
 from ..observers import Observer
+from ..operations import observe
 from ..observables import Observable
 
 if T.TYPE_CHECKING:
@@ -104,13 +105,16 @@ class MultiStream(Observer[K], Observable[K]):
         return False
 
     async def _aclose(self) -> None:
-        pass
+        await gather(*(observe(self, observer).dispose() for observer in self._observers))
 
     async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         # Add observers to internal observation set
         self._observers.add(observer)
 
     async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
+        if self.closed:
+            return  # Ignore dispose after stream is closed
+
         try:
             self._observers.remove(observer)
         except KeyError:
