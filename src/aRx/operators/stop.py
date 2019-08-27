@@ -13,6 +13,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
 
+
 # Generic Types
 K = T.TypeVar("K")
 
@@ -87,7 +88,7 @@ class Stop(SingleStream[K]):
             self._index += 1
 
         if await attempt_await(stop_awaitable):
-            raise _StopMark
+            raise _StopMark(self)
 
         awaitable = super()._asend(value, namespace)
 

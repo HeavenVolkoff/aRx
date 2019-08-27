@@ -2,7 +2,6 @@
 import typing as T
 from abc import abstractmethod
 from asyncio import CancelledError
-from warnings import warn
 from contextlib import suppress
 
 # External
@@ -10,7 +9,6 @@ from async_tools import get_running_loop
 from async_tools.abstract import AsyncABCMeta
 
 # Project
-from ...error import DisposeWarning
 from ...namespace import Namespace
 from ..observable import Observable
 
@@ -20,6 +18,7 @@ if T.TYPE_CHECKING:
 
     # Project
     from ...protocols import ObserverProtocol
+
 
 # Generic Types
 K = T.TypeVar("K")
@@ -55,7 +54,6 @@ class FromSource(T.Generic[K, L], Observable[K], metaclass=AsyncABCMeta):
 
     async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
         if self._observer is not observer:
-            warn(DisposeWarning("Attempting to dispose of a unknown observer"))
             return
 
         if self._task:

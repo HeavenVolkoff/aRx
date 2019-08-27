@@ -12,6 +12,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..protocols import ObserverProtocol, ObservableProtocol, TransformerProtocol
 
+
 # Generic Types
 K = T.TypeVar("K")
 L = T.TypeVar("L")

@@ -47,6 +47,17 @@ class Namespace:
         """
         return self.previous is None
 
+    @staticmethod
+    def _search_strategies(
+        item: T.Union[str, object, T.Type[T.Any]]
+    ) -> T.Callable[["Namespace"], bool]:
+        if isinstance(item, str):
+            return lambda namespace: namespace.action != item
+        elif isinstance(item, type):
+            return lambda namespace: namespace.type != item
+        else:
+            return lambda namespace: namespace.ref is not item
+
     def search(self, item: T.Union[str, object, T.Type[T.Any]]) -> T.Optional["Namespace"]:
         """Search the chain for a namespace that matches the given item.
 
@@ -54,29 +65,13 @@ class Namespace:
             First namespace match
 
         """
+        strategy = self._search_strategies(item)
         namespace: T.Optional[Namespace] = self
 
-        if isinstance(item, str):
-            while namespace:
-                if namespace.type == item:
-                    return namespace
+        while namespace and strategy(namespace):
+            namespace = namespace.previous
 
-                namespace = namespace.previous
-        elif isinstance(item, type):
-            while namespace:
-                # Only check ref on possible matches
-                if namespace.type == item.__qualname__ and type(namespace.ref) == item:
-                    return namespace
-
-                namespace = namespace.previous
-        else:
-            while namespace:
-                if namespace.ref is item:
-                    return namespace
-
-                namespace = namespace.previous
-
-        return None
+        return namespace
 
     def __contains__(self, item: T.Union[str, object, T.Type[T.Any]]) -> bool:
         return self.search(item) is not None

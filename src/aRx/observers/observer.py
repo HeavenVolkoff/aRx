@@ -156,14 +156,16 @@ class Observer(
                     # Cancelled errors are irreversible
                     raise
                 except Exception as ex:
-                    # Any exception raised during the handling of the input data will be inputted to
+                    # Any exception raised during the handling of the input data will be thrown to
                     # the observers for it to handle.
                     try:
                         await self.athrow(ex, namespace)
                     except CancelledError:
                         raise
                     except Exception:
-                        if self._close_guard:
+                        # asend should always have precedence over athrow when closing the observer,
+                        # but just in case check it
+                        if self._close_guard and not self.closed:
                             aclose_awaitable = self.aclose()
 
                         raise

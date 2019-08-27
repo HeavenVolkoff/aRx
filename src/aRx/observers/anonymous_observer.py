@@ -14,6 +14,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
 
+
 # Generic Types
 K = T.TypeVar("K")
 
@@ -93,12 +94,12 @@ class AnonymousObserver(Observer[K]):
         self._aclose_impl = default_aclose if aclose is None else aclose
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:
-        res = self._asend_impl(value, namespace)
+        awaitable = self._asend_impl(value, namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        await attempt_await(res)
+        await attempt_await(awaitable)
 
     async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
         return await attempt_await(self._athrow_impl(exc, namespace))

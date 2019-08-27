@@ -12,6 +12,7 @@ if T.TYPE_CHECKING:
     from .pipe_op import pipe
     from ..protocols import ObserverProtocol, ObservableProtocol
 
+
 # Generic Types
 K = T.TypeVar("K")
 

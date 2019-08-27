@@ -4,8 +4,10 @@ import typing as T
 # External
 import typing_extensions as Te
 
-# Project
-from ..namespace import Namespace
+if T.TYPE_CHECKING:
+    # Project
+    from ..namespace import Namespace
+
 
 # Generic Types
 K = T.TypeVar("K", contravariant=True)
@@ -27,10 +29,10 @@ class ObserverProtocol(Te.Protocol[K]):
     def closed(self) -> bool:
         ...
 
-    async def asend(self, data: K, namespace: T.Optional[Namespace] = None) -> None:
+    async def asend(self, data: K, namespace: T.Optional["Namespace"] = None) -> None:
         ...
 
-    async def athrow(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
+    async def athrow(self, main_exc: Exception, namespace: T.Optional["Namespace"] = None) -> None:
         ...
 
     async def aclose(self) -> bool:

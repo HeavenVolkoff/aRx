@@ -1,11 +1,8 @@
-class ARxWarning(UserWarning):
-    """aRx base error class."""
+# Internal
+import typing as T
 
-    pass
-
-
-class DisposeWarning(ARxWarning):
-    pass
+if T.TYPE_CHECKING:
+    from .protocols import ObserverProtocol
 
 
 class ARxError(Exception):
@@ -33,7 +30,7 @@ class ConsumerClosedError(ARxError):
 class ObserverClosedError(ObserverError):
     """aRx error for when :class:`~aRx.abstract.observers.Observer` is used when closed."""
 
-    def __init__(self, instance: object) -> None:
+    def __init__(self, instance: "ObserverProtocol[T.Any]") -> None:
         """ObserverClosedError constructor.
 
         Arguments:
@@ -52,8 +49,6 @@ class SingleStreamError(ARxError):
 
 
 __all__ = (
-    "ARxWarning",
-    "DisposeWarning",
     "ARxError",
     "ObserverError",
     "ConsumerClosedError",

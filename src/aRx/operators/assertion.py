@@ -11,6 +11,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
 
+
 # Generic Types
 K = T.TypeVar("K")
 
@@ -31,12 +32,12 @@ class Assert(SingleStream[K]):
         if not await attempt_await(self._asend_predicate(value)):
             raise self._exc
 
-        res = super()._asend(value, namespace)
+        awaitable = super()._asend(value, namespace)
 
         # Remove reference early to avoid keeping large objects in memory
         del value
 
-        await res
+        await awaitable
 
 
 __all__ = ("Assert",)

@@ -12,11 +12,13 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
 
+
 # Generic Types
 K = T.TypeVar("K")
 
 
 class Skip(SingleStream[K]):
+    # TODO: Implement Skip athrow
     def __init__(self, count: int, **kwargs: T.Any) -> None:
         super().__init__(**kwargs)
 
@@ -28,8 +30,9 @@ class Skip(SingleStream[K]):
     async def _asend(self, value: K, namespace: "Namespace") -> None:
         if self._reverse_queue is not None:
             # Skip values from end
-            value = self._reverse_queue[0]
+            _value = self._reverse_queue[0]
             self._reverse_queue.append(value)
+            value = _value
         elif self._count > 0:
             # Skip values from start
             self._count -= 1

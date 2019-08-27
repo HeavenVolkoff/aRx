@@ -11,6 +11,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
 
+
 # Generic Types
 K = T.TypeVar("K")
 

@@ -1,14 +1,13 @@
 # Internal
 import typing as T
 from asyncio import InvalidStateError
-from warnings import warn
 from contextlib import suppress
 
 # External
 from async_tools.abstract import AsyncABCMeta
 
 # Project
-from ..error import DisposeWarning, SingleStreamError, ObserverClosedError
+from ..error import SingleStreamError, ObserverClosedError
 from ..observers import Observer
 from ..operations import observe
 from ..observables import Observable
@@ -20,6 +19,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
     from ..protocols import ObserverProtocol
+
 
 # Generic Types
 K = T.TypeVar("K")
@@ -88,9 +88,10 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
     async def _aclose(self) -> None:
         # Cancel all awaiting event in the case we weren't subscribed
         with suppress(InvalidStateError):
-            self._lock.set_exception(ObserverClosedError)
+            self._lock.set_exception(ObserverClosedError(self))
 
         if self._observer:
+            # Dispose observer
             await observe(self, self._observer).dispose()
 
     async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
@@ -113,11 +114,7 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         self._lock.set_result(None)
 
     async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
-        if self.closed:
-            return  # Ignore dispose after stream is closed
-
         if observer is not self._observer:
-            warn(DisposeWarning("Attempting to dispose of a unknown observer"))
             return
 
         self._observer = None

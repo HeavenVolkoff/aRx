@@ -1,10 +1,10 @@
 # Internal
 import typing as T
 from asyncio import ALL_COMPLETED, wait, gather
-from warnings import warn
+from contextlib import suppress
 
 # Project
-from ..error import DisposeWarning
+from ..error import ObserverClosedError
 from ..observers import Observer
 from ..operations import observe
 from ..observables import Observable
@@ -40,15 +40,30 @@ class MultiStream(Observer[K], Observable[K]):
 
         # Internal
         self._observers: T.Set["ObserverProtocol[K]"] = set()
+        self._disposables: T.Optional[T.Awaitable[T.Any]] = None
+
+    async def _clear_closed_observers(self) -> None:
+        if self._disposables:
+            # Already disposing something, try again later
+            return
+
+        # gather all closed observers
+        disposables = tuple(obv for obv in self._observers if obv.closed)
+        if not disposables:
+            return  # Nothing to do
+
+        try:
+            self._disposables = gather(*(observe(self, obv).dispose() for obv in disposables))
+            await self._disposables
+        finally:
+            self._disposables = None
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:
-        self._observers = set(obv for obv in self._observers if not obv.closed)
-
         if not self._observers:
             return
 
         awaitable = wait(
-            tuple(obv.asend(value, namespace) for obv in self._observers),
+            tuple(obv.asend(value, namespace) for obv in self._observers if not obv.closed),
             return_when=ALL_COMPLETED,
         )
 
@@ -61,45 +76,51 @@ class MultiStream(Observer[K], Observable[K]):
 
         for fut in done:
             exc = fut.exception()
-            if exc:
+            # Ignore ObserverClosedError in multi-stream as it's occurrence is natural due to the
+            # lazy way observers closure is handled
+            if exc and not isinstance(exc, ObserverClosedError):
                 self.loop.call_exception_handler(
                     {
+                        "future": fut,
                         "message": (
-                            "Unhandled exception while attempt "
-                            "to propagate data through observers"
+                            f"{self}: Unhandled exception while attempting to propagate data "
+                            "through observers"
                         ),
                         "exception": exc,
                     }
                 )
 
-    async def _athrow(self, main_exc: Exception, namespace: "Namespace") -> bool:
-        self._observers = set(obv for obv in self._observers if not obv.closed)
+        await self._clear_closed_observers()
 
+    async def _athrow(self, main_exc: Exception, namespace: "Namespace") -> bool:
         if self._observers:
-            awaitable = wait(
-                tuple(obv.athrow(main_exc, namespace) for obv in self._observers),
+            done, pending = await wait(
+                tuple(
+                    obv.athrow(main_exc, namespace) for obv in self._observers if not obv.closed
+                ),
                 return_when=ALL_COMPLETED,
             )
-
-            # Remove reference early to avoid keeping large objects in memory
-            del main_exc
-
-            done, pending = await awaitable
 
             assert not pending
 
             for fut in done:
                 exc = fut.exception()
-                if exc:
+                # Ignore ObserverClosedError in multi-stream as it's occurrence is natural due to
+                # the lazy way observers closure is handled
+                if exc and not isinstance(exc, ObserverClosedError):
+                    exc.__context__ = main_exc
                     self.loop.call_exception_handler(
                         {
+                            "future": fut,
                             "message": (
-                                "Unhandled exception while attempt "
-                                "to propagate exception through observers"
+                                f"{self}: Unhandled exception while attempting to propagate "
+                                "exception through observers"
                             ),
                             "exception": exc,
                         }
                     )
+
+            await self._clear_closed_observers()
 
         # A MultiStream never closes on athrow
         return False
@@ -112,13 +133,8 @@ class MultiStream(Observer[K], Observable[K]):
         self._observers.add(observer)
 
     async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
-        if self.closed:
-            return  # Ignore dispose after stream is closed
-
-        try:
+        with suppress(KeyError):
             self._observers.remove(observer)
-        except KeyError:
-            warn(DisposeWarning("Attempting to dispose of a unknown observer"))
 
 
 __all__ = ("MultiStream",)

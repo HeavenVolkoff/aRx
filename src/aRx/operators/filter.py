@@ -12,6 +12,7 @@ if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
 
+
 # Generic Types
 K = T.TypeVar("K")
 
@@ -68,6 +69,7 @@ class Filter(SingleStream[K]):
     ) -> None:
         super().__init__(**kwargs)
 
+        # There must be passed at least one predicate as argument
         assert asend_predicate or athrow_predicate
 
         self._index = 0 if with_index else None
