@@ -1,5 +1,8 @@
 # Internal
 import typing as T
+from asyncio import InvalidStateError
+from contextlib import suppress
+from collections import deque
 
 # External
 import typing_extensions as Te
@@ -28,7 +31,6 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         Arguments:
             kwargs: Keyword parameters for super.
         """
-        from collections import deque
 
         super().__init__(**kwargs)
 
@@ -44,10 +46,6 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
 
     @_next_value.setter
     def _next_value(self, value: T.Tuple[bool, T.Union[K, Exception]]) -> None:
-        # Internal
-        from asyncio import InvalidStateError
-        from contextlib import suppress
-
         self._queue.append(value)
 
         with suppress(InvalidStateError):
@@ -65,14 +63,15 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         return True
 
     async def _aclose(self) -> None:
-        self._control.set_result(False)
+        with suppress(InvalidStateError):
+            self._control.set_result(True)
 
     async def __anext__(self) -> K:
         while not self._queue:
             if self.closed:
                 raise StopAsyncIteration()
 
-            if await self._control:
+            if await self._control and not self.closed:
                 self._control = self.loop.create_future()
 
         is_error, value = self._next_value
