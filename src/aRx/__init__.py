@@ -1,3 +1,32 @@
+"""## Asynchronous Reactive Extensions
+
+A library to make asynchronous reactive programming in python easy to use.
+
+Its main purpose is to provide a framework for reactive programming built
+following python's standard on top of asyncio module's constructs.
+
+<script>
+    .. include:: ../../docs/rework-links.js
+</script>
+
+<details class="rework-link">
+  <summary>Copyright</summary>
+
+  .. include:: ../../COPYRIGHT.md
+    :start-line:1
+
+</details>
+
+<details class="rework-link">
+  <summary>License (Mozilla Public License Version 2.0)</summary>
+
+  .. include:: ../../LICENSE.md
+    :start-line:1
+
+</details>
+
+"""
+
 # External
 from importlib_metadata import version
 

@@ -25,14 +25,14 @@ async def concat(
 
     sink: SingleStream[T.Any] = SingleStream()
 
-    observation = await observe(a, sink)
+    await observe(a, sink)
 
     try:
         await observe(b, sink)
     except CancelledError:
         raise
     except Exception:
-        await observation.dispose()
+        await observe(a, sink).dispose()
         raise
 
     return sink

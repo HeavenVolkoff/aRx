@@ -16,7 +16,7 @@ install:
     - pip install ".[docs, tests]"
 
 script:
-    - python -m unittest discover -s tests && travis-sphinx build --nowarn --source=docs
+    - python -m unittest discover -s tests && echo "TODO: Build docs"
 
 after_success:
-    - travis-sphinx deploy
+    - echo "TODO: Upload docs"

@@ -17,7 +17,7 @@ if T.TYPE_CHECKING:
 K = T.TypeVar("K")
 
 
-class observe(T.Generic[K], T.Awaitable["observe[K]"], Te.AsyncContextManager[None]):
+class observe(T.Generic[K], T.Awaitable["ObserverProtocol[K]"], Te.AsyncContextManager[None]):
     def __init__(
         self,
         observable: "ObservableProtocol[K]",
@@ -33,9 +33,9 @@ class observe(T.Generic[K], T.Awaitable["observe[K]"], Te.AsyncContextManager[No
         self._observable = observable
         self._keep_alive = keep_alive
 
-    def __await__(self) -> T.Generator[None, None, "observe[K]"]:
+    def __await__(self) -> T.Generator[None, None, "ObserverProtocol[K]"]:
         yield from self.__aenter__().__await__()
-        return self
+        return self._observer
 
     __iter__ = __await__  # make compatible with 'yield from'.
 
