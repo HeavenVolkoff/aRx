@@ -40,11 +40,17 @@ class pipe(T.Generic[K, L], observe[K]):
     def __gt__(self, observer: "ObserverProtocol[L]") -> sink[L]:
         return sink(self._transformer, observer, previous_pipe=self)
 
-    async def __aenter__(self) -> None:
+    def __await__(self) -> T.Generator[None, None, "TransformerProtocol[K, L]"]:
+        yield from super().__await__()
+        return self._transformer
+
+    async def __aenter__(self) -> "TransformerProtocol[K, L]":
         await super().__aenter__()
 
         if self._previous:
             await self._previous.__aenter__()
+
+        return self._transformer
 
     async def __aexit__(
         self,

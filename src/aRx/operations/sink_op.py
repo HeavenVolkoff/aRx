@@ -31,11 +31,13 @@ class sink(observe[K]):
         # Internal
         self._previous = previous_pipe
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self) -> "ObserverProtocol[K]":
         await super().__aenter__()
 
         if self._previous:
             await self._previous.__aenter__()
+
+        return self._observer
 
     async def __aexit__(
         self,

@@ -17,7 +17,9 @@ if T.TYPE_CHECKING:
 K = T.TypeVar("K")
 
 
-class observe(T.Generic[K], T.Awaitable["ObserverProtocol[K]"], Te.AsyncContextManager[None]):
+class observe(
+    T.Generic[K], T.Awaitable["ObserverProtocol[K]"], Te.AsyncContextManager["ObserverProtocol[K]"]
+):
     def __init__(
         self,
         observable: "ObservableProtocol[K]",
@@ -39,7 +41,7 @@ class observe(T.Generic[K], T.Awaitable["ObserverProtocol[K]"], Te.AsyncContextM
 
     __iter__ = __await__  # make compatible with 'yield from'.
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self) -> "ObserverProtocol[K]":
         try:
             await self._observable.__observe__(self._observer)
         except CancelledError:
@@ -47,6 +49,8 @@ class observe(T.Generic[K], T.Awaitable["ObserverProtocol[K]"], Te.AsyncContextM
         except Exception as exc:
             if not await self.__aexit__(type(exc), exc, exc.__traceback__):
                 raise
+
+        return self._observer
 
     async def __aexit__(
         self,
