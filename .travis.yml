@@ -16,7 +16,8 @@ install:
     - pip install ".[docs, tests]"
 
 script:
-    - python -m unittest discover -s tests && echo "TODO: Build docs"
+    - python -m unittest discover -s tests
+    # TODO Build docs
 
-after_success:
-    - echo "TODO: Upload docs"
+# after_success:
+    # TODO Upload docs
