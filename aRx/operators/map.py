@@ -141,16 +141,20 @@ class Map(SingleStreamBase[K, L]):
         if self._asend_mapper is None:
             awaitable: T.Union[T.Awaitable[K], K] = T.cast(K, value)
         elif self._index is None:
-            assert not (
-                isinstance(self._asend_mapper, MapperCallableWithIndex)
-                or isinstance(self._asend_mapper, MapperAwaitableCallableWithIndex)
-            )
+            if T.TYPE_CHECKING:
+                # These checks always fails at runtime
+                assert not (
+                    isinstance(self._asend_mapper, MapperCallableWithIndex)
+                    or isinstance(self._asend_mapper, MapperAwaitableCallableWithIndex)
+                )
             awaitable = self._asend_mapper(value)
         else:
-            assert not (
-                isinstance(self._asend_mapper, MapperCallable)
-                or isinstance(self._asend_mapper, MapperAwaitableCallable)
-            )
+            if T.TYPE_CHECKING:
+                # These checks always fails at runtime
+                assert not (
+                    isinstance(self._asend_mapper, MapperCallable)
+                    or isinstance(self._asend_mapper, MapperAwaitableCallable)
+                )
             awaitable = self._asend_mapper(value, self._index)
             self._index += 1
 

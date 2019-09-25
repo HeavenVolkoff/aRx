@@ -13,8 +13,6 @@ from contextlib import contextmanager
 
 # External
 import typing_extensions as Te
-
-# External
 from async_tools import Loopable
 from async_tools.abstract import BasicRepr, AsyncABCMeta
 

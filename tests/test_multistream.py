@@ -12,22 +12,28 @@ from aRx.operators import Map, Filter
 from aRx.operations import observe
 
 
+def r(_):
+    raise Exception("Fuuuu")
+
+
 @asynctest.strict
 class TestMultiStream(asynctest.TestCase, unittest.TestCase):
-    async def test_asend_aclose_deadlock(self):
+    async def test_asend_aclose(self):
         with expires(1, suppress=True) as timeout:
+            a = MultiStream()
+            await (a | Map(r) > AnonymousObserver(athrow=lambda _, __: True, aclose=a.aclose))
 
-            def r(_):
-                raise Exception("Fuuuu")
+            await a.asend("whatevs")
+            await a.aclose()
 
+        self.assertFalse(timeout.expired)
+
+    async def test_asend_aclose_complex(self):
+        with expires(1, suppress=True) as timeout:
             a = MultiStream()
 
-            await observe(a, AnonymousObserver(aclose=print))
-
-            c = await (a | Map(r))
-
             await (
-                c | Filter(lambda _: True) | Map(lambda x: x)
+                a | Map(r) | Filter(lambda _: True) | Map(lambda x: x)
                 > AnonymousObserver(athrow=lambda _, __: True, aclose=a.aclose)
             )
 

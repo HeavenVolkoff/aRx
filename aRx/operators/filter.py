@@ -98,10 +98,14 @@ class Filter(SingleStream[K]):
         if self._asend_predicate is None:
             awaitable: T.Union[T.Awaitable[bool], bool] = True
         elif self._index is None:
-            assert not (isinstance(self._asend_predicate, FilterCallableWithIndex))
+            if T.TYPE_CHECKING:
+                # These checks always fails at runtime
+                assert not (isinstance(self._asend_predicate, FilterCallableWithIndex))
             awaitable = self._asend_predicate(value)
         else:
-            assert not (isinstance(self._asend_predicate, FilterCallable))
+            if T.TYPE_CHECKING:
+                # These checks always fails at runtime
+                assert not (isinstance(self._asend_predicate, FilterCallable))
             awaitable = self._asend_predicate(value, self._index)
             self._index += 1
 
