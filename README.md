@@ -19,9 +19,9 @@ Inspired by [RxPY](https://github.com/ReactiveX/RxPY)
 Original Work:
 >[The MIT License (MIT)](licenses/LICENSE.aioreactive.txt)
 >
->[Copyright (c) 2016 Børge Lanes, Dag Brattli.](./COPYRIGHT.md)
+>Copyright (c) 2016 Børge Lanes, Dag Brattli
 
 Modified work:
 >[The MPL 2.0 License](LICENSE)
 >
->[Copyright (c) 2018 Vítor Augusto da Silva Vasconcellos.](./COPYRIGHT.md)
+>Copyright (c) 2018 Vítor Augusto da Silva Vasconcellos
