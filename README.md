@@ -1,5 +1,9 @@
 # aRx
 
+[![project_badge](https://img.shields.io/badge/HeavenVolkoff/aRx-black.svg?style=for-the-badge&logo=github "Project Badge")](https://github.com/HeavenVolkoff/aRx)
+[![version_badge](https://img.shields.io/github/tag/HeavenVolkoff/aRx.svg?label=version&style=for-the-badge "Version Badge")](https://github.com/HeavenVolkoff/aRx/releases/latest)
+[![license_badge](https://img.shields.io/github/license/HeavenVolkoff/aRx.svg?style=for-the-badge "License Badge")](https://www.mozilla.org/en-US/MPL/2.0/)
+
 Asynchronous Reactive eXtensions for Python 3.6+.
 
 Derived from [aioreactive](https://github.com/dbrattli/aioreactive)
