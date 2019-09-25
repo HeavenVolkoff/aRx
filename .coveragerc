@@ -1,9 +1,7 @@
 # .coveragerc to control coverage.py
 [run]
 branch = True
-# If coverage have problems file detection, uncomment the line below and change
-# it to your package name
-# source = foundation
+source = aRx
 
 [report]
 exclude_lines =
