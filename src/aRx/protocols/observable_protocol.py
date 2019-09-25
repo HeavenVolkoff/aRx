@@ -19,3 +19,6 @@ class ObservableProtocol(Te.Protocol[K]):
 
     async def __dispose__(self, observer: "ObserverProtocol[K]") -> None:
         ...
+
+
+__all__ = ("ObservableProtocol",)

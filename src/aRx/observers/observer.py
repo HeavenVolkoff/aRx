@@ -140,38 +140,22 @@ class Observer(
         if self.closed or self._close_guard:
             raise ObserverClosedError(self)
 
-        aclose_awaitable: T.Optional[T.Awaitable[bool]] = None
+        with self._propagating():
+            namespace = Namespace(self, "asend", namespace)
+            awaitable = self._asend(data, namespace)
 
-        try:
-            with self._propagating():
-                namespace = Namespace(self, "asend", namespace)
-                awaitable = self._asend(data, namespace)
+            # Remove reference early to avoid keeping large objects in memory
+            del data
 
-                # Remove reference early to avoid keeping large objects in memory
-                del data
-
-                try:
-                    await awaitable
-                except CancelledError:
-                    # Cancelled errors are irreversible
-                    raise
-                except Exception as ex:
-                    # Any exception raised during the handling of the input data will be thrown to
-                    # the observers for it to handle.
-                    try:
-                        await self.athrow(ex, namespace)
-                    except CancelledError:
-                        raise
-                    except Exception:
-                        # asend should always have precedence over athrow when closing the observer,
-                        # but just in case check it
-                        if self._close_guard and not self.closed:
-                            aclose_awaitable = self.aclose()
-
-                        raise
-        finally:
-            if aclose_awaitable:
-                await aclose_awaitable
+            try:
+                await awaitable
+            except CancelledError:
+                # Cancelled errors are irreversible
+                raise
+            except Exception as ex:
+                # Any exception raised during the handling of the input data will be thrown to
+                # the observers for it to handle.
+                await self.athrow(ex, namespace)
 
     async def athrow(self, main_exc: Exception, namespace: T.Optional[Namespace] = None) -> None:
         """Interface through which exceptions are inputted.
@@ -192,30 +176,15 @@ class Observer(
         if (self.closed and not from_asend) or self._close_guard:
             raise ObserverClosedError(self)
 
-        cancelled = False
+        with self._propagating():
+            awaitable = self._athrow(main_exc, Namespace(self, "athrow", namespace))
 
-        try:
-            with self._propagating():
-                awaitable = self._athrow(main_exc, Namespace(self, "athrow", namespace))
-
-                try:
-                    self._close_guard = await awaitable
-                except CancelledError:
-                    # Cancelled errors are irreversible
-                    cancelled = True
-                    self._close_guard = True
-                    raise
-                except Exception:
-                    # Closes streams on irrecoverable exceptions
-                    self._close_guard = True
-                    raise
-                except BaseException:
-                    cancelled = True
-                    self._close_guard = True
-                    raise
-        finally:
-            if self._close_guard and not (cancelled or from_asend):
-                await self.aclose()
+            try:
+                self._close_guard = await awaitable
+            except Exception:
+                # Must use create_task to avoid deadlock
+                self.loop.create_task(self.aclose())
+                raise
 
     async def aclose(self) -> bool:
         """Close observers.
@@ -228,7 +197,6 @@ class Observer(
         if self.closed:
             return False
 
-        # This is necessary due to the uncertain timing of promise cancellation
         self._closed = True
 
         # Wait remaining propagations

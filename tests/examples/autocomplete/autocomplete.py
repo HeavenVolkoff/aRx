@@ -16,8 +16,6 @@ import asyncio
 
 # External
 import jinja2
-
-# External
 import aiohttp
 import aiohttp_jinja2
 from aiohttp import web
