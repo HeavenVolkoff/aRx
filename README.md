@@ -22,6 +22,6 @@ Original Work:
 >[Copyright (c) 2016 Børge Lanes, Dag Brattli.](./COPYRIGHT.md)
 
 Modified work:
->[The MPL 2.0 License](./LICENSE.md)
+>[The MPL 2.0 License](LICENSE)
 >
 >[Copyright (c) 2018 Vítor Augusto da Silva Vasconcellos.](./COPYRIGHT.md)
