@@ -13,6 +13,8 @@ from contextlib import contextmanager
 
 # External
 import typing_extensions as Te
+
+# External
 from async_tools import Loopable
 from async_tools.abstract import BasicRepr, AsyncABCMeta
 
@@ -189,9 +191,12 @@ class Observer(
             try:
                 self._close_guard = await awaitable
             except Exception:
-                # Must use create_task to avoid deadlock
-                self.loop.create_task(self.aclose())
+                self._close_guard = True
                 raise
+            finally:
+                if self._close_guard and not self.closed:
+                    # Must use create_task to avoid deadlock
+                    self.loop.create_task(self.aclose())
 
     async def aclose(self) -> bool:
         """Close observers.
