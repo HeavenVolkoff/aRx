@@ -7,7 +7,9 @@ Derived from [aioreactive](https://github.com/dbrattli/aioreactive)
 Inspired by [RxPY](https://github.com/ReactiveX/RxPY)
 
 ## Documentation (WIP)
-> [link](https://HeavenVolkoff.github.io/aRx)
+> Code is documented to some extent
+>
+> A public API documentation is being worked on
 
 ## License & Copyright
 Original Work:

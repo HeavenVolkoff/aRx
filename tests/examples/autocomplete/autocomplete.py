@@ -9,12 +9,13 @@ Requirements:
 > pip3 install aiohttp_jinja2
 """
 
+# Internal
 import os
 import json
 import asyncio
 
+# External
 import jinja2
-
 import aiohttp
 import aiohttp_jinja2
 from aiohttp import web

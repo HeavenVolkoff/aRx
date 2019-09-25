@@ -1,3 +1,4 @@
+# Internal
 import time
 import asyncio
 import logging
@@ -5,6 +6,7 @@ from threading import current_thread
 from asyncio.futures import wrap_future
 from concurrent.futures import ThreadPoolExecutor
 
+# External
 from aioreactive.core import Operators as op, AsyncObservable
 
 log = logging.getLogger(__name__)
