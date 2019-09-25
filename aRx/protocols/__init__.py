@@ -10,5 +10,5 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Project
 from .observer_protocol import ObserverProtocol
-from .observable_protocol import ObservableProtocol
+from .observable_protocol import ObservableProtocol, ObservableProtocolWithOperators
 from .transformer_protocol import TransformerProtocol, TransformerProtocolWithOperators

@@ -22,20 +22,33 @@ if T.TYPE_CHECKING:
 
 # Generic Types
 K = T.TypeVar("K")
+M = T.TypeVar("M", contravariant=True)
 
 
-def noop(_: T.Any) -> bool:
-    return True
+@Te.runtime
+class FilterCallable(Te.Protocol[M]):
+    def __call__(self, __value: M) -> T.Union[T.Awaitable[bool], bool]:
+        ...
+
+
+@Te.runtime
+class FilterErrorCallable(Te.Protocol):
+    def __call__(self, __error: Exception) -> T.Union[T.Awaitable[bool], bool]:
+        ...
+
+
+@Te.runtime
+class FilterCallableWithIndex(Te.Protocol[M]):
+    def __call__(self, __value: M, __index: int) -> T.Union[T.Awaitable[bool], bool]:
+        ...
 
 
 class Filter(SingleStream[K]):
     @T.overload
     def __init__(
         self,
-        asend_predicate: T.Callable[[K], T.Union[bool, T.Awaitable[bool]]],
-        athrow_predicate: T.Optional[
-            T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
-        ] = None,
+        asend_predicate: FilterCallable[K],
+        athrow_predicate: T.Optional[FilterErrorCallable] = None,
         *,
         with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
@@ -46,7 +59,7 @@ class Filter(SingleStream[K]):
     def __init__(
         self,
         asend_predicate: Te.Literal[None],
-        athrow_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
+        athrow_predicate: FilterErrorCallable,
         *,
         with_index: Te.Literal[False] = False,
         **kwargs: T.Any,
@@ -56,20 +69,18 @@ class Filter(SingleStream[K]):
     @T.overload
     def __init__(
         self,
-        asend_predicate: T.Callable[[K, int], T.Union[bool, T.Awaitable[bool]]],
-        athrow_predicate: T.Optional[
-            T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
-        ] = None,
+        asend_predicate: FilterCallableWithIndex[K],
+        athrow_predicate: T.Optional[FilterErrorCallable] = None,
         *,
-        with_index: Te.Literal[True] = True,
+        with_index: Te.Literal[True],
         **kwargs: T.Any,
     ) -> None:
         ...
 
     def __init__(
         self,
-        asend_predicate: T.Any = None,
-        athrow_predicate: T.Any = None,
+        asend_predicate: T.Optional[T.Union[FilterCallable[K], FilterCallableWithIndex[K]]],
+        athrow_predicate: T.Optional[FilterErrorCallable] = None,
         *,
         with_index: bool = False,
         **kwargs: T.Any,
@@ -80,13 +91,17 @@ class Filter(SingleStream[K]):
         assert asend_predicate or athrow_predicate
 
         self._index = 0 if with_index else None
-        self._asend_predicate = noop if asend_predicate is None else asend_predicate
-        self._athrow_predicate = noop if athrow_predicate is None else athrow_predicate
+        self._asend_predicate = asend_predicate
+        self._athrow_predicate = athrow_predicate
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:
-        if self._index is None:
+        if self._asend_predicate is None:
+            awaitable: T.Union[T.Awaitable[bool], bool] = True
+        elif self._index is None:
+            assert not (isinstance(self._asend_predicate, FilterCallableWithIndex))
             awaitable = self._asend_predicate(value)
         else:
+            assert not (isinstance(self._asend_predicate, FilterCallable))
             awaitable = self._asend_predicate(value, self._index)
             self._index += 1
 
@@ -99,7 +114,7 @@ class Filter(SingleStream[K]):
             await result
 
     async def _athrow(self, exc: Exception, namespace: "Namespace") -> bool:
-        if await attempt_await(self._athrow_predicate(exc)):
+        if self._athrow_predicate is None or await attempt_await(self._athrow_predicate(exc)):
             return await super()._athrow(exc, namespace)
 
         return False

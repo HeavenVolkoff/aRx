@@ -14,10 +14,11 @@ import typing_extensions as Te
 
 # Project
 from .observer_protocol import ObserverProtocol
-from .observable_protocol import ObservableProtocol
-
-if T.TYPE_CHECKING:
-    from ..operations import sink, pipe
+from .observable_protocol import (
+    ObservableProtocol,
+    ObservableProtocolWithOperators,
+    add_operators as observable_add_operators,
+)
 
 # Generic Types
 K = T.TypeVar("K", contravariant=True)
@@ -38,41 +39,18 @@ class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], Te.Protoco
 
 
 @Te.runtime
-class TransformerProtocolWithOperators(TransformerProtocol[K, N], Te.Protocol[K, N]):
-    """Transformer abstract class.
-
-    Base class for defining an object that is an Observer and Observable at the same time,
-    in other words something through which data is inputted, transformed and outputted.
-    """
-
-    def __gt__(self, observer: ObserverProtocol[N]) -> "sink[N]":
-        ...
-
-    def __or__(self, transformer: TransformerProtocol[N, M]) -> "pipe[N, M]":
-        ...
+class TransformerProtocolWithOperators(
+    TransformerProtocol[K, N], ObservableProtocolWithOperators[N], Te.Protocol[K, N]
+):
+    pass
 
 
 def add_operators(
     transformer: TransformerProtocol[M, N]
 ) -> TransformerProtocolWithOperators[M, N]:
-    from copy import copy
-    from ..observables import Observable
-    from types import MethodType
-
-    if isinstance(transformer, TransformerProtocolWithOperators):
-        return transformer
-    else:
-        # Don't change the original object
-        new = copy(transformer)
-
-        # Warning:
-        #   This should implement all the operators defined in TransformerProtocolWithOperators
-        new.__gt__ = MethodType(Observable.__gt__, new)  # type: ignore
-        new.__or__ = MethodType(Observable.__or__, new)  # type: ignore
-
-        assert isinstance(new, TransformerProtocolWithOperators)
-
-        return new
+    new = observable_add_operators(transformer)
+    assert isinstance(new, TransformerProtocolWithOperators)
+    return new
 
 
 __all__ = ("TransformerProtocol", "TransformerProtocolWithOperators", "add_operators")
