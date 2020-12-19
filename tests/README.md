@@ -3,4 +3,4 @@ Unitary tests developed using [`unittest`](https://docs.python.org/3/library/uni
 
 ### How to run:
 From the project root, run in terminal:
->```PYTHONPATH="./src" python -m unittest discover -s tests```
+>```python -m unittest discover -s tests```

@@ -7,10 +7,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
-from asyncio import CancelledError
-
-# External
-import typing_extensions as Te
+from asyncio import get_running_loop
 
 # Project
 from ._internal.from_source import FromSource
@@ -35,27 +32,19 @@ class FromIterableIterable(FromSource[K, T.AsyncIterator[K]]):
     async def _worker(self) -> None:
         assert self._observer is not None
 
-        cancelled = False
-
+        loop = get_running_loop()
         try:
             async for data in self._source:
                 if self._observer.closed:
                     break
 
                 await self._observer.asend(data, self._namespace)
-        except CancelledError:
-            cancelled = True
-            raise
         except Exception as exc:
-            if not self._observer.closed:
-                await self._observer.athrow(exc, self._namespace)
-        except BaseException:
-            cancelled = True
-            raise
+            await self._observer.athrow(exc, self._namespace)
         finally:
-            if not cancelled and isinstance(self._source, Te.AsyncGenerator):
+            if isinstance(self._source, T.AsyncGenerator):
                 # Ensure async_generator gets closed
-                await self._source.aclose()
+                loop.create_task(self._source.aclose())
 
 
 __all__ = ("FromIterableIterable",)

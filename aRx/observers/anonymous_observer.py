@@ -7,6 +7,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
+from asyncio import get_running_loop
 
 # External
 from async_tools import attempt_await
@@ -15,9 +16,6 @@ from async_tools import attempt_await
 from .observer import Observer
 
 if T.TYPE_CHECKING:
-    # Internal
-    from asyncio import AbstractEventLoop
-
     # Project
     from ..namespace import Namespace
 
@@ -30,10 +28,10 @@ def default_asend(_: T.Any, __: T.Any) -> None:
     return
 
 
-def setup_default_athrow(loop: "AbstractEventLoop") -> T.Callable[[Exception, "Namespace"], bool]:
+def setup_default_athrow() -> T.Callable[[Exception, "Namespace"], bool]:
     def default_athrow(exc: Exception, namespace: "Namespace") -> bool:
         ref = namespace.ref
-        loop.call_exception_handler(
+        get_running_loop().call_exception_handler(
             {
                 "message": (
                     f"Unhandled error propagated through {AnonymousObserver.__qualname__}"
@@ -97,7 +95,7 @@ class AnonymousObserver(Observer[K]):
         super().__init__(**kwargs)
 
         self._asend_impl = default_asend if asend is None else asend
-        self._athrow_impl = setup_default_athrow(self.loop) if athrow is None else athrow
+        self._athrow_impl = setup_default_athrow() if athrow is None else athrow
         self._aclose_impl = default_aclose if aclose is None else aclose
 
     async def _asend(self, value: K, namespace: "Namespace") -> None:

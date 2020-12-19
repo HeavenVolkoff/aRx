@@ -9,7 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import typing as T
 
 # External
-import typing_extensions as Te
 from async_tools import attempt_await
 
 # Project
@@ -25,20 +24,20 @@ K = T.TypeVar("K")
 M = T.TypeVar("M", contravariant=True)
 
 
-@Te.runtime
-class FilterCallable(Te.Protocol[M]):
+@T.runtime_checkable
+class FilterCallable(T.Protocol[M]):
     def __call__(self, __value: M) -> T.Union[T.Awaitable[bool], bool]:
         ...
 
 
-@Te.runtime
-class FilterErrorCallable(Te.Protocol):
+@T.runtime_checkable
+class FilterErrorCallable(T.Protocol):
     def __call__(self, __error: Exception) -> T.Union[T.Awaitable[bool], bool]:
         ...
 
 
-@Te.runtime
-class FilterCallableWithIndex(Te.Protocol[M]):
+@T.runtime_checkable
+class FilterCallableWithIndex(T.Protocol[M]):
     def __call__(self, __value: M, __index: int) -> T.Union[T.Awaitable[bool], bool]:
         ...
 
@@ -50,7 +49,7 @@ class Filter(SingleStream[K]):
         asend_predicate: FilterCallable[K],
         athrow_predicate: T.Optional[FilterErrorCallable] = None,
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -58,10 +57,10 @@ class Filter(SingleStream[K]):
     @T.overload
     def __init__(
         self,
-        asend_predicate: Te.Literal[None],
+        asend_predicate: T.Literal[None],
         athrow_predicate: FilterErrorCallable,
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -72,7 +71,7 @@ class Filter(SingleStream[K]):
         asend_predicate: FilterCallableWithIndex[K],
         athrow_predicate: T.Optional[FilterErrorCallable] = None,
         *,
-        with_index: Te.Literal[True],
+        with_index: T.Literal[True],
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -99,12 +98,14 @@ class Filter(SingleStream[K]):
             awaitable: T.Union[T.Awaitable[bool], bool] = True
         elif self._index is None:
             if T.TYPE_CHECKING:
-                # These checks always fails at runtime
+                # Workaround type system due to class bad design.
+                # TODO: Indexed operations should be a different class
                 assert not (isinstance(self._asend_predicate, FilterCallableWithIndex))
             awaitable = self._asend_predicate(value)
         else:
             if T.TYPE_CHECKING:
-                # These checks always fails at runtime
+                # Workaround type system due to class bad design.
+                # TODO: Indexed operations should be a different class
                 assert not (isinstance(self._asend_predicate, FilterCallable))
             awaitable = self._asend_predicate(value, self._index)
             self._index += 1

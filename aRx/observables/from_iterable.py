@@ -7,7 +7,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
-from asyncio import CancelledError
 
 # Project
 from ._internal.from_source import FromSource
@@ -22,11 +21,11 @@ class FromIterable(FromSource[K, T.Iterator[K]]):
     def __init__(self, iterable: T.Iterable[K], **kwargs: T.Any) -> None:
         """FromIterable constructor.
 
-       Arguments:
-           iterable: Iterable to be converted.
-           kwargs: Keyword parameters for super.
+        Arguments:
+            iterable: Iterable to be converted.
+            kwargs: Keyword parameters for super.
 
-       """
+        """
         super().__init__(iter(iterable), **kwargs)
 
     async def _worker(self) -> None:
@@ -38,12 +37,8 @@ class FromIterable(FromSource[K, T.Iterator[K]]):
                     break
 
                 await self._observer.asend(data, self._namespace)
-
-        except CancelledError:
-            raise
         except Exception as exc:
-            if not self._observer.closed:
-                await self._observer.athrow(exc, self._namespace)
+            await self._observer.athrow(exc, self._namespace)
 
 
 __all__ = ("FromIterable",)

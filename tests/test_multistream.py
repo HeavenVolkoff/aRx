@@ -5,11 +5,9 @@ import unittest
 import asynctest
 from async_tools import expires
 
-# External
 from aRx.streams import MultiStream
 from aRx.observers import AnonymousObserver
 from aRx.operators import Map, Filter
-from aRx.operations import observe
 
 
 def r(_):

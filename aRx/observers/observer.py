@@ -8,22 +8,15 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 from abc import abstractmethod
-from asyncio import CancelledError
+from asyncio import Future, get_running_loop
 from contextlib import contextmanager
 
 # External
-import typing_extensions as Te
-from async_tools import Loopable
 from async_tools.abstract import BasicRepr, AsyncABCMeta
 
 # Project
 from ..errors import ObserverClosedError
 from ..namespace import Namespace
-
-if T.TYPE_CHECKING:
-    # Internal
-    from asyncio import Future
-
 
 # Generic Types
 K = T.TypeVar("K")
@@ -32,9 +25,8 @@ L = T.TypeVar("L")
 
 class Observer(
     BasicRepr,
-    Loopable,
     T.Generic[K],
-    Te.AsyncContextManager["Observer[K]"],
+    T.AsyncContextManager["Observer[K]"],
     metaclass=AsyncABCMeta,
 ):
     """Observer abstract class.
@@ -58,7 +50,7 @@ class Observer(
             kwargs: keyword parameters for super.
 
         """
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
 
         self.keep_alive = keep_alive
 
@@ -98,7 +90,7 @@ class Observer(
             namespace: Namespace to identify propagation origin.
 
         """
-        raise NotImplemented()
+        raise NotImplementedError
 
     @abstractmethod
     async def _athrow(self, exc: Exception, namespace: Namespace) -> bool:
@@ -109,12 +101,12 @@ class Observer(
             namespace: Namespace to identify propagation origin.
 
         """
-        raise NotImplemented()
+        raise NotImplementedError
 
     @abstractmethod
     async def _aclose(self) -> None:
         """Method responsible for handling the logic necessary to close the observers."""
-        raise NotImplemented()
+        raise NotImplementedError
 
     @contextmanager
     def _propagating(self) -> T.Generator[None, None, None]:
@@ -156,9 +148,6 @@ class Observer(
 
             try:
                 await awaitable
-            except CancelledError:
-                # Cancelled errors are irreversible
-                raise
             except Exception as ex:
                 # Any exception raised during the handling of the input data will be thrown to
                 # the observers for it to handle.
@@ -194,7 +183,7 @@ class Observer(
             finally:
                 if self._close_guard and not self.closed:
                     # Must use create_task to avoid deadlock
-                    self.loop.create_task(self.aclose())
+                    get_running_loop().create_task(self.aclose())
 
     async def aclose(self) -> bool:
         """Close observers.
@@ -211,7 +200,7 @@ class Observer(
 
         # Wait remaining propagations
         if self._propagation_count > 0:
-            self._propagation_guard = self.loop.create_future()
+            self._propagation_guard = get_running_loop().create_future()
             await self._propagation_guard
 
         # Call internal close

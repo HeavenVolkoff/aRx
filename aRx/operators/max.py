@@ -8,9 +8,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 
-# External
-import typing_extensions as Te
-
 # Project
 from ..streams import SingleStream
 
@@ -19,7 +16,7 @@ if T.TYPE_CHECKING:
     from ..namespace import Namespace
 
 
-class Comparable(Te.Protocol):
+class Comparable(T.Protocol):
     def __gt__(self, other: T.Any) -> bool:
         ...
 

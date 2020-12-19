@@ -30,7 +30,7 @@ L = T.TypeVar("L")
 M = T.TypeVar("M")
 
 
-class pipe(T.Generic[K, L], observe[K]):
+class pipe(observe[K], T.Generic[K, L]):
     def __init__(
         self,
         observable: ObservableProtocol[K],

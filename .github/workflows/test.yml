@@ -1,0 +1,23 @@
+name: Test async_tools
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip --no-cache install -U pip setuptools
+        pip install -qe ".[tests]"
+    - name: Test
+      run: catchsegv python -m unittest discover -s tests

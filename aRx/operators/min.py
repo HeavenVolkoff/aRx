@@ -8,9 +8,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 
-# External
-import typing_extensions as Te
-
 # Project
 from ..streams import SingleStream
 
@@ -23,13 +20,13 @@ if T.TYPE_CHECKING:
 K = T.TypeVar("K")
 
 
-class Comparable(Te.Protocol):
+class Comparable(T.Protocol):
     def __lt__(self: K, other: K) -> bool:
         ...
 
 
 M = T.TypeVar("M", bound=Comparable)
-_NOT_PROVIDED: Te.Final = object()
+_NOT_PROVIDED: T.Final = object()
 
 
 class Min(SingleStream[M]):

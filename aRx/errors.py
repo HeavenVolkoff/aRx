@@ -11,6 +11,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import typing as T
 
 if T.TYPE_CHECKING:
+    # Project
     from .protocols import ObserverProtocol
 
 
@@ -60,7 +61,7 @@ class SingleStreamError(ARxError):
 __all__ = (
     "ARxError",
     "ObserverError",
-    "ConsumerClosedError",
-    "ObserverClosedError",
     "SingleStreamError",
+    "ObserverClosedError",
+    "ConsumerClosedError",
 )

@@ -9,9 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 
-# External
-import typing_extensions as Te
-
 # Project
 from .observer_protocol import ObserverProtocol
 from .observable_protocol import (
@@ -27,8 +24,8 @@ M = T.TypeVar("M")
 N = T.TypeVar("N")
 
 
-@Te.runtime
-class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], Te.Protocol[K, L]):
+@T.runtime_checkable
+class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], T.Protocol[K, L]):
     """Transformer abstract class.
 
     Base class for defining an object that is an Observer and Observable at the same time,
@@ -38,9 +35,9 @@ class TransformerProtocol(ObservableProtocol[L], ObserverProtocol[K], Te.Protoco
     pass
 
 
-@Te.runtime
+@T.runtime_checkable
 class TransformerProtocolWithOperators(
-    TransformerProtocol[K, N], ObservableProtocolWithOperators[N], Te.Protocol[K, N]
+    TransformerProtocol[K, N], ObservableProtocolWithOperators[N], T.Protocol[K, N]
 ):
     pass
 

@@ -9,9 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import typing as T
 from collections import deque
 
-# External
-import typing_extensions as Te
-
 # Project
 from ..streams import SingleStream
 
@@ -30,7 +27,7 @@ class Skip(SingleStream[K]):
         super().__init__(**kwargs)
 
         self._count = abs(count)
-        self._reverse_queue: T.Optional[Te.Deque[K]] = (
+        self._reverse_queue: T.Optional[T.Deque[K]] = (
             deque(maxlen=self._count) if count < 0 else None
         )
 

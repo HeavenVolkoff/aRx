@@ -9,9 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import typing as T
 from collections import deque
 
-# External
-import typing_extensions as Te
-
 # Project
 from ..errors import ObserverClosedError
 from ..streams import SingleStream
@@ -34,7 +31,7 @@ class Take(SingleStream[K]):
         super().__init__(**kwargs)
 
         self._count = abs(count)
-        self._reverse_queue: T.Optional[Te.Deque[T.Tuple[K, "Namespace"]]] = (
+        self._reverse_queue: T.Optional[T.Deque[T.Tuple[K, "Namespace"]]] = (
             deque(maxlen=self._count) if count < 0 else None
         )
 

@@ -9,7 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import typing as T
 
 # External
-import typing_extensions as Te
 from async_tools import attempt_await
 
 # Project
@@ -27,32 +26,32 @@ M = T.TypeVar("M", covariant=True)
 N = T.TypeVar("N", contravariant=True)
 
 
-@Te.runtime
-class MapperCallable(Te.Protocol[M, N]):
+@T.runtime_checkable
+class MapperCallable(T.Protocol[M, N]):
     def __call__(self, __value: N) -> M:
         ...
 
 
-@Te.runtime
-class MapperErrorCallable(Te.Protocol):
+@T.runtime_checkable
+class MapperErrorCallable(T.Protocol):
     def __call__(self, __error: Exception) -> T.Union[T.Awaitable[Exception], Exception]:
         ...
 
 
-@Te.runtime
-class MapperCallableWithIndex(Te.Protocol[M, N]):
+@T.runtime_checkable
+class MapperCallableWithIndex(T.Protocol[M, N]):
     def __call__(self, __value: N, __index: int) -> M:
         ...
 
 
-@Te.runtime
-class MapperAwaitableCallable(Te.Protocol[M, N]):
+@T.runtime_checkable
+class MapperAwaitableCallable(T.Protocol[M, N]):
     def __call__(self, __value: N) -> T.Awaitable[M]:
         ...
 
 
-@Te.runtime
-class MapperAwaitableCallableWithIndex(Te.Protocol[M, N]):
+@T.runtime_checkable
+class MapperAwaitableCallableWithIndex(T.Protocol[M, N]):
     def __call__(self, __value: N, __index: int) -> T.Awaitable[M]:
         ...
 
@@ -64,7 +63,7 @@ class Map(SingleStreamBase[K, L]):
         asend_mapper: MapperAwaitableCallable[K, L],
         athrow_mapper: T.Optional[MapperErrorCallable] = None,
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -75,7 +74,7 @@ class Map(SingleStreamBase[K, L]):
         asend_mapper: MapperCallable[K, L],
         athrow_mapper: T.Optional[MapperErrorCallable] = None,
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -83,10 +82,10 @@ class Map(SingleStreamBase[K, L]):
     @T.overload
     def __init__(
         self,
-        asend_mapper: Te.Literal[None],
+        asend_mapper: T.Literal[None],
         athrow_mapper: MapperErrorCallable,
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -97,7 +96,7 @@ class Map(SingleStreamBase[K, L]):
         asend_mapper: MapperAwaitableCallableWithIndex[K, L],
         athrow_mapper: T.Optional[MapperErrorCallable] = None,
         *,
-        with_index: Te.Literal[True],
+        with_index: T.Literal[True],
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -108,7 +107,7 @@ class Map(SingleStreamBase[K, L]):
         asend_mapper: MapperCallableWithIndex[K, L],
         athrow_mapper: T.Optional[MapperErrorCallable] = None,
         *,
-        with_index: Te.Literal[True],
+        with_index: T.Literal[True],
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -142,7 +141,8 @@ class Map(SingleStreamBase[K, L]):
             awaitable: T.Union[T.Awaitable[K], K] = T.cast(K, value)
         elif self._index is None:
             if T.TYPE_CHECKING:
-                # These checks always fails at runtime
+                # Workaround type system due to class bad design.
+                # TODO: Indexed operations should be a different class
                 assert not (
                     isinstance(self._asend_mapper, MapperCallableWithIndex)
                     or isinstance(self._asend_mapper, MapperAwaitableCallableWithIndex)
@@ -150,7 +150,8 @@ class Map(SingleStreamBase[K, L]):
             awaitable = self._asend_mapper(value)
         else:
             if T.TYPE_CHECKING:
-                # These checks always fails at runtime
+                # Workaround type system due to class bad design.
+                # TODO: Indexed operations should be a different class
                 assert not (
                     isinstance(self._asend_mapper, MapperCallable)
                     or isinstance(self._asend_mapper, MapperAwaitableCallable)

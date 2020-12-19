@@ -7,7 +7,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
-from asyncio import CancelledError
 
 # Project
 from .observe_op import observe
@@ -36,8 +35,6 @@ async def concat(
 
     try:
         await observe(b, sink)
-    except CancelledError:
-        raise
     except Exception:
         await observe(a, sink).dispose()
         raise

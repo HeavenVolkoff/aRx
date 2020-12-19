@@ -8,11 +8,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 from abc import abstractmethod
-from asyncio import CancelledError
-from contextlib import suppress
+from asyncio import Task, get_running_loop
 
 # External
-from async_tools import get_running_loop
 from async_tools.abstract import AsyncABCMeta
 
 # Project
@@ -20,9 +18,6 @@ from ...namespace import Namespace
 from ..observable import Observable
 
 if T.TYPE_CHECKING:
-    # Internal
-    from asyncio import Task
-
     # Project
     from ...protocols import ObserverProtocol
 
@@ -39,7 +34,7 @@ class FromSource(T.Generic[K, L], Observable[K], metaclass=AsyncABCMeta):
         """FromAsyncIterable constructor.
 
         Arguments:
-            async_iterable: AsyncIterable to be iterated.
+            source: AsyncIterable to be iterated
             kwargs: Keyword parameters for super.
 
         """
@@ -63,13 +58,20 @@ class FromSource(T.Generic[K, L], Observable[K], metaclass=AsyncABCMeta):
         if self._observer is not observer:
             return
 
+        loop = get_running_loop()
         if self._task:
-            if self._task.cancelled():
-                self._task.result()  # raise CancelledError
-            self._task.cancel()
-
-            with suppress(CancelledError, Exception):
-                await self._task
+            if self._task.done():
+                try:
+                    await self._task
+                except Exception as exc:
+                    loop.call_exception_handler(
+                        {
+                            "message": f"{self}: Data observation data failed",
+                            "exception": exc,
+                        }
+                    )
+            else:
+                self._task.cancel()
 
         self._task = None
         self._observer = None

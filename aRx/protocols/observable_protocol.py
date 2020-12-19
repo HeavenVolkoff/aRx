@@ -8,12 +8,9 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 
-# External
-import typing_extensions as Te
-
 if T.TYPE_CHECKING:
     # Project
-    from ..operations import sink, pipe
+    from ..operations import pipe, sink
     from .observer_protocol import ObserverProtocol
     from .transformer_protocol import TransformerProtocol
 
@@ -24,7 +21,7 @@ L = T.TypeVar("L")
 M = T.TypeVar("M")
 
 
-class ObservableProtocol(Te.Protocol[K]):
+class ObservableProtocol(T.Protocol[K]):
     async def __observe__(self, observer: "ObserverProtocol[K]") -> None:
         ...
 
@@ -32,8 +29,8 @@ class ObservableProtocol(Te.Protocol[K]):
         ...
 
 
-@Te.runtime
-class ObservableProtocolWithOperators(ObservableProtocol[L], Te.Protocol[L]):
+@T.runtime_checkable
+class ObservableProtocolWithOperators(ObservableProtocol[L], T.Protocol[L]):
     def __gt__(self, observer: "ObserverProtocol[L]") -> "sink[L]":
         ...
 
@@ -42,9 +39,12 @@ class ObservableProtocolWithOperators(ObservableProtocol[L], Te.Protocol[L]):
 
 
 def add_operators(transformer: ObservableProtocol[L]) -> ObservableProtocolWithOperators[L]:
+    # Internal
     from copy import copy
-    from ..observables import Observable
     from types import MethodType
+
+    # Project
+    from ..observables import Observable
 
     if isinstance(transformer, ObservableProtocolWithOperators):
         return transformer

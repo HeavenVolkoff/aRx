@@ -10,12 +10,13 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
-# External
-from importlib_metadata import version
+# Internal
+from importlib.metadata import version
 
 try:
     __version__: str = version(__name__)
 except Exception:  # pragma: no cover
+    # Internal
     import traceback
     from warnings import warn
 

@@ -7,20 +7,13 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
-from asyncio import InvalidStateError
-from contextlib import suppress
+from asyncio import Future, get_running_loop
 from collections import deque
-
-# External
-import typing_extensions as Te
 
 # Project
 from .observer import Observer
 
 if T.TYPE_CHECKING:
-    # Internal
-    from asyncio import Future
-
     # Project
     from ..namespace import Namespace
 
@@ -42,9 +35,9 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         super().__init__(**kwargs)
 
         # Private
-        self._queue: Te.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
+        self._queue: T.Deque[T.Tuple[bool, T.Union[K, Exception]]] = deque()
         self._counter = 0
-        self._control: "Future[bool]" = self.loop.create_future()
+        self._control: T.Optional["Future[bool]"] = None
 
     @property
     def _next_value(self) -> T.Tuple[bool, T.Union[K, Exception]]:
@@ -55,7 +48,7 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
     def _next_value(self, value: T.Tuple[bool, T.Union[K, Exception]]) -> None:
         self._queue.append(value)
 
-        with suppress(InvalidStateError):
+        if self._control and not self._control.done():
             self._control.set_result(True)
 
     def __aiter__(self) -> T.AsyncIterator[K]:
@@ -70,16 +63,18 @@ class IteratorObserver(Observer[K], T.AsyncIterator[K]):
         return True
 
     async def _aclose(self) -> None:
-        with suppress(InvalidStateError):
+        if self._control and not self._control.done():
             self._control.set_result(True)
 
     async def __anext__(self) -> K:
+        loop = get_running_loop()
+
         while not self._queue:
             if self.closed:
                 raise StopAsyncIteration()
 
-            if await self._control and not self.closed:
-                self._control = self.loop.create_future()
+            if self._control is None or (await self._control and not self.closed):
+                self._control = loop.create_future()
 
         is_error, value = self._next_value
 

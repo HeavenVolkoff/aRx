@@ -7,10 +7,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
-from asyncio import CancelledError
-
-# External
-import typing_extensions as Te
 
 if T.TYPE_CHECKING:
     # Internal
@@ -25,7 +21,7 @@ K = T.TypeVar("K")
 
 
 class observe(
-    T.Generic[K], T.Awaitable["ObserverProtocol[K]"], Te.AsyncContextManager["ObserverProtocol[K]"]
+    T.Generic[K], T.Awaitable["ObserverProtocol[K]"], T.AsyncContextManager["ObserverProtocol[K]"]
 ):
     def __init__(
         self,
@@ -51,8 +47,6 @@ class observe(
     async def __aenter__(self) -> "ObserverProtocol[K]":
         try:
             await self._observable.__observe__(self._observer)
-        except CancelledError:
-            raise
         except Exception as exc:
             if not await self.__aexit__(type(exc), exc, exc.__traceback__):
                 raise
@@ -65,28 +59,21 @@ class observe(
         exc_value: T.Optional[BaseException],
         traceback: T.Optional["TracebackType"],
     ) -> None:
-        cancelled = False
-
         keep_alive = self._keep_alive
 
         try:
             await self._observable.__dispose__(self._observer)
-        except CancelledError:
-            cancelled = True
-            raise
         except Exception:
-            keep_alive = False
-            raise
-        except BaseException:
-            cancelled = True
-            raise
-        finally:
-            if not cancelled:
-                if keep_alive is None:
-                    keep_alive = self._observer.keep_alive
+            if not self._observer.closed:
+                await self._observer.aclose()
 
-                if not (self._observer.closed or keep_alive):
-                    await self._observer.aclose()
+            raise
+
+        if keep_alive is None:
+            keep_alive = self._observer.keep_alive
+
+        if not (self._observer.closed or keep_alive):
+            await self._observer.aclose()
 
     async def dispose(self) -> None:
         return await self.__aexit__(None, None, None)

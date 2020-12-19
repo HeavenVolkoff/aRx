@@ -9,7 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import typing as T
 
 # External
-import typing_extensions as Te
 from async_tools import attempt_await
 
 # Project
@@ -42,7 +41,7 @@ class Stop(SingleStream[K]):
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -50,10 +49,10 @@ class Stop(SingleStream[K]):
     @T.overload
     def __init__(
         self,
-        asend_predicate: Te.Literal[None],
+        asend_predicate: T.Literal[None],
         athrow_predicate: T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]],
         *,
-        with_index: Te.Literal[False] = False,
+        with_index: T.Literal[False] = False,
         **kwargs: T.Any,
     ) -> None:
         ...
@@ -66,7 +65,7 @@ class Stop(SingleStream[K]):
             T.Callable[[Exception], T.Union[bool, T.Awaitable[bool]]]
         ] = None,
         *,
-        with_index: Te.Literal[True] = True,
+        with_index: T.Literal[True] = True,
         **kwargs: T.Any,
     ) -> None:
         ...

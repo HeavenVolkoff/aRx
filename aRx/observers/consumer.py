@@ -7,15 +7,13 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
+from asyncio import Future, get_running_loop
 
 # Project
 from ..errors import ConsumerClosedError
 from .observer import Observer
 
 if T.TYPE_CHECKING:
-    # Internal
-    from asyncio import Future
-
     # Project
     from ..namespace import Namespace
 
@@ -28,7 +26,7 @@ class Consumer(Observer[K]):
     def __init__(self, **kwargs: T.Any) -> None:
         super().__init__(keep_alive=False, **kwargs)
 
-        self.result: "Future[K]" = self.loop.create_future()
+        self.result: "Future[K]" = get_running_loop().create_future()
 
     async def _asend(self, value: K, _: "Namespace") -> None:
         if self.result.done():

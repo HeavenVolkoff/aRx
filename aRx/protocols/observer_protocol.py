@@ -9,9 +9,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Internal
 import typing as T
 
-# External
-import typing_extensions as Te
-
 if T.TYPE_CHECKING:
     # Project
     from ..namespace import Namespace
@@ -21,7 +18,7 @@ if T.TYPE_CHECKING:
 K = T.TypeVar("K", contravariant=True)
 
 
-class ObserverProtocol(Te.Protocol[K]):
+class ObserverProtocol(T.Protocol[K]):
     """Observer protocols class.
 
     An observers represents a data sink, where data can flow into and be

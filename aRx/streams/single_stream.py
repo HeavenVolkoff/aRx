@@ -8,8 +8,7 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Internal
 import typing as T
-from asyncio import InvalidStateError
-from contextlib import suppress
+from asyncio import Future, get_running_loop
 
 # External
 from async_tools.abstract import AsyncABCMeta
@@ -21,9 +20,6 @@ from ..operations import observe
 from ..observables import Observable
 
 if T.TYPE_CHECKING:
-    # Internal
-    from asyncio import Future
-
     # Project
     from ..namespace import Namespace
     from ..protocols import ObserverProtocol
@@ -44,7 +40,7 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         wait for the observers action to execute.
     """
 
-    __slots__ = ("_lock", "_observer")
+    __slots__ = ("__lock", "_observer")
 
     def __init__(self, **kwargs: T.Any) -> None:
         """SingleStream constructor.
@@ -56,10 +52,18 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         super().__init__(**kwargs)
 
         # Internal
-        self._lock: "Future[None]" = self._loop.create_future()
+        self.__lock: T.Optional["Future[None]"] = None
         self._observer: T.Optional["ObserverProtocol[K]"] = None
 
+    @property
+    def _lock(self) -> "Future[None]":
+        if self.__lock is None:
+            self.__lock = get_running_loop().create_future()
+
+        return self.__lock
+
     async def _asend(self, value: L, namespace: "Namespace") -> None:
+
         # Wait for observers
         await self._lock
 
@@ -94,8 +98,9 @@ class SingleStreamBase(Observable[K], Observer[L], metaclass=AsyncABCMeta):
         return False
 
     async def _aclose(self) -> None:
+
         # Cancel all awaiting event in the case we weren't subscribed
-        with suppress(InvalidStateError):
+        if not self._lock.done():
             self._lock.set_exception(ObserverClosedError(self))
 
         if self._observer:
