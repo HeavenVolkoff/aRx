@@ -16,7 +16,7 @@ from ._internal.from_source import FromSource
 K = T.TypeVar("K")
 
 
-class FromIterableIterable(FromSource[K, T.AsyncIterator[K]]):
+class FromAsyncIterable(FromSource[K, T.AsyncIterator[K]]):
     """Observable that uses an async iterable as data source."""
 
     def __init__(self, async_iterable: T.AsyncIterable[K], **kwargs: T.Any) -> None:
@@ -47,4 +47,4 @@ class FromIterableIterable(FromSource[K, T.AsyncIterator[K]]):
                 loop.create_task(self._source.aclose())
 
 
-__all__ = ("FromIterableIterable",)
+__all__ = ("FromAsyncIterable",)

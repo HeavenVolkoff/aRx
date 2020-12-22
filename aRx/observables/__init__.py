@@ -11,6 +11,6 @@ file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Project
 from .observable import Observable
 from .from_iterable import FromIterable
-from .from_async_iterable import FromIterableIterable
+from .from_async_iterable import FromAsyncIterable
 
-__all__ = ("FromIterableIterable", "FromIterable", "Observable")
+__all__ = ("FromAsyncIterable", "FromIterable", "Observable")
