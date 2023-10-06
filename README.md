@@ -1,4 +1,4 @@
-# aRx
+# aRx (DEPRECATED)
 
 [![project_badge](https://img.shields.io/badge/HeavenVolkoff/aRx-black.svg?style=for-the-badge&logo=github "Project Badge")](https://github.com/HeavenVolkoff/aRx)
 [![version_badge](https://img.shields.io/github/tag/HeavenVolkoff/aRx.svg?label=version&style=for-the-badge "Version Badge")](https://github.com/HeavenVolkoff/aRx/releases/latest)
@@ -24,4 +24,4 @@ Original Work:
 Modified work:
 >[The MPL 2.0 License](LICENSE)
 >
->Copyright (c) 2018 Vítor Augusto da Silva Vasconcellos
+>Copyright (c) 2018-2023 Vítor Vasconcellos
